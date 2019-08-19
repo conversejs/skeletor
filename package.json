@@ -1,7 +1,7 @@
 {
-  "name": "backbone",
-  "description": "Give your JS App some Backbone with Models, Views, Collections, and Events.",
-  "url": "http://backbonejs.org",
+  "name": "skeletor",
+  "description": "",
+  "url": "https://github.com/skeletorjs/skeletor",
   "keywords": [
     "model",
     "view",
@@ -13,12 +13,12 @@
   ],
   "author": "Jeremy Ashkenas",
   "dependencies": {
-    "underscore": ">=1.8.3"
+    "lodash": "^4.17.14"
   },
   "devDependencies": {
     "coffee-script": "1.7.1",
     "docco": "0.7.0",
-    "eslint": "^2.11.0",
+    "eslint": "^6.0.1",
     "karma": "^0.13.13",
     "karma-phantomjs-launcher": "^1.0.0",
     "karma-qunit": "^1.0.0",
@@ -32,17 +32,14 @@
     "doc": "docco backbone.js && docco examples/todos/todos.js examples/backbone.localStorage.js",
     "lint": "eslint backbone.js test/*.js"
   },
-  "main": "backbone.js",
-  "version": "1.4.0",
+  "module": "src/skeletor.js",
+  "version": "0.0.1",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/jashkenas/backbone.git"
+    "url": "https://github.com/skeletorjs/skeletor.git"
   },
   "files": [
-    "backbone.js",
-    "backbone-min.js",
-    "backbone-min.map",
     "LICENSE"
   ]
 }
