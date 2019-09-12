@@ -9,10 +9,9 @@ module.exports = function(config) {
 
     // list of files / patterns to load in the browser
     files: [
-        'test/vendor/jquery.js',
+        'node_modules/lodash/lodash.js',
         'test/vendor/json2.js',
-        'test/vendor/underscore.js',
-        'backbone.js',
+        'dist/skeletor.js',
         'test/setup/*.js',
         'test/*.js'
     ],
@@ -37,7 +36,7 @@ module.exports = function(config) {
 
     // start these browsers
     // available browser launchers: https://npmjs.org/browse/keyword/karma-launcher
-    browsers: ['PhantomJS'],
+    browsers: ['Chromium'],
 
     // Continuous Integration mode
     // if true, Karma captures browsers, runs the tests and exits

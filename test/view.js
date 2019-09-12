@@ -2,14 +2,14 @@
 
   var view;
 
-  QUnit.module('Backbone.View', {
+  QUnit.module('Skeletor.View', {
 
     beforeEach: function() {
       $('#qunit-fixture').append(
         '<div id="testElement"><h1>Test</h1></div>'
      );
 
-      view = new Backbone.View({
+      view = new Skeletor.View({
         id: 'test-view',
         className: 'test-view',
         other: 'non-special-option'
@@ -32,7 +32,7 @@
 
   QUnit.test('$', function(assert) {
     assert.expect(2);
-    var myView = new Backbone.View;
+    var myView = new Skeletor.View;
     myView.setElement('<p><a><b>test</b></a></p>');
     var result = myView.$('a b');
 
@@ -42,17 +42,17 @@
 
   QUnit.test('$el', function(assert) {
     assert.expect(3);
-    var myView = new Backbone.View;
+    var myView = new Skeletor.View;
     myView.setElement('<p><a><b>test</b></a></p>');
     assert.strictEqual(myView.el.nodeType, 1);
 
-    assert.ok(myView.$el instanceof Backbone.$);
+    assert.ok(myView.$el instanceof Skeletor.$);
     assert.strictEqual(myView.$el[0], myView.el);
   });
 
   QUnit.test('initialize', function(assert) {
     assert.expect(1);
-    var View = Backbone.View.extend({
+    var View = Skeletor.View.extend({
       initialize: function() {
         this.one = 1;
       }
@@ -63,7 +63,7 @@
 
   QUnit.test('preinitialize', function(assert) {
     assert.expect(1);
-    var View = Backbone.View.extend({
+    var View = Skeletor.View.extend({
       preinitialize: function() {
         this.one = 1;
       }
@@ -74,7 +74,7 @@
 
   QUnit.test('preinitialize occurs before the view is set up', function(assert) {
     assert.expect(2);
-    var View = Backbone.View.extend({
+    var View = Skeletor.View.extend({
       preinitialize: function() {
         assert.equal(this.el, undefined);
       }
@@ -85,7 +85,7 @@
 
   QUnit.test('render', function(assert) {
     assert.expect(1);
-    var myView = new Backbone.View;
+    var myView = new Skeletor.View;
     assert.equal(myView.render(), myView, '#render returns the view instance');
   });
 
@@ -93,7 +93,7 @@
     assert.expect(6);
     var counter1 = 0, counter2 = 0;
 
-    var myView = new Backbone.View({el: '#testElement'});
+    var myView = new Skeletor.View({el: '#testElement'});
     myView.increment = function() { counter1++; };
     myView.$el.on('click', function() { counter2++; });
 
@@ -116,7 +116,7 @@
 
   QUnit.test('delegate', function(assert) {
     assert.expect(3);
-    var myView = new Backbone.View({el: '#testElement'});
+    var myView = new Skeletor.View({el: '#testElement'});
     myView.delegate('click', 'h1', function() {
       assert.ok(true);
     });
@@ -130,7 +130,7 @@
 
   QUnit.test('delegateEvents allows functions for callbacks', function(assert) {
     assert.expect(3);
-    var myView = new Backbone.View({el: '<p></p>'});
+    var myView = new Skeletor.View({el: '<p></p>'});
     myView.counter = 0;
 
     var events = {
@@ -153,7 +153,7 @@
 
   QUnit.test('delegateEvents ignore undefined methods', function(assert) {
     assert.expect(0);
-    var myView = new Backbone.View({el: '<p></p>'});
+    var myView = new Skeletor.View({el: '<p></p>'});
     myView.delegateEvents({click: 'undefinedMethod'});
     myView.$el.trigger('click');
   });
@@ -162,7 +162,7 @@
     assert.expect(7);
     var counter1 = 0, counter2 = 0;
 
-    var myView = new Backbone.View({el: '#testElement'});
+    var myView = new Skeletor.View({el: '#testElement'});
     myView.increment = function() { counter1++; };
     myView.$el.on('click', function() { counter2++; });
 
@@ -188,7 +188,7 @@
 
   QUnit.test('undelegate', function(assert) {
     assert.expect(1);
-    var myView = new Backbone.View({el: '#testElement'});
+    var myView = new Skeletor.View({el: '#testElement'});
     myView.delegate('click', function() { assert.ok(false); });
     myView.delegate('click', 'h1', function() { assert.ok(false); });
 
@@ -202,7 +202,7 @@
 
   QUnit.test('undelegate with passed handler', function(assert) {
     assert.expect(1);
-    var myView = new Backbone.View({el: '#testElement'});
+    var myView = new Skeletor.View({el: '#testElement'});
     var listener = function() { assert.ok(false); };
     myView.delegate('click', listener);
     myView.delegate('click', function() { assert.ok(true); });
@@ -212,7 +212,7 @@
 
   QUnit.test('undelegate with selector', function(assert) {
     assert.expect(2);
-    var myView = new Backbone.View({el: '#testElement'});
+    var myView = new Skeletor.View({el: '#testElement'});
     myView.delegate('click', function() { assert.ok(true); });
     myView.delegate('click', 'h1', function() { assert.ok(false); });
     myView.undelegate('click', 'h1');
@@ -222,7 +222,7 @@
 
   QUnit.test('undelegate with handler and selector', function(assert) {
     assert.expect(2);
-    var myView = new Backbone.View({el: '#testElement'});
+    var myView = new Skeletor.View({el: '#testElement'});
     myView.delegate('click', function() { assert.ok(true); });
     var handler = function() { assert.ok(false); };
     myView.delegate('click', 'h1', handler);
@@ -233,7 +233,7 @@
 
   QUnit.test('tagName can be provided as a string', function(assert) {
     assert.expect(1);
-    var View = Backbone.View.extend({
+    var View = Skeletor.View.extend({
       tagName: 'span'
     });
 
@@ -242,7 +242,7 @@
 
   QUnit.test('tagName can be provided as a function', function(assert) {
     assert.expect(1);
-    var View = Backbone.View.extend({
+    var View = Skeletor.View.extend({
       tagName: function() {
         return 'p';
       }
@@ -253,7 +253,7 @@
 
   QUnit.test('_ensureElement with DOM node el', function(assert) {
     assert.expect(1);
-    var View = Backbone.View.extend({
+    var View = Skeletor.View.extend({
       el: document.body
     });
 
@@ -262,17 +262,17 @@
 
   QUnit.test('_ensureElement with string el', function(assert) {
     assert.expect(3);
-    var View = Backbone.View.extend({
+    var View = Skeletor.View.extend({
       el: 'body'
     });
     assert.strictEqual(new View().el, document.body);
 
-    View = Backbone.View.extend({
+    View = Skeletor.View.extend({
       el: '#testElement > h1'
     });
     assert.strictEqual(new View().el, $('#testElement > h1').get(0));
 
-    View = Backbone.View.extend({
+    View = Skeletor.View.extend({
       el: '#nonexistent'
     });
     assert.ok(!new View().el);
@@ -280,7 +280,7 @@
 
   QUnit.test('with className and id functions', function(assert) {
     assert.expect(2);
-    var View = Backbone.View.extend({
+    var View = Skeletor.View.extend({
       className: function() {
         return 'className';
       },
@@ -295,7 +295,7 @@
 
   QUnit.test('with attributes', function(assert) {
     assert.expect(2);
-    var View = Backbone.View.extend({
+    var View = Skeletor.View.extend({
       attributes: {
         'id': 'id',
         'class': 'class'
@@ -308,7 +308,7 @@
 
   QUnit.test('with attributes as a function', function(assert) {
     assert.expect(1);
-    var View = Backbone.View.extend({
+    var View = Skeletor.View.extend({
       attributes: function() {
         return {'class': 'dynamic'};
       }
@@ -319,7 +319,7 @@
 
   QUnit.test('should default to className/id properties', function(assert) {
     assert.expect(4);
-    var View = Backbone.View.extend({
+    var View = Skeletor.View.extend({
       className: 'backboneClass',
       id: 'backboneId',
       attributes: {
@@ -340,7 +340,7 @@
     var count = 0;
     var $el = $('<p></p>');
 
-    var View = Backbone.View.extend({
+    var View = Skeletor.View.extend({
       el: $el,
       events: {
         click: function() {
@@ -364,7 +364,7 @@
 
   QUnit.test('custom events', function(assert) {
     assert.expect(2);
-    var View = Backbone.View.extend({
+    var View = Skeletor.View.extend({
       el: $('body'),
       events: {
         fake$event: function() { assert.ok(true); }
@@ -382,7 +382,7 @@
     assert.expect(2);
     var $el = $('body');
 
-    var myView = new Backbone.View({el: $el});
+    var myView = new Skeletor.View({el: $el});
     assert.ok(myView.$el === $el);
 
     myView.setElement($el = $($el));
@@ -394,7 +394,7 @@
     var button1 = $('<button></button>');
     var button2 = $('<button></button>');
 
-    var View = Backbone.View.extend({
+    var View = Skeletor.View.extend({
       events: {
         click: function(e) {
           assert.ok(myView.el === e.target);
@@ -411,7 +411,7 @@
 
   QUnit.test('#1172 - Clone attributes object', function(assert) {
     assert.expect(2);
-    var View = Backbone.View.extend({
+    var View = Skeletor.View.extend({
       attributes: {foo: 'bar'}
     });
 
@@ -424,7 +424,7 @@
 
   QUnit.test('views stopListening', function(assert) {
     assert.expect(0);
-    var View = Backbone.View.extend({
+    var View = Skeletor.View.extend({
       initialize: function() {
         this.listenTo(this.model, 'all x', function() { assert.ok(false); });
         this.listenTo(this.collection, 'all x', function() { assert.ok(false); });
@@ -432,8 +432,8 @@
     });
 
     var myView = new View({
-      model: new Backbone.Model,
-      collection: new Backbone.Collection
+      model: new Skeletor.Model,
+      collection: new Skeletor.Collection
     });
 
     myView.stopListening();
@@ -443,7 +443,7 @@
 
   QUnit.test('Provide function for el.', function(assert) {
     assert.expect(2);
-    var View = Backbone.View.extend({
+    var View = Skeletor.View.extend({
       el: function() {
         return '<p><a></a></p>';
       }
@@ -458,7 +458,7 @@
     assert.expect(1);
     var counter = 0;
 
-    var View = Backbone.View.extend({
+    var View = Skeletor.View.extend({
       el: '#testElement',
       increment: function() {
         counter++;
@@ -477,7 +477,7 @@
 
   QUnit.test('remove', function(assert) {
     assert.expect(2);
-    var myView = new Backbone.View;
+    var myView = new Skeletor.View();
     document.body.appendChild(view.el);
 
     myView.delegate('click', function() { assert.ok(false); });
@@ -493,7 +493,7 @@
 
   QUnit.test('setElement', function(assert) {
     assert.expect(3);
-    var myView = new Backbone.View({
+    var myView = new Skeletor.View({
       events: {
         click: function() { assert.ok(false); }
       }

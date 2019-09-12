@@ -4,9 +4,8 @@
   },
   "globals": {
     "QUnit": false,
-    "Backbone": true,
-    "_": true,
-    "$": true
+    "Skeletor": true,
+    "_": true
   },
   "rules": {
     "no-throw-literal": 0,

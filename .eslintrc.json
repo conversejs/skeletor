@@ -12,7 +12,7 @@
     "globals": {
         "Uint8Array": true,
         "Promise": true,
-        "converse": true,
+        "Skeletor": true,
         "define": true,
         "require": true,
         "sinon": true,

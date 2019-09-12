@@ -5,6 +5,7 @@ export default [
     input: 'src/main.js',
     output: {
       name: 'skeletor',
+      sourcemap: true,
       file: 'dist/skeletor.js',
       format: 'umd'
     }
@@ -13,6 +14,7 @@ export default [
     input: 'src/main.js',
     output: {
       name: 'skeletor',
+      sourcemap: true,
       file: 'dist/skeletor.min.js',
       format: 'umd'
     },

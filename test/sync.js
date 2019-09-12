@@ -1,6 +1,6 @@
 (function(QUnit) {
 
-  var Library = Backbone.Collection.extend({
+  var Library = Skeletor.Collection.extend({
     url: function() { return '/library'; }
   });
   var library;
@@ -11,7 +11,7 @@
     length: 123
   };
 
-  QUnit.module('Backbone.sync', {
+  QUnit.module('Skeletor.sync', {
 
     beforeEach: function(assert) {
       library = new Library;
@@ -19,7 +19,7 @@
     },
 
     afterEach: function(assert) {
-      Backbone.emulateHTTP = false;
+      Skeletor.emulateHTTP = false;
     }
 
   });
@@ -141,7 +141,7 @@
 
   QUnit.test('urlError', function(assert) {
     assert.expect(2);
-    var model = new Backbone.Model();
+    var model = new Skeletor.Model();
     assert.raises(function() {
       model.fetch();
     });
@@ -151,63 +151,63 @@
 
   QUnit.test('#1052 - `options` is optional.', function(assert) {
     assert.expect(0);
-    var model = new Backbone.Model();
+    var model = new Skeletor.Model();
     model.url = '/test';
-    Backbone.sync('create', model);
+    Skeletor.sync('create', model);
   });
 
-  QUnit.test('Backbone.ajax', function(assert) {
+  QUnit.test('Skeletor.ajax', function(assert) {
     assert.expect(1);
-    Backbone.ajax = function(settings) {
+    Skeletor.ajax = function(settings) {
       assert.strictEqual(settings.url, '/test');
     };
-    var model = new Backbone.Model();
+    var model = new Skeletor.Model();
     model.url = '/test';
-    Backbone.sync('create', model);
+    Skeletor.sync('create', model);
   });
 
   QUnit.test('Call provided error callback on error.', function(assert) {
     assert.expect(1);
-    var model = new Backbone.Model;
+    var model = new Skeletor.Model;
     model.url = '/test';
-    Backbone.sync('read', model, {
+    Skeletor.sync('read', model, {
       error: function() { assert.ok(true); }
     });
     this.ajaxSettings.error();
   });
 
-  QUnit.test('Use Backbone.emulateHTTP as default.', function(assert) {
+  QUnit.test('Use Skeletor.emulateHTTP as default.', function(assert) {
     assert.expect(2);
-    var model = new Backbone.Model;
+    var model = new Skeletor.Model;
     model.url = '/test';
 
-    Backbone.emulateHTTP = true;
+    Skeletor.emulateHTTP = true;
     model.sync('create', model);
     assert.strictEqual(this.ajaxSettings.emulateHTTP, true);
 
-    Backbone.emulateHTTP = false;
+    Skeletor.emulateHTTP = false;
     model.sync('create', model);
     assert.strictEqual(this.ajaxSettings.emulateHTTP, false);
   });
 
-  QUnit.test('Use Backbone.emulateJSON as default.', function(assert) {
+  QUnit.test('Use Skeletor.emulateJSON as default.', function(assert) {
     assert.expect(2);
-    var model = new Backbone.Model;
+    var model = new Skeletor.Model;
     model.url = '/test';
 
-    Backbone.emulateJSON = true;
+    Skeletor.emulateJSON = true;
     model.sync('create', model);
     assert.strictEqual(this.ajaxSettings.emulateJSON, true);
 
-    Backbone.emulateJSON = false;
+    Skeletor.emulateJSON = false;
     model.sync('create', model);
     assert.strictEqual(this.ajaxSettings.emulateJSON, false);
   });
 
   QUnit.test('#1756 - Call user provided beforeSend function.', function(assert) {
     assert.expect(4);
-    Backbone.emulateHTTP = true;
-    var model = new Backbone.Model;
+    Skeletor.emulateHTTP = true;
+    var model = new Skeletor.Model;
     model.url = '/test';
     var xhr = {
       setRequestHeader: function(header, value) {
@@ -226,7 +226,7 @@
 
   QUnit.test('#2928 - Pass along `textStatus` and `errorThrown`.', function(assert) {
     assert.expect(2);
-    var model = new Backbone.Model;
+    var model = new Skeletor.Model;
     model.url = '/test';
     model.on('error', function(m, xhr, options) {
       assert.strictEqual(options.textStatus, 'textStatus');

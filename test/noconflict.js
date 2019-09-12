@@ -1,13 +1,13 @@
 (function(QUnit) {
 
-  QUnit.module('Backbone.noConflict');
+  QUnit.module('Skeletor.noConflict');
 
   QUnit.test('noConflict', function(assert) {
     assert.expect(2);
-    var noconflictBackbone = Backbone.noConflict();
-    assert.equal(window.Backbone, undefined, 'Returned window.Backbone');
-    window.Backbone = noconflictBackbone;
-    assert.equal(window.Backbone, noconflictBackbone, 'Backbone is still pointing to the original Backbone');
+    var noconflictSkeletor = Skeletor.noConflict();
+    assert.equal(window.Skeletor, undefined, 'Returned window.Skeletor');
+    window.Skeletor = noconflictSkeletor;
+    assert.equal(window.Skeletor, noconflictSkeletor, 'Skeletor is still pointing to the original Skeletor');
   });
 
 })(QUnit);

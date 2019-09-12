@@ -1,9 +1,8 @@
 (function(QUnit) {
-
-  var sync = Backbone.sync;
-  var ajax = Backbone.ajax;
-  var emulateHTTP = Backbone.emulateHTTP;
-  var emulateJSON = Backbone.emulateJSON;
+  var sync = Skeletor.sync;
+  var ajax = Skeletor.ajax;
+  var emulateHTTP = Skeletor.emulateHTTP;
+  var emulateJSON = Skeletor.emulateJSON;
   var history = window.history;
   var pushState = history.pushState;
   var replaceState = history.replaceState;
@@ -17,12 +16,12 @@
     history.pushState = history.replaceState = function() {};
 
     // Capture ajax settings for comparison.
-    Backbone.ajax = function(settings) {
+    Skeletor.ajax = function(settings) {
       env.ajaxSettings = settings;
     };
 
-    // Capture the arguments to Backbone.sync for comparison.
-    Backbone.sync = function(method, model, options) {
+    // Capture the arguments to Skeletor.sync for comparison.
+    Skeletor.sync = function (method, model, options) {
       env.syncArgs = {
         method: method,
         model: model,
@@ -34,10 +33,10 @@
   });
 
   QUnit.testDone(function() {
-    Backbone.sync = sync;
-    Backbone.ajax = ajax;
-    Backbone.emulateHTTP = emulateHTTP;
-    Backbone.emulateJSON = emulateJSON;
+    Skeletor.sync = sync;
+    Skeletor.ajax = ajax;
+    Skeletor.emulateHTTP = emulateHTTP;
+    Skeletor.emulateJSON = emulateJSON;
     history.pushState = pushState;
     history.replaceState = replaceState;
   });
