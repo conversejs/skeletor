@@ -35,5 +35,6 @@ https://github.com/broofa
 
 1. Use `drop` instead of `rest`.
 2. `indexBy` is called `keyBy`
+2. Use `invokeMap` for collections instead of `invoke`.
 
 ![](https://raw.githubusercontent.com/skeletorjs/skeletor/master/images/skeletor3.jpg)

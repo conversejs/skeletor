@@ -297,4 +297,4 @@ _.extend(History.prototype, Events, {
   }
 });
 
-export const history = new History();
+export default History;

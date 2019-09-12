@@ -4,7 +4,7 @@
 
   QUnit.test('on and trigger', function(assert) {
     assert.expect(2);
-    var obj = {counter: 0};
+    const obj = {counter: 0};
     _.extend(obj, Skeletor.Events);
     obj.on('event', function() { obj.counter += 1; });
     obj.trigger('event');
@@ -18,7 +18,7 @@
 
   QUnit.test('binding and triggering multiple events', function(assert) {
     assert.expect(4);
-    var obj = {counter: 0};
+    const obj = {counter: 0};
     _.extend(obj, Skeletor.Events);
 
     obj.on('a b c', function() { obj.counter += 1; });
@@ -38,10 +38,10 @@
   });
 
   QUnit.test('binding and triggering with event maps', function(assert) {
-    var obj = {counter: 0};
+    const obj = {counter: 0};
     _.extend(obj, Skeletor.Events);
 
-    var increment = function() {
+    const increment = function() {
       this.counter += 1;
     };
 
@@ -69,10 +69,10 @@
   });
 
   QUnit.test('binding and triggering multiple event names with event maps', function(assert) {
-    var obj = {counter: 0};
+    const obj = {counter: 0};
     _.extend(obj, Skeletor.Events);
 
-    var increment = function() {
+    const increment = function() {
       this.counter += 1;
     };
 
@@ -98,8 +98,8 @@
 
   QUnit.test('binding and trigger with event maps context', function(assert) {
     assert.expect(2);
-    var obj = {counter: 0};
-    var context = {};
+    const obj = {counter: 0};
+    const context = {};
     _.extend(obj, Skeletor.Events);
 
     obj.on({
@@ -117,8 +117,8 @@
 
   QUnit.test('listenTo and stopListening', function(assert) {
     assert.expect(1);
-    var a = _.extend({}, Skeletor.Events);
-    var b = _.extend({}, Skeletor.Events);
+    const a = _.extend({}, Skeletor.Events);
+    const b = _.extend({}, Skeletor.Events);
     a.listenTo(b, 'all', function(){ assert.ok(true); });
     b.trigger('anything');
     a.listenTo(b, 'all', function(){ assert.ok(false); });
@@ -128,9 +128,9 @@
 
   QUnit.test('listenTo and stopListening with event maps', function(assert) {
     assert.expect(4);
-    var a = _.extend({}, Skeletor.Events);
-    var b = _.extend({}, Skeletor.Events);
-    var cb = function(){ assert.ok(true); };
+    const a = _.extend({}, Skeletor.Events);
+    const b = _.extend({}, Skeletor.Events);
+    const cb = function(){ assert.ok(true); };
     a.listenTo(b, {event: cb});
     b.trigger('event');
     a.listenTo(b, {event2: cb});
@@ -143,9 +143,9 @@
 
   QUnit.test('stopListening with omitted args', function(assert) {
     assert.expect(2);
-    var a = _.extend({}, Skeletor.Events);
-    var b = _.extend({}, Skeletor.Events);
-    var cb = function() { assert.ok(true); };
+    const a = _.extend({}, Skeletor.Events);
+    const b = _.extend({}, Skeletor.Events);
+    const cb = () => assert.ok(true);
     a.listenTo(b, 'event', cb);
     b.on('event', cb);
     a.listenTo(b, 'event2', cb);
@@ -161,10 +161,10 @@
   QUnit.test('listenToOnce', function(assert) {
     assert.expect(2);
     // Same as the previous test, but we use once rather than having to explicitly unbind
-    var obj = {counterA: 0, counterB: 0};
+    const obj = {counterA: 0, counterB: 0};
     _.extend(obj, Skeletor.Events);
-    var incrA = function(){ obj.counterA += 1; obj.trigger('event'); };
-    var incrB = function(){ obj.counterB += 1; };
+    const incrA = function(){ obj.counterA += 1; obj.trigger('event'); };
+    const incrB = function(){ obj.counterB += 1; };
     obj.listenToOnce(obj, 'event', incrA);
     obj.listenToOnce(obj, 'event', incrB);
     obj.trigger('event');
@@ -174,32 +174,32 @@
 
   QUnit.test('listenToOnce and stopListening', function(assert) {
     assert.expect(1);
-    var a = _.extend({}, Skeletor.Events);
-    var b = _.extend({}, Skeletor.Events);
-    a.listenToOnce(b, 'all', function() { assert.ok(true); });
+    const a = _.extend({}, Skeletor.Events);
+    const b = _.extend({}, Skeletor.Events);
+    a.listenToOnce(b, 'all', () => assert.ok(true));
     b.trigger('anything');
     b.trigger('anything');
-    a.listenToOnce(b, 'all', function() { assert.ok(false); });
+    a.listenToOnce(b, 'all', () => assert.ok(false));
     a.stopListening();
     b.trigger('anything');
   });
 
   QUnit.test('listenTo, listenToOnce and stopListening', function(assert) {
     assert.expect(1);
-    var a = _.extend({}, Skeletor.Events);
-    var b = _.extend({}, Skeletor.Events);
-    a.listenToOnce(b, 'all', function() { assert.ok(true); });
+    const a = _.extend({}, Skeletor.Events);
+    const b = _.extend({}, Skeletor.Events);
+    a.listenToOnce(b, 'all', () => assert.ok(true));
     b.trigger('anything');
     b.trigger('anything');
-    a.listenTo(b, 'all', function() { assert.ok(false); });
+    a.listenTo(b, 'all', () => assert.ok(false));
     a.stopListening();
     b.trigger('anything');
   });
 
   QUnit.test('listenTo and stopListening with event maps', function(assert) {
     assert.expect(1);
-    var a = _.extend({}, Skeletor.Events);
-    var b = _.extend({}, Skeletor.Events);
+    const a = _.extend({}, Skeletor.Events);
+    const b = _.extend({}, Skeletor.Events);
     a.listenTo(b, {change: function(){ assert.ok(true); }});
     b.trigger('change');
     a.listenTo(b, {change: function(){ assert.ok(false); }});
@@ -209,14 +209,14 @@
 
   QUnit.test('listenTo yourself', function(assert) {
     assert.expect(1);
-    var e = _.extend({}, Skeletor.Events);
+    const e = _.extend({}, Skeletor.Events);
     e.listenTo(e, 'foo', function(){ assert.ok(true); });
     e.trigger('foo');
   });
 
   QUnit.test('listenTo yourself cleans yourself up with stopListening', function(assert) {
     assert.expect(1);
-    var e = _.extend({}, Skeletor.Events);
+    const e = _.extend({}, Skeletor.Events);
     e.listenTo(e, 'foo', function(){ assert.ok(true); });
     e.trigger('foo');
     e.stopListening();
@@ -225,9 +225,9 @@
 
   QUnit.test('stopListening cleans up references', function(assert) {
     assert.expect(12);
-    var a = _.extend({}, Skeletor.Events);
-    var b = _.extend({}, Skeletor.Events);
-    var fn = function() {};
+    const a = _.extend({}, Skeletor.Events);
+    const b = _.extend({}, Skeletor.Events);
+    const fn = function() {};
     b.on('event', fn);
     a.listenTo(b, 'event', fn).stopListening();
     assert.equal(_.size(a._listeningTo), 0);
@@ -249,9 +249,9 @@
 
   QUnit.test('stopListening cleans up references from listenToOnce', function(assert) {
     assert.expect(12);
-    var a = _.extend({}, Skeletor.Events);
-    var b = _.extend({}, Skeletor.Events);
-    var fn = function() {};
+    const a = _.extend({}, Skeletor.Events);
+    const b = _.extend({}, Skeletor.Events);
+    const fn = function() {};
     b.on('event', fn);
     a.listenToOnce(b, 'event', fn).stopListening();
     assert.equal(_.size(a._listeningTo), 0);
@@ -273,9 +273,9 @@
 
   QUnit.test('listenTo and off cleaning up references', function(assert) {
     assert.expect(8);
-    var a = _.extend({}, Skeletor.Events);
-    var b = _.extend({}, Skeletor.Events);
-    var fn = function() {};
+    const a = _.extend({}, Skeletor.Events);
+    const b = _.extend({}, Skeletor.Events);
+    const fn = function() {};
     a.listenTo(b, 'event', fn);
     b.off();
     assert.equal(_.size(a._listeningTo), 0);
@@ -296,8 +296,8 @@
 
   QUnit.test('listenTo and stopListening cleaning up references', function(assert) {
     assert.expect(2);
-    var a = _.extend({}, Skeletor.Events);
-    var b = _.extend({}, Skeletor.Events);
+    const a = _.extend({}, Skeletor.Events);
+    const b = _.extend({}, Skeletor.Events);
     a.listenTo(b, 'all', function(){ assert.ok(true); });
     b.trigger('anything');
     a.listenTo(b, 'other', function(){ assert.ok(false); });
@@ -308,8 +308,8 @@
 
   QUnit.test('listenToOnce without context cleans up references after the event has fired', function(assert) {
     assert.expect(2);
-    var a = _.extend({}, Skeletor.Events);
-    var b = _.extend({}, Skeletor.Events);
+    const a = _.extend({}, Skeletor.Events);
+    const b = _.extend({}, Skeletor.Events);
     a.listenToOnce(b, 'all', function(){ assert.ok(true); });
     b.trigger('anything');
     assert.equal(_.size(a._listeningTo), 0);
@@ -317,11 +317,11 @@
 
   QUnit.test('listenToOnce with event maps cleans up references', function(assert) {
     assert.expect(2);
-    var a = _.extend({}, Skeletor.Events);
-    var b = _.extend({}, Skeletor.Events);
+    const a = _.extend({}, Skeletor.Events);
+    const b = _.extend({}, Skeletor.Events);
     a.listenToOnce(b, {
-      one: function() { assert.ok(true); },
-      two: function() { assert.ok(false); }
+      one: () => assert.ok(true),
+      two: () => assert.ok(false)
     });
     b.trigger('one');
     assert.equal(_.size(a._listeningTo), 1);
@@ -329,8 +329,8 @@
 
   QUnit.test('listenToOnce with event maps binds the correct `this`', function(assert) {
     assert.expect(1);
-    var a = _.extend({}, Skeletor.Events);
-    var b = _.extend({}, Skeletor.Events);
+    const a = _.extend({}, Skeletor.Events);
+    const b = _.extend({}, Skeletor.Events);
     a.listenToOnce(b, {
       one: function() { assert.ok(this === a); },
       two: function() { assert.ok(false); }
@@ -340,7 +340,7 @@
 
   QUnit.test("listenTo with empty callback doesn't throw an error", function(assert) {
     assert.expect(1);
-    var e = _.extend({}, Skeletor.Events);
+    const e = _.extend({}, Skeletor.Events);
     e.listenTo(e, 'foo', null);
     e.trigger('foo');
     assert.ok(true);
@@ -348,7 +348,8 @@
 
   QUnit.test('trigger all for each event', function(assert) {
     assert.expect(3);
-    var a, b, obj = {counter: 0};
+    let a, b;
+    const obj = {counter: 0};
     _.extend(obj, Skeletor.Events);
     obj.on('all', function(event) {
       obj.counter++;
@@ -363,9 +364,9 @@
 
   QUnit.test('on, then unbind all functions', function(assert) {
     assert.expect(1);
-    var obj = {counter: 0};
+    const obj = {counter: 0};
     _.extend(obj, Skeletor.Events);
-    var callback = function() { obj.counter += 1; };
+    const callback = function() { obj.counter += 1; };
     obj.on('event', callback);
     obj.trigger('event');
     obj.off('event');
@@ -375,9 +376,9 @@
 
   QUnit.test('bind two callbacks, unbind only one', function(assert) {
     assert.expect(2);
-    var obj = {counterA: 0, counterB: 0};
+    const obj = {counterA: 0, counterB: 0};
     _.extend(obj, Skeletor.Events);
-    var callback = function() { obj.counterA += 1; };
+    const callback = function() { obj.counterA += 1; };
     obj.on('event', callback);
     obj.on('event', function() { obj.counterB += 1; });
     obj.trigger('event');
@@ -389,9 +390,9 @@
 
   QUnit.test('unbind a callback in the midst of it firing', function(assert) {
     assert.expect(1);
-    var obj = {counter: 0};
+    const obj = {counter: 0};
     _.extend(obj, Skeletor.Events);
-    var callback = function() {
+    const callback = function() {
       obj.counter += 1;
       obj.off('event', callback);
     };
@@ -404,10 +405,10 @@
 
   QUnit.test('two binds that unbind themeselves', function(assert) {
     assert.expect(2);
-    var obj = {counterA: 0, counterB: 0};
+    const obj = {counterA: 0, counterB: 0};
     _.extend(obj, Skeletor.Events);
-    var incrA = function(){ obj.counterA += 1; obj.off('event', incrA); };
-    var incrB = function(){ obj.counterB += 1; obj.off('event', incrB); };
+    const incrA = function(){ obj.counterA += 1; obj.off('event', incrA); };
+    const incrB = function(){ obj.counterB += 1; obj.off('event', incrB); };
     obj.on('event', incrA);
     obj.on('event', incrB);
     obj.trigger('event');
@@ -419,7 +420,7 @@
 
   QUnit.test('bind a callback with a default context when none supplied', function(assert) {
     assert.expect(1);
-    var obj = _.extend({
+    const obj = _.extend({
       assertTrue: function() {
         assert.equal(this, obj, '`this` was bound to the callback');
       }
@@ -431,24 +432,24 @@
 
   QUnit.test('bind a callback with a supplied context', function(assert) {
     assert.expect(1);
-    var TestClass = function() {
+    const TestClass = function() {
       return this;
     };
     TestClass.prototype.assertTrue = function() {
       assert.ok(true, '`this` was bound to the callback');
     };
 
-    var obj = _.extend({}, Skeletor.Events);
+    const obj = _.extend({}, Skeletor.Events);
     obj.on('event', function() { this.assertTrue(); }, new TestClass);
     obj.trigger('event');
   });
 
   QUnit.test('nested trigger with unbind', function(assert) {
     assert.expect(1);
-    var obj = {counter: 0};
+    const obj = {counter: 0};
     _.extend(obj, Skeletor.Events);
-    var incr1 = function(){ obj.counter += 1; obj.off('event', incr1); obj.trigger('event'); };
-    var incr2 = function(){ obj.counter += 1; };
+    const incr1 = function(){ obj.counter += 1; obj.off('event', incr1); obj.trigger('event'); };
+    const incr2 = function(){ obj.counter += 1; };
     obj.on('event', incr1);
     obj.on('event', incr2);
     obj.trigger('event');
@@ -457,10 +458,11 @@
 
   QUnit.test('callback list is not altered during trigger', function(assert) {
     assert.expect(2);
-    var counter = 0, obj = _.extend({}, Skeletor.Events);
-    var incr = function(){ counter++; };
-    var incrOn = function(){ obj.on('event all', incr); };
-    var incrOff = function(){ obj.off('event all', incr); };
+    let counter = 0;
+    const obj = _.extend({}, Skeletor.Events);
+    const incr = function(){ counter++; };
+    const incrOn = function(){ obj.on('event all', incr); };
+    const incrOff = function(){ obj.off('event all', incr); };
 
     obj.on('event all', incrOn).trigger('event');
     assert.equal(counter, 0, 'on does not alter callback list');
@@ -472,8 +474,8 @@
   QUnit.test("#1282 - 'all' callback list is retrieved after each event.", function(assert) {
     assert.expect(1);
     var counter = 0;
-    var obj = _.extend({}, Skeletor.Events);
-    var incr = function(){ counter++; };
+    const obj = _.extend({}, Skeletor.Events);
+    const incr = function(){ counter++; };
     obj.on('x', function() {
       obj.on('y', incr).on('all', incr);
     })
@@ -488,7 +490,7 @@
 
   QUnit.test('if callback is truthy but not a function, `on` should throw an error just like jQuery', function(assert) {
     assert.expect(1);
-    var view = _.extend({}, Skeletor.Events).on('test', 'noop');
+    const view = _.extend({}, Skeletor.Events).on('test', 'noop');
     assert.raises(function() {
       view.trigger('test');
     });
@@ -496,18 +498,18 @@
 
   QUnit.test('remove all events for a specific context', function(assert) {
     assert.expect(4);
-    var obj = _.extend({}, Skeletor.Events);
-    obj.on('x y all', function() { assert.ok(true); });
-    obj.on('x y all', function() { assert.ok(false); }, obj);
+    const obj = _.extend({}, Skeletor.Events);
+    obj.on('x y all', () => assert.ok(true));
+    obj.on('x y all', () => assert.ok(false), obj);
     obj.off(null, null, obj);
     obj.trigger('x y');
   });
 
   QUnit.test('remove all events for a specific callback', function(assert) {
     assert.expect(4);
-    var obj = _.extend({}, Skeletor.Events);
-    var success = function() { assert.ok(true); };
-    var fail = function() { assert.ok(false); };
+    const obj = _.extend({}, Skeletor.Events);
+    const success = () => assert.ok(true);
+    const fail = () => assert.ok(false);
     obj.on('x y all', success);
     obj.on('x y all', fail);
     obj.off(null, fail);
@@ -516,9 +518,9 @@
 
   QUnit.test('#1310 - off does not skip consecutive events', function(assert) {
     assert.expect(0);
-    var obj = _.extend({}, Skeletor.Events);
-    obj.on('event', function() { assert.ok(false); }, obj);
-    obj.on('event', function() { assert.ok(false); }, obj);
+    const obj = _.extend({}, Skeletor.Events);
+    obj.on('event', () => assert.ok(false), obj);
+    obj.on('event', () => assert.ok(false), obj);
     obj.off(null, null, obj);
     obj.trigger('event');
   });
@@ -526,10 +528,10 @@
   QUnit.test('once', function(assert) {
     assert.expect(2);
     // Same as the previous test, but we use once rather than having to explicitly unbind
-    var obj = {counterA: 0, counterB: 0};
+    const obj = {counterA: 0, counterB: 0};
     _.extend(obj, Skeletor.Events);
-    var incrA = function(){ obj.counterA += 1; obj.trigger('event'); };
-    var incrB = function(){ obj.counterB += 1; };
+    const incrA = function(){ obj.counterA += 1; obj.trigger('event'); };
+    const incrB = function(){ obj.counterB += 1; };
     obj.once('event', incrA);
     obj.once('event', incrB);
     obj.trigger('event');
@@ -539,10 +541,10 @@
 
   QUnit.test('once variant one', function(assert) {
     assert.expect(3);
-    var f = function(){ assert.ok(true); };
+    const f = function(){ assert.ok(true); };
 
-    var a = _.extend({}, Skeletor.Events).once('event', f);
-    var b = _.extend({}, Skeletor.Events).on('event', f);
+    const a = _.extend({}, Skeletor.Events).once('event', f);
+    const b = _.extend({}, Skeletor.Events).on('event', f);
 
     a.trigger('event');
 
@@ -552,8 +554,8 @@
 
   QUnit.test('once variant two', function(assert) {
     assert.expect(3);
-    var f = function(){ assert.ok(true); };
-    var obj = _.extend({}, Skeletor.Events);
+    const f = function(){ assert.ok(true); };
+    const obj = _.extend({}, Skeletor.Events);
 
     obj
       .once('event', f)
@@ -564,8 +566,8 @@
 
   QUnit.test('once with off', function(assert) {
     assert.expect(0);
-    var f = function(){ assert.ok(true); };
-    var obj = _.extend({}, Skeletor.Events);
+    const f = function(){ assert.ok(true); };
+    const obj = _.extend({}, Skeletor.Events);
 
     obj.once('event', f);
     obj.off('event', f);
@@ -573,10 +575,10 @@
   });
 
   QUnit.test('once with event maps', function(assert) {
-    var obj = {counter: 0};
+    const obj = {counter: 0};
     _.extend(obj, Skeletor.Events);
 
-    var increment = function() {
+    const increment = function() {
       this.counter += 1;
     };
 
@@ -601,8 +603,8 @@
 
   QUnit.test('bind a callback with a supplied context using once with object notation', function(assert) {
     assert.expect(1);
-    var obj = {counter: 0};
-    var context = {};
+    const obj = {counter: 0};
+    const context = {};
     _.extend(obj, Skeletor.Events);
 
     obj.once({
@@ -614,8 +616,8 @@
 
   QUnit.test('once with off only by context', function(assert) {
     assert.expect(0);
-    var context = {};
-    var obj = _.extend({}, Skeletor.Events);
+    const context = {};
+    const obj = _.extend({}, Skeletor.Events);
     obj.once('event', function(){ assert.ok(false); }, context);
     obj.off(null, null, context);
     obj.trigger('event');
@@ -626,10 +628,10 @@
   });
 
   QUnit.test('once with asynchronous events', function(assert) {
-    var done = assert.async();
+    const done = assert.async();
     assert.expect(1);
-    var func = _.debounce(function() { assert.ok(true); done(); }, 50);
-    var obj = _.extend({}, Skeletor.Events).once('async', func);
+    const func = _.debounce(() => { assert.ok(true); done() }, 50);
+    const obj = _.extend({}, Skeletor.Events).once('async', func);
 
     obj.trigger('async');
     obj.trigger('async');
@@ -637,15 +639,15 @@
 
   QUnit.test('once with multiple events.', function(assert) {
     assert.expect(2);
-    var obj = _.extend({}, Skeletor.Events);
-    obj.once('x y', function() { assert.ok(true); });
+    const obj = _.extend({}, Skeletor.Events);
+    obj.once('x y', () => assert.ok(true));
     obj.trigger('x y');
   });
 
   QUnit.test('Off during iteration with once.', function(assert) {
     assert.expect(2);
-    var obj = _.extend({}, Skeletor.Events);
-    var f = function(){ this.off('event', f); };
+    const obj = _.extend({}, Skeletor.Events);
+    const f = function(){ this.off('event', f); };
     obj.on('event', f);
     obj.once('event', function(){});
     obj.on('event', function(){ assert.ok(true); });
@@ -670,14 +672,14 @@
 
   QUnit.test('listenToOnce without a callback is a noop', function(assert) {
     assert.expect(0);
-    var obj = _.extend({}, Skeletor.Events);
+    const obj = _.extend({}, Skeletor.Events);
     obj.listenToOnce(obj, 'event').trigger('event');
   });
 
   QUnit.test('event functions are chainable', function(assert) {
-    var obj = _.extend({}, Skeletor.Events);
-    var obj2 = _.extend({}, Skeletor.Events);
-    var fn = function() {};
+    const obj = _.extend({}, Skeletor.Events);
+    const obj2 = _.extend({}, Skeletor.Events);
+    const fn = function() {};
     assert.equal(obj, obj.trigger('noeventssetyet'));
     assert.equal(obj, obj.off('noeventssetyet'));
     assert.equal(obj, obj.stopListening('noeventssetyet'));
@@ -693,9 +695,9 @@
 
   QUnit.test('#3448 - listenToOnce with space-separated events', function(assert) {
     assert.expect(2);
-    var one = _.extend({}, Skeletor.Events);
-    var two = _.extend({}, Skeletor.Events);
-    var count = 1;
+    const one = _.extend({}, Skeletor.Events);
+    const two = _.extend({}, Skeletor.Events);
+    let count = 1;
     one.listenToOnce(two, 'x y', function(n) { assert.ok(n === count++); });
     two.trigger('x', 1);
     two.trigger('x', 1);
@@ -704,8 +706,8 @@
   });
 
   QUnit.test('#3611 - listenTo is compatible with non-Skeletor event libraries', function(assert) {
-    var obj = _.extend({}, Skeletor.Events);
-    var other = {
+    const obj = _.extend({}, Skeletor.Events);
+    const other = {
       events: {},
       on: function(name, callback) {
         this.events[name] = callback;
@@ -715,13 +717,13 @@
       }
     };
 
-    obj.listenTo(other, 'test', function() { assert.ok(true); });
+    obj.listenTo(other, 'test', () => assert.ok(true));
     other.trigger('test');
   });
 
   QUnit.test('#3611 - stopListening is compatible with non-Skeletor event libraries', function(assert) {
-    var obj = _.extend({}, Skeletor.Events);
-    var other = {
+    const obj = _.extend({}, Skeletor.Events);
+    const other = {
       events: {},
       on: function(name, callback) {
         this.events[name] = callback;
@@ -730,12 +732,12 @@
         this.events = {};
       },
       trigger: function(name) {
-        var fn = this.events[name];
+        const fn = this.events[name];
         if (fn) fn();
       }
     };
 
-    obj.listenTo(other, 'test', function() { assert.ok(false); });
+    obj.listenTo(other, 'test', () => assert.ok(false));
     obj.stopListening(other);
     other.trigger('test');
     assert.equal(_.size(obj._listeningTo), 0);

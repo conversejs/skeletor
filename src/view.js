@@ -22,19 +22,6 @@ const paddedLt = /^\s*</;
 // Caches a local reference to `Element.prototype` for faster access.
 const ElementProto = (typeof Element !== 'undefined' && Element.prototype) || {};
 
-// Cross-browser event listener shims
-const elementAddEventListener = ElementProto.addEventListener ? function(eventName, listener) {
-  return this.addEventListener(eventName, listener, false);
-} : function(eventName, listener) {
-  return this.attachEvent('on' + eventName, listener);
-}
-
-const elementRemoveEventListener = ElementProto.removeEventListener ? function(eventName, listener) {
-  return this.removeEventListener(eventName, listener, false);
-} : function(eventName, listener) {
-  return this.detachEvent('on' + eventName, listener);
-}
-
 const indexOf = function(array, item) {
   for (let i = 0, len = array.length; i < len; i++) if (array[i] === item) return i;
   return -1;
@@ -182,22 +169,19 @@ _.extend(View.prototype, Events, {
   // handler.
   delegate: function(eventName, selector, listener) {
     var root = this.el;
-
     if (!root) {
-      return;
+      return this;
     }
-
     if (typeof selector === 'function') {
       listener = selector;
       selector = null;
     }
-
     // Given that `focus` and `blur` events do not bubble, do not delegate these events
     if (['focus', 'blur'].indexOf(eventName) !== -1) {
       var els = this.el.querySelectorAll(selector);
       for (var i = 0, len = els.length; i < len; i++) {
         var item = els[i];
-        elementAddEventListener.call(item, eventName, listener, false);
+        item.addEventListener(eventName, listener, false);
         this._domEvents.push({el: item, eventName: eventName, handler: listener});
       }
       return listener;
@@ -213,9 +197,9 @@ _.extend(View.prototype, Events, {
       }
     } : listener;
 
-    elementAddEventListener.call(this.el, eventName, handler, false);
+    this.el.addEventListener(eventName, handler, false);
     this._domEvents.push({el: this.el, eventName: eventName, handler: handler, listener: listener, selector: selector});
-    return handler;
+    return this;
   },
 
   // Clears all callbacks previously bound to the view by `delegateEvents`.
@@ -225,7 +209,7 @@ _.extend(View.prototype, Events, {
     if (this.el) {
       for (let i = 0, len = this._domEvents.length; i < len; i++) {
         const item = this._domEvents[i];
-        elementRemoveEventListener.call(item.el, item.eventName, item.handler, false);
+        item.el.removeEventListener(item.eventName, item.handler, false);
       }
       this._domEvents.length = 0;
     }
@@ -235,7 +219,26 @@ _.extend(View.prototype, Events, {
   // A finer-grained `undelegateEvents` for removing a single delegated event.
   // `selector` and `listener` are both optional.
   undelegate: function(eventName, selector, listener) {
-    this.$el.off(eventName + '.delegateEvents' + this.cid, selector, listener);
+    if (typeof selector === 'function') {
+      listener = selector;
+      selector = null;
+    }
+    if (this.el) {
+      const handlers = this._domEvents.slice();
+      let i = handlers.length;
+      while (i--) {
+        const item = handlers[i];
+        const match = item.eventName === eventName &&
+            (listener ? item.listener === listener : true) &&
+            (selector ? item.selector === selector : true);
+
+        if (!match) {
+          continue;
+        }
+        item.el.removeEventListener(item.eventName, item.handler, false);
+        this._domEvents.splice(i, 1);
+      }
+    }
     return this;
   },
 

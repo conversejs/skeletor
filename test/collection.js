@@ -1,6 +1,6 @@
 (function(QUnit) {
 
-  var a, b, c, d, e, col, otherCol;
+  let a, b, c, d, e, col, otherCol;
 
   QUnit.module('Skeletor.Collection', {
 
@@ -12,13 +12,18 @@
       e         = null;
       col       = new Skeletor.Collection([a, b, c, d]);
       otherCol  = new Skeletor.Collection();
+      sinon.stub(window, 'fetch').callsFake(() => {});
+    },
+
+    afterEach: function() {
+      window.fetch.restore()
     }
 
   });
 
   QUnit.test('new and sort', function(assert) {
     assert.expect(6);
-    var counter = 0;
+    let counter = 0;
     col.on('sort', function(){ counter++; });
     assert.deepEqual(col.pluck('label'), ['a', 'b', 'c', 'd']);
     col.comparator = function(m1, m2) {
@@ -36,7 +41,7 @@
 
   QUnit.test('String comparator.', function(assert) {
     assert.expect(1);
-    var collection = new Skeletor.Collection([
+    const collection = new Skeletor.Collection([
       {id: 3},
       {id: 1},
       {id: 2}
@@ -46,15 +51,15 @@
 
   QUnit.test('new and parse', function(assert) {
     assert.expect(3);
-    var Collection = Skeletor.Collection.extend({
+    const Collection = Skeletor.Collection.extend({
       parse: function(data) {
         return _.filter(data, function(datum) {
           return datum.a % 2 === 0;
         });
       }
     });
-    var models = [{a: 1}, {a: 2}, {a: 3}, {a: 4}];
-    var collection = new Collection(models, {parse: true});
+    const models = [{a: 1}, {a: 2}, {a: 3}, {a: 4}];
+    const collection = new Collection(models, {parse: true});
     assert.strictEqual(collection.length, 2);
     assert.strictEqual(collection.first().get('a'), 2);
     assert.strictEqual(collection.last().get('a'), 4);
@@ -62,10 +67,10 @@
 
   QUnit.test('clone preserves model and comparator', function(assert) {
     assert.expect(3);
-    var Model = Skeletor.Model.extend();
-    var comparator = function(model){ return model.id; };
+    const Model = Skeletor.Model.extend();
+    const comparator = function(model){ return model.id; };
 
-    var collection = new Skeletor.Collection([{id: 1}], {
+    const collection = new Skeletor.Collection([{id: 1}], {
       model: Model,
       comparator: comparator
     }).clone();
@@ -87,15 +92,15 @@
 
   QUnit.test('get with non-default ids', function(assert) {
     assert.expect(5);
-    var MongoModel = Skeletor.Model.extend({idAttribute: '_id'});
-    var model = new MongoModel({_id: 100});
-    var collection = new Skeletor.Collection([model], {model: MongoModel});
+    const MongoModel = Skeletor.Model.extend({idAttribute: '_id'});
+    const model = new MongoModel({_id: 100});
+    const collection = new Skeletor.Collection([model], {model: MongoModel});
     assert.equal(collection.get(100), model);
     assert.equal(collection.get(model.cid), model);
     assert.equal(collection.get(model), model);
     assert.equal(collection.get(101), undefined);
 
-    var collection2 = new Skeletor.Collection();
+    const collection2 = new Skeletor.Collection();
     collection2.model = MongoModel;
     collection2.add(model.attributes);
     assert.equal(collection2.get(model.clone()), collection2.first());
@@ -115,7 +120,7 @@
     assert.ok(col.has(b.cid));
     assert.ok(col.has(c.cid));
     assert.ok(col.has(d.cid));
-    var outsider = new Skeletor.Model({id: 4});
+    const outsider = new Skeletor.Model({id: 4});
     assert.notOk(col.has(outsider));
     assert.notOk(col.has(outsider.id));
     assert.notOk(col.has(outsider.cid));
@@ -123,12 +128,12 @@
 
   QUnit.test('update index when id changes', function(assert) {
     assert.expect(4);
-    var collection = new Skeletor.Collection();
+    const collection = new Skeletor.Collection();
     collection.add([
       {id: 0, name: 'one'},
       {id: 1, name: 'two'}
     ]);
-    var one = collection.get(0);
+    const one = collection.get(0);
     assert.equal(one.get('name'), 'one');
     collection.on('change:name', function(model) { assert.ok(this.get(model)); });
     one.set({name: 'dalmatians', id: 101});
@@ -149,7 +154,7 @@
 
   QUnit.test('add', function(assert) {
     assert.expect(14);
-    var added, opts, secondAdded;
+    let added, opts, secondAdded;
     added = opts = secondAdded = null;
     e = new Skeletor.Model({id: 10, label: 'e'});
     otherCol.add(e);
@@ -168,18 +173,18 @@
     assert.equal(secondAdded, null);
     assert.ok(opts.amazing);
 
-    var f = new Skeletor.Model({id: 20, label: 'f'});
-    var g = new Skeletor.Model({id: 21, label: 'g'});
-    var h = new Skeletor.Model({id: 22, label: 'h'});
-    var atCol = new Skeletor.Collection([f, g, h]);
+    const f = new Skeletor.Model({id: 20, label: 'f'});
+    const g = new Skeletor.Model({id: 21, label: 'g'});
+    const h = new Skeletor.Model({id: 22, label: 'h'});
+    const atCol = new Skeletor.Collection([f, g, h]);
     assert.equal(atCol.length, 3);
     atCol.add(e, {at: 1});
     assert.equal(atCol.length, 4);
     assert.equal(atCol.at(1), e);
     assert.equal(atCol.last(), h);
 
-    var coll = new Skeletor.Collection(new Array(2));
-    var addCount = 0;
+    const coll = new Skeletor.Collection(new Array(2));
+    let addCount = 0;
     coll.on('add', function(){
       addCount += 1;
     });
@@ -193,22 +198,22 @@
 
   QUnit.test('add multiple models', function(assert) {
     assert.expect(6);
-    var collection = new Skeletor.Collection([{at: 0}, {at: 1}, {at: 9}]);
+    const collection = new Skeletor.Collection([{at: 0}, {at: 1}, {at: 9}]);
     collection.add([{at: 2}, {at: 3}, {at: 4}, {at: 5}, {at: 6}, {at: 7}, {at: 8}], {at: 2});
-    for (var i = 0; i <= 5; i++) {
+    for (let i = 0; i <= 5; i++) {
       assert.equal(collection.at(i).get('at'), i);
     }
   });
 
   QUnit.test('add; at should have preference over comparator', function(assert) {
     assert.expect(1);
-    var Col = Skeletor.Collection.extend({
+    const Col = Skeletor.Collection.extend({
       comparator: function(m1, m2) {
         return m1.id > m2.id ? -1 : 1;
       }
     });
 
-    var collection = new Col([{id: 2}, {id: 3}]);
+    const collection = new Col([{id: 2}, {id: 3}]);
     collection.add(new Skeletor.Model({id: 1}), {at: 1});
 
     assert.equal(collection.pluck('id').join(' '), '3 1 2');
@@ -216,20 +221,20 @@
 
   QUnit.test('add; at should add to the end if the index is out of bounds', function(assert) {
     assert.expect(1);
-    var collection = new Skeletor.Collection([{id: 2}, {id: 3}]);
+    const collection = new Skeletor.Collection([{id: 2}, {id: 3}]);
     collection.add(new Skeletor.Model({id: 1}), {at: 5});
 
     assert.equal(collection.pluck('id').join(' '), '2 3 1');
   });
 
   QUnit.test("can't add model to collection twice", function(assert) {
-    var collection = new Skeletor.Collection([{id: 1}, {id: 2}, {id: 1}, {id: 2}, {id: 3}]);
+    const collection = new Skeletor.Collection([{id: 1}, {id: 2}, {id: 1}, {id: 2}, {id: 3}]);
     assert.equal(collection.pluck('id').join(' '), '1 2 3');
   });
 
   QUnit.test("can't add different model with same id to collection twice", function(assert) {
     assert.expect(1);
-    var collection = new Skeletor.Collection();
+    const collection = new Skeletor.Collection();
     collection.unshift({id: 101});
     collection.add({id: 101});
     assert.equal(collection.length, 1);
@@ -237,7 +242,7 @@
 
   QUnit.test('merge in duplicate models with {merge: true}', function(assert) {
     assert.expect(3);
-    var collection = new Skeletor.Collection();
+    const collection = new Skeletor.Collection();
     collection.add([{id: 1, name: 'Moe'}, {id: 2, name: 'Curly'}, {id: 3, name: 'Larry'}]);
     collection.add({id: 1, name: 'Moses'});
     assert.equal(collection.first().get('name'), 'Moe');
@@ -249,8 +254,8 @@
 
   QUnit.test('add model to multiple collections', function(assert) {
     assert.expect(10);
-    var counter = 0;
-    var m = new Skeletor.Model({id: 10, label: 'm'});
+    let counter = 0;
+    const m = new Skeletor.Model({id: 10, label: 'm'});
     m.on('add', function(model, collection) {
       counter++;
       assert.equal(m, model);
@@ -260,12 +265,12 @@
         assert.equal(collection, col1);
       }
     });
-    var col1 = new Skeletor.Collection([]);
+    const col1 = new Skeletor.Collection([]);
     col1.on('add', function(model, collection) {
       assert.equal(m, model);
       assert.equal(col1, collection);
     });
-    var col2 = new Skeletor.Collection([]);
+    const col2 = new Skeletor.Collection([]);
     col2.on('add', function(model, collection) {
       assert.equal(m, model);
       assert.equal(col2, collection);
@@ -278,21 +283,21 @@
 
   QUnit.test('add model with parse', function(assert) {
     assert.expect(1);
-    var Model = Skeletor.Model.extend({
+    const Model = Skeletor.Model.extend({
       parse: function(obj) {
         obj.value += 1;
         return obj;
       }
     });
 
-    var Col = Skeletor.Collection.extend({model: Model});
-    var collection = new Col;
+    const Col = Skeletor.Collection.extend({model: Model});
+    const collection = new Col();
     collection.add({value: 1}, {parse: true});
     assert.equal(collection.at(0).get('value'), 2);
   });
 
   QUnit.test('add with parse and merge', function(assert) {
-    var collection = new Skeletor.Collection();
+    const collection = new Skeletor.Collection();
     collection.parse = function(attrs) {
       return _.map(attrs, function(model) {
         if (model.model) return model.model;
@@ -306,13 +311,13 @@
 
   QUnit.test('add model to collection with sort()-style comparator', function(assert) {
     assert.expect(3);
-    var collection = new Skeletor.Collection();
+    const collection = new Skeletor.Collection();
     collection.comparator = function(m1, m2) {
       return m1.get('name') < m2.get('name') ? -1 : 1;
     };
-    var tom = new Skeletor.Model({name: 'Tom'});
-    var rob = new Skeletor.Model({name: 'Rob'});
-    var tim = new Skeletor.Model({name: 'Tim'});
+    const tom = new Skeletor.Model({name: 'Tom'});
+    const rob = new Skeletor.Model({name: 'Rob'});
+    const tim = new Skeletor.Model({name: 'Tim'});
     collection.add(tom);
     collection.add(rob);
     collection.add(tim);
@@ -323,7 +328,7 @@
 
   QUnit.test('comparator that depends on `this`', function(assert) {
     assert.expect(2);
-    var collection = new Skeletor.Collection();
+    const collection = new Skeletor.Collection();
     collection.negative = function(num) {
       return -num;
     };
@@ -341,8 +346,8 @@
 
   QUnit.test('remove', function(assert) {
     assert.expect(12);
-    var removed = null;
-    var result = null;
+    let removed = null;
+    let result = null;
     col.on('remove', function(model, collection, options) {
       removed = model.get('label');
       assert.equal(options.index, 3);
@@ -369,15 +374,15 @@
 
   QUnit.test('add and remove return values', function(assert) {
     assert.expect(13);
-    var Even = Skeletor.Model.extend({
+    const Even = Skeletor.Model.extend({
       validate: function(attrs) {
         if (attrs.id % 2 !== 0) return 'odd';
       }
     });
-    var collection = new Skeletor.Collection();
+    const collection = new Skeletor.Collection();
     collection.model = Even;
 
-    var list = collection.add([{id: 2}, {id: 4}], {validate: true});
+    let list = collection.add([{id: 2}, {id: 4}], {validate: true});
     assert.equal(list.length, 2);
     assert.ok(list[0] instanceof Skeletor.Model);
     assert.equal(list[1], collection.last());
@@ -388,7 +393,7 @@
     assert.equal(list[0], false);
     assert.equal(list[1].get('id'), 6);
 
-    var result = collection.add({id: 6});
+    let result = collection.add({id: 6});
     assert.equal(result.cid, list[1].cid);
 
     result = collection.remove({id: 6});
@@ -403,24 +408,24 @@
 
   QUnit.test('shift and pop', function(assert) {
     assert.expect(2);
-    var collection = new Skeletor.Collection([{a: 'a'}, {b: 'b'}, {c: 'c'}]);
+    const collection = new Skeletor.Collection([{a: 'a'}, {b: 'b'}, {c: 'c'}]);
     assert.equal(collection.shift().get('a'), 'a');
     assert.equal(collection.pop().get('c'), 'c');
   });
 
   QUnit.test('slice', function(assert) {
     assert.expect(2);
-    var collection = new Skeletor.Collection([{a: 'a'}, {b: 'b'}, {c: 'c'}]);
-    var array = collection.slice(1, 3);
+    const collection = new Skeletor.Collection([{a: 'a'}, {b: 'b'}, {c: 'c'}]);
+    const array = collection.slice(1, 3);
     assert.equal(array.length, 2);
     assert.equal(array[0].get('b'), 'b');
   });
 
   QUnit.test('events are unbound on remove', function(assert) {
     assert.expect(3);
-    var counter = 0;
-    var dj = new Skeletor.Model();
-    var emcees = new Skeletor.Collection([dj]);
+    let counter = 0;
+    const dj = new Skeletor.Model();
+    const emcees = new Skeletor.Collection([dj]);
     emcees.on('change', function(){ counter++; });
     dj.set({name: 'Kool'});
     assert.equal(counter, 1);
@@ -432,18 +437,18 @@
 
   QUnit.test('remove in multiple collections', function(assert) {
     assert.expect(7);
-    var modelData = {
+    const modelData = {
       id: 5,
       title: 'Othello'
     };
-    var passed = false;
-    var m1 = new Skeletor.Model(modelData);
-    var m2 = new Skeletor.Model(modelData);
+    let passed = false;
+    const m1 = new Skeletor.Model(modelData);
+    const m2 = new Skeletor.Model(modelData);
     m2.on('remove', function() {
       passed = true;
     });
-    var col1 = new Skeletor.Collection([m1]);
-    var col2 = new Skeletor.Collection([m2]);
+    const col1 = new Skeletor.Collection([m1]);
+    const col2 = new Skeletor.Collection([m2]);
     assert.notEqual(m1, m2);
     assert.ok(col1.length === 1);
     assert.ok(col2.length === 1);
@@ -457,8 +462,8 @@
 
   QUnit.test('remove same model in multiple collection', function(assert) {
     assert.expect(16);
-    var counter = 0;
-    var m = new Skeletor.Model({id: 5, title: 'Othello'});
+    let counter = 0;
+    const m = new Skeletor.Model({id: 5, title: 'Othello'});
     m.on('remove', function(model, collection) {
       counter++;
       assert.equal(m, model);
@@ -468,12 +473,12 @@
         assert.equal(collection, col2);
       }
     });
-    var col1 = new Skeletor.Collection([m]);
+    const col1 = new Skeletor.Collection([m]);
     col1.on('remove', function(model, collection) {
       assert.equal(m, model);
       assert.equal(col1, collection);
     });
-    var col2 = new Skeletor.Collection([m]);
+    const col2 = new Skeletor.Collection([m]);
     col2.on('remove', function(model, collection) {
       assert.equal(m, model);
       assert.equal(col2, collection);
@@ -492,10 +497,10 @@
 
   QUnit.test('model destroy removes from all collections', function(assert) {
     assert.expect(3);
-    var m = new Skeletor.Model({id: 5, title: 'Othello'});
+    const m = new Skeletor.Model({id: 5, title: 'Othello'});
     m.sync = function(method, model, options) { options.success(); };
-    var col1 = new Skeletor.Collection([m]);
-    var col2 = new Skeletor.Collection([m]);
+    const col1 = new Skeletor.Collection([m]);
+    const col2 = new Skeletor.Collection([m]);
     m.destroy();
     assert.ok(col1.length === 0);
     assert.ok(col2.length === 0);
@@ -504,10 +509,10 @@
 
   QUnit.test('Collection: non-persisted model destroy removes from all collections', function(assert) {
     assert.expect(3);
-    var m = new Skeletor.Model({title: 'Othello'});
+    const m = new Skeletor.Model({title: 'Othello'});
     m.sync = function(method, model, options) { throw 'should not be called'; };
-    var col1 = new Skeletor.Collection([m]);
-    var col2 = new Skeletor.Collection([m]);
+    const col1 = new Skeletor.Collection([m]);
+    const col2 = new Skeletor.Collection([m]);
     m.destroy();
     assert.ok(col1.length === 0);
     assert.ok(col2.length === 0);
@@ -515,33 +520,32 @@
   });
 
   QUnit.test('fetch', function(assert) {
-    assert.expect(4);
-    var collection = new Skeletor.Collection();
+    assert.expect(5);
+    const collection = new Skeletor.Collection();
     collection.url = '/test';
+    sinon.spy(collection, 'sync')
     collection.fetch();
-    assert.equal(this.syncArgs.method, 'read');
-    assert.equal(this.syncArgs.model, collection);
-    assert.equal(this.syncArgs.options.parse, true);
-
+    assert.ok(collection.sync.callCount === 1);
+    assert.ok(collection.sync.lastCall.args[0] === 'read');
+    assert.ok(collection.sync.lastCall.args[1] == collection);
+    assert.ok(collection.sync.lastCall.args[2].parse === true);
     collection.fetch({parse: false});
-    assert.equal(this.syncArgs.options.parse, false);
+    assert.ok(collection.sync.lastCall.args[2].parse === false);
   });
 
   QUnit.test('fetch with an error response triggers an error event', function(assert) {
     assert.expect(1);
-    var collection = new Skeletor.Collection();
-    collection.on('error', function() {
-      assert.ok(true);
-    });
-    collection.sync = function(method, model, options) { options.error(); };
+    const collection = new Skeletor.Collection();
+    collection.on('error', () => assert.ok(true));
+    collection.sync = (method, model, options) => options.error();
     collection.fetch();
   });
 
   QUnit.test('#3283 - fetch with an error response calls error with context', function(assert) {
     assert.expect(1);
-    var collection = new Skeletor.Collection();
-    var obj = {};
-    var options = {
+    const collection = new Skeletor.Collection();
+    const obj = {};
+    const options = {
       context: obj,
       error: function() {
         assert.equal(this, obj);
@@ -555,40 +559,45 @@
 
   QUnit.test('ensure fetch only parses once', function(assert) {
     assert.expect(1);
-    var collection = new Skeletor.Collection();
-    var counter = 0;
-    collection.parse = function(models) {
+    const collection = new Skeletor.Collection();
+    let counter = 0;
+    collection.parse = models => {
       counter++;
       return models;
     };
     collection.url = '/test';
+    sinon.spy(collection, 'sync')
     collection.fetch();
-    this.syncArgs.options.success([]);
+    collection.sync.lastCall.args[2].success([]);
     assert.equal(counter, 1);
+    collection.sync.restore();
   });
 
   QUnit.test('create', function(assert) {
-    assert.expect(4);
-    var collection = new Skeletor.Collection();
+    assert.expect(5);
+    const collection = new Skeletor.Collection();
+    sinon.spy(Skeletor.Model.prototype, 'sync')
     collection.url = '/test';
-    var model = collection.create({label: 'f'}, {wait: true});
-    assert.equal(this.syncArgs.method, 'create');
-    assert.equal(this.syncArgs.model, model);
+    const model = collection.create({label: 'f'}, {wait: true});
+    assert.equal(Skeletor.Model.prototype.sync.callCount, 1);
+    assert.equal(Skeletor.Model.prototype.sync.lastCall.args[0], 'create');
+    assert.equal(Skeletor.Model.prototype.sync.lastCall.args[1], model);
     assert.equal(model.get('label'), 'f');
     assert.equal(model.collection, collection);
+    Skeletor.Model.prototype.sync.restore();
   });
 
   QUnit.test('create with validate:true enforces validation', function(assert) {
     assert.expect(3);
-    var ValidatingModel = Skeletor.Model.extend({
+    const ValidatingModel = Skeletor.Model.extend({
       validate: function(attrs) {
         return 'fail';
       }
     });
-    var ValidatingCollection = Skeletor.Collection.extend({
+    const ValidatingCollection = Skeletor.Collection.extend({
       model: ValidatingModel
     });
-    var collection = new ValidatingCollection();
+    const collection = new ValidatingCollection();
     collection.on('invalid', function(coll, error, options) {
       assert.equal(error, 'fail');
       assert.equal(options.validationError, 'fail');
@@ -598,88 +607,83 @@
 
   QUnit.test('create will pass extra options to success callback', function(assert) {
     assert.expect(1);
-    var Model = Skeletor.Model.extend({
+    const Model = Skeletor.Model.extend({
       sync: function(method, model, options) {
         _.extend(options, {specialSync: true});
         return Skeletor.Model.prototype.sync.call(this, method, model, options);
       }
     });
 
-    var Collection = Skeletor.Collection.extend({
+    const Collection = Skeletor.Collection.extend({
       model: Model,
       url: '/test'
     });
 
-    var collection = new Collection;
-
-    var success = function(model, response, options) {
-      assert.ok(options.specialSync, 'Options were passed correctly to callback');
-    };
+    const collection = new Collection();
+    const success = (model, response, options) => assert.ok(
+      options.specialSync, 'Options were passed correctly to callback');
 
     collection.create({}, {success: success});
-    this.ajaxSettings.success();
+    window.fetch.lastCall.args[0].success();
   });
 
   QUnit.test('create with wait:true should not call collection.parse', function(assert) {
     assert.expect(0);
-    var Collection = Skeletor.Collection.extend({
+    const Collection = Skeletor.Collection.extend({
       url: '/test',
-      parse: function() {
-        assert.ok(false);
-      }
+      parse: () => assert.ok(false)
     });
-
     const collection = new Collection();
     collection.create({}, {wait: true});
-    this.ajaxSettings.success();
+    window.fetch.lastCall.args[0].success();
   });
 
   QUnit.test('a failing create returns model with errors', function(assert) {
-    var ValidatingModel = Skeletor.Model.extend({
+    const ValidatingModel = Skeletor.Model.extend({
       validate: function(attrs) {
         return 'fail';
       }
     });
-    var ValidatingCollection = Skeletor.Collection.extend({
+    const ValidatingCollection = Skeletor.Collection.extend({
       model: ValidatingModel
     });
-    var collection = new ValidatingCollection();
-    var m = collection.create({foo: 'bar'});
+    const collection = new ValidatingCollection();
+    const m = collection.create({foo: 'bar'});
     assert.equal(m.validationError, 'fail');
     assert.equal(collection.length, 1);
   });
 
   QUnit.test('initialize', function(assert) {
     assert.expect(1);
-    var Collection = Skeletor.Collection.extend({
+    const Collection = Skeletor.Collection.extend({
       initialize: function() {
         this.one = 1;
       }
     });
-    var coll = new Collection;
+    const coll = new Collection();
     assert.equal(coll.one, 1);
   });
 
   QUnit.test('preinitialize', function(assert) {
     assert.expect(1);
-    var Collection = Skeletor.Collection.extend({
+    const Collection = Skeletor.Collection.extend({
       preinitialize: function() {
         this.one = 1;
       }
     });
-    var coll = new Collection;
+    const coll = new Collection();
     assert.equal(coll.one, 1);
   });
 
   QUnit.test('preinitialize occurs before the collection is set up', function(assert) {
     assert.expect(2);
-    var Collection = Skeletor.Collection.extend({
+    const Collection = Skeletor.Collection.extend({
       preinitialize: function() {
         assert.notEqual(this.model, FooModel);
       }
     });
-    var FooModel = Skeletor.Model.extend({id: 'foo'});
-    var coll = new Collection({}, {
+    const FooModel = Skeletor.Model.extend({id: 'foo'});
+    const coll = new Collection({}, {
       model: FooModel
     });
     assert.equal(coll.model, FooModel);
@@ -692,8 +696,8 @@
 
   QUnit.test('where and findWhere', function(assert) {
     assert.expect(8);
-    var model = new Skeletor.Model({a: 1});
-    var coll = new Skeletor.Collection([
+    const model = new Skeletor.Model({a: 1});
+    const coll = new Skeletor.Collection([
       model,
       {a: 1},
       {a: 1, b: 2},
@@ -719,7 +723,7 @@
       }
     });
 
-    var coll = new Skeletor.Collection([
+    const coll = new Skeletor.Collection([
       {a: 1},
       {a: 1, b: 2},
       {a: 2, b: 2},
@@ -731,43 +735,43 @@
     }), 7);
   });
 
-  QUnit.test('Underscore methods', function(assert) {
+  QUnit.test('Lodash methods', function(assert) {
     assert.expect(21);
-    assert.equal(col.map(function(model){ return model.get('label'); }).join(' '), 'a b c d');
-    assert.equal(col.some(function(model){ return model.id === 100; }), false);
-    assert.equal(col.some(function(model){ return model.id === 0; }), true);
-    assert.equal(col.reduce(function(m1, m2) {return m1.id > m2.id ? m1 : m2;}).id, 3);
-    assert.equal(col.reduceRight(function(m1, m2) {return m1.id > m2.id ? m1 : m2;}).id, 3);
+    assert.equal(col.map(model => model.get('label')).join(' '), 'a b c d');
+    assert.equal(col.some(model => model.id === 100), false);
+    assert.equal(col.some(model => model.id === 0), true);
+    assert.equal(col.reduce((m1, m2) => m1.id > m2.id ? m1 : m2).id, 3);
+    assert.equal(col.reduceRight((m1, m2) => m1.id > m2.id ? m1 : m2).id, 3);
     assert.equal(col.indexOf(b), 1);
     assert.equal(col.size(), 4);
-    assert.equal(col.rest().length, 3);
-    assert.ok(!_.includes(col.rest(), a));
-    assert.ok(_.includes(col.rest(), d));
+    assert.equal(col.drop().length, 3);
+    assert.ok(!_.includes(col.drop(), a));
+    assert.ok(_.includes(col.drop(), d));
     assert.ok(!col.isEmpty());
     assert.ok(!_.includes(col.without(d), d));
 
-    var wrapped = col.chain();
+    const wrapped = col.chain();
     assert.equal(wrapped.map('id').max().value(), 3);
     assert.equal(wrapped.map('id').min().value(), 0);
     assert.deepEqual(wrapped
-      .filter(function(o){ return o.id % 2 === 0; })
-      .map(function(o){ return o.id * 2; })
+      .filter(o => o.id % 2 === 0)
+      .map(o => o.id * 2)
       .value(),
       [4, 0]);
     assert.deepEqual(col.difference([c, d]), [a, b]);
     assert.ok(col.includes(col.sample()));
 
-    var first = col.first();
-    assert.deepEqual(col.groupBy(function(model){ return model.id; })[first.id], [first]);
-    assert.deepEqual(col.countBy(function(model){ return model.id; }), {0: 1, 1: 1, 2: 1, 3: 1});
-    assert.deepEqual(col.sortBy(function(model){ return model.id; })[0], col.at(3));
-    assert.ok(col.indexBy('id')[first.id] === first);
+    const first = col.first();
+    assert.deepEqual(col.groupBy(model => model.id)[first.id], [first]);
+    assert.deepEqual(col.countBy(model => model.id), {0: 1, 1: 1, 2: 1, 3: 1});
+    assert.deepEqual(col.sortBy(model => model.id)[0], col.at(3));
+    assert.ok(col.keyBy('id')[first.id] === first);
   });
 
   QUnit.test('Underscore methods with object-style and property-style iteratee', function(assert) {
     assert.expect(26);
-    var model = new Skeletor.Model({a: 4, b: 1, e: 3});
-    var coll = new Skeletor.Collection([
+    const model = new Skeletor.Model({a: 4, b: 1, e: 3});
+    const coll = new Skeletor.Collection([
       {a: 1, b: 1},
       {a: 2, b: 1, c: 1},
       {a: 3, b: 1},
@@ -804,8 +808,8 @@
   QUnit.test('reset', function(assert) {
     assert.expect(16);
 
-    var resetCount = 0;
-    var models = col.models;
+    let resetCount = 0;
+    const models = col.models;
     col.on('reset', function() { resetCount += 1; });
     col.reset([]);
     assert.equal(resetCount, 1);
@@ -815,7 +819,7 @@
     assert.equal(resetCount, 2);
     assert.equal(col.length, 4);
     assert.equal(col.last(), d);
-    col.reset(_.map(models, function(m){ return m.attributes; }));
+    col.reset(models.map(m => m.attributes));
     assert.equal(resetCount, 3);
     assert.equal(col.length, 4);
     assert.ok(col.last() !== d);
@@ -824,7 +828,7 @@
     assert.equal(col.length, 0);
     assert.equal(resetCount, 4);
 
-    var f = new Skeletor.Model({id: 20, label: 'f'});
+    const f = new Skeletor.Model({id: 20, label: 'f'});
     col.reset([undefined, f]);
     assert.equal(col.length, 2);
     assert.equal(resetCount, 5);
@@ -835,26 +839,26 @@
   });
 
   QUnit.test('reset with different values', function(assert) {
-    var collection = new Skeletor.Collection({id: 1});
+    const collection = new Skeletor.Collection({id: 1});
     collection.reset({id: 1, a: 1});
     assert.equal(collection.get(1).get('a'), 1);
   });
 
   QUnit.test('same references in reset', function(assert) {
-    var model = new Skeletor.Model({id: 1});
-    var collection = new Skeletor.Collection({id: 1});
+    const model = new Skeletor.Model({id: 1});
+    const collection = new Skeletor.Collection({id: 1});
     collection.reset(model);
     assert.equal(collection.get(1), model);
   });
 
   QUnit.test('reset passes caller options', function(assert) {
     assert.expect(3);
-    var Model = Skeletor.Model.extend({
+    const Model = Skeletor.Model.extend({
       initialize: function(attrs, options) {
         this.modelParameter = options.modelParameter;
       }
     });
-    var collection = new (Skeletor.Collection.extend({model: Model}))();
+    const collection = new (Skeletor.Collection.extend({model: Model}))();
     collection.reset([{astring: 'green', anumber: 1}, {astring: 'blue', anumber: 2}], {modelParameter: 'model parameter'});
     assert.equal(collection.length, 2);
     collection.each(function(model) {
@@ -864,8 +868,8 @@
 
   QUnit.test('reset does not alter options by reference', function(assert) {
     assert.expect(2);
-    var collection = new Skeletor.Collection([{id: 1}]);
-    var origOpts = {};
+    const collection = new Skeletor.Collection([{id: 1}]);
+    const origOpts = {};
     collection.on('reset', function(coll, opts){
       assert.equal(origOpts.previousModels, undefined);
       assert.equal(opts.previousModels[0].id, 1);
@@ -875,7 +879,7 @@
 
   QUnit.test('trigger custom events on models', function(assert) {
     assert.expect(1);
-    var fired = null;
+    let fired = null;
     a.on('custom', function() { fired = true; });
     a.trigger('custom');
     assert.equal(fired, true);
@@ -883,8 +887,8 @@
 
   QUnit.test('add does not alter arguments', function(assert) {
     assert.expect(2);
-    var attrs = {};
-    var models = [attrs];
+    const attrs = {};
+    const models = [attrs];
     new Skeletor.Collection().add(models);
     assert.equal(models.length, 1);
     assert.ok(attrs === models[0]);
@@ -892,9 +896,9 @@
 
   QUnit.test('#714: access `model.collection` in a brand new model.', function(assert) {
     assert.expect(2);
-    var collection = new Skeletor.Collection();
+    const collection = new Skeletor.Collection();
     collection.url = '/test';
-    var Model = Skeletor.Model.extend({
+    const Model = Skeletor.Model.extend({
       set: function(attrs) {
         assert.equal(attrs.prop, 'value');
         assert.equal(this.collection, collection);
@@ -907,7 +911,7 @@
 
   QUnit.test('#574, remove its own reference to the .models array.', function(assert) {
     assert.expect(2);
-    var collection = new Skeletor.Collection([
+    const collection = new Skeletor.Collection([
       {id: 1}, {id: 2}, {id: 3}, {id: 4}, {id: 5}, {id: 6}
     ]);
     assert.equal(collection.length, 6);
@@ -917,17 +921,17 @@
 
   QUnit.test('#861, adding models to a collection which do not pass validation, with validate:true', function(assert) {
     assert.expect(2);
-    var Model = Skeletor.Model.extend({
+    const Model = Skeletor.Model.extend({
       validate: function(attrs) {
         if (attrs.id === 3) return "id can't be 3";
       }
     });
 
-    var Collection = Skeletor.Collection.extend({
+    const Collection = Skeletor.Collection.extend({
       model: Model
     });
 
-    var collection = new Collection;
+    const collection = new Collection();
     collection.on('invalid', function() { assert.ok(true); });
 
     collection.add([{id: 1}, {id: 2}, {id: 3}, {id: 4}, {id: 5}, {id: 6}], {validate: true});
@@ -936,12 +940,12 @@
 
   QUnit.test('Invalid models are discarded with validate:true.', function(assert) {
     assert.expect(5);
-    var collection = new Skeletor.Collection();
+    const collection = new Skeletor.Collection();
     collection.on('test', function() { assert.ok(true); });
     collection.model = Skeletor.Model.extend({
       validate: function(attrs){ if (!attrs.valid) return 'invalid'; }
     });
-    var model = new collection.model({id: 1, valid: true});
+    const model = new collection.model({id: 1, valid: true});
     collection.add([model, {id: 2}], {validate: true});
     model.trigger('test');
     assert.ok(collection.get(model.cid));
@@ -952,8 +956,8 @@
 
   QUnit.test('multiple copies of the same model', function(assert) {
     assert.expect(3);
-    var collection = new Skeletor.Collection();
-    var model = new Skeletor.Model();
+    const collection = new Skeletor.Collection();
+    const model = new Skeletor.Model();
     collection.add([model, model]);
     assert.equal(collection.length, 1);
     collection.add([{id: 1}, {id: 1}]);
@@ -963,23 +967,23 @@
 
   QUnit.test('#964 - collection.get return inconsistent', function(assert) {
     assert.expect(2);
-    var collection = new Skeletor.Collection();
+    const collection = new Skeletor.Collection();
     assert.ok(collection.get(null) === undefined);
     assert.ok(collection.get() === undefined);
   });
 
   QUnit.test('#1112 - passing options.model sets collection.model', function(assert) {
     assert.expect(2);
-    var Model = Skeletor.Model.extend({});
-    var collection = new Skeletor.Collection([{id: 1}], {model: Model});
+    const Model = Skeletor.Model.extend({});
+    const collection = new Skeletor.Collection([{id: 1}], {model: Model});
     assert.ok(collection.model === Model);
     assert.ok(collection.at(0) instanceof Model);
   });
 
   QUnit.test('null and undefined are invalid ids.', function(assert) {
     assert.expect(2);
-    var model = new Skeletor.Model({id: 1});
-    var collection = new Skeletor.Collection([model]);
+    const model = new Skeletor.Model({id: 1});
+    const collection = new Skeletor.Collection([model]);
     model.set({id: null});
     assert.ok(!collection.get('null'));
     model.set({id: 1});
@@ -989,13 +993,13 @@
 
   QUnit.test('falsy comparator', function(assert) {
     assert.expect(4);
-    var Col = Skeletor.Collection.extend({
+    const Col = Skeletor.Collection.extend({
       comparator: function(model){ return model.id; }
     });
-    var collection = new Col();
-    var colFalse = new Col(null, {comparator: false});
-    var colNull = new Col(null, {comparator: null});
-    var colUndefined = new Col(null, {comparator: undefined});
+    const collection = new Col();
+    const colFalse = new Col(null, {comparator: false});
+    const colNull = new Col(null, {comparator: null});
+    const colUndefined = new Col(null, {comparator: undefined});
     assert.ok(collection.comparator);
     assert.ok(!colFalse.comparator);
     assert.ok(!colNull.comparator);
@@ -1004,9 +1008,9 @@
 
   QUnit.test('#1355 - `options` is passed to success callbacks', function(assert) {
     assert.expect(2);
-    var m = new Skeletor.Model({x: 1});
-    var collection = new Skeletor.Collection();
-    var opts = {
+    const m = new Skeletor.Model({x: 1});
+    const collection = new Skeletor.Collection();
+    const opts = {
       opts: true,
       success: function(coll, resp, options) {
         assert.ok(options.opts);
@@ -1021,9 +1025,8 @@
 
   QUnit.test("#1412 - Trigger 'request' and 'sync' events.", function(assert) {
     assert.expect(4);
-    var collection = new Skeletor.Collection();
+    const collection = new Skeletor.Collection();
     collection.url = '/test';
-    Skeletor.ajax = function(settings){ settings.success(); };
 
     collection.on('request', function(obj, xhr, options) {
       assert.ok(obj === collection, "collection has correct 'request' event after fetching");
@@ -1032,6 +1035,7 @@
       assert.ok(obj === collection, "collection has correct 'sync' event after fetching");
     });
     collection.fetch();
+    window.fetch.lastCall.args[0].success();
     collection.off();
 
     collection.on('request', function(obj, xhr, options) {
@@ -1041,32 +1045,31 @@
       assert.ok(obj === collection.get(1), "collection has correct 'sync' event after one of its models save");
     });
     collection.create({id: 1});
+    window.fetch.lastCall.args[0].success();
     collection.off();
   });
 
   QUnit.test('#3283 - fetch, create calls success with context', function(assert) {
     assert.expect(2);
-    var collection = new Skeletor.Collection();
+    const collection = new Skeletor.Collection();
     collection.url = '/test';
-    Skeletor.ajax = function(settings) {
-      settings.success.call(settings.context);
-    };
-    var obj = {};
-    var options = {
+    const obj = {};
+    const options = {
       context: obj,
       success: function() {
         assert.equal(this, obj);
       }
     };
-
     collection.fetch(options);
+    window.fetch.lastCall.args[0].success();
     collection.create({id: 1}, options);
+    window.fetch.lastCall.args[0].success();
   });
 
   QUnit.test('#1447 - create with wait adds model.', function(assert) {
     assert.expect(1);
-    var collection = new Skeletor.Collection();
-    var model = new Skeletor.Model();
+    const collection = new Skeletor.Collection();
+    const model = new Skeletor.Model();
     model.sync = function(method, m, options){ options.success(); };
     collection.on('add', function(){ assert.ok(true); });
     collection.create(model, {wait: true});
@@ -1074,7 +1077,7 @@
 
   QUnit.test('#1448 - add sorts collection after merge.', function(assert) {
     assert.expect(1);
-    var collection = new Skeletor.Collection([
+    const collection = new Skeletor.Collection([
       {id: 1, x: 1},
       {id: 2, x: 2}
     ]);
@@ -1085,8 +1088,8 @@
 
   QUnit.test('#1655 - groupBy can be used with a string argument.', function(assert) {
     assert.expect(3);
-    var collection = new Skeletor.Collection([{x: 1}, {x: 2}]);
-    var grouped = collection.groupBy('x');
+    const collection = new Skeletor.Collection([{x: 1}, {x: 2}]);
+    const grouped = collection.groupBy('x');
     assert.strictEqual(_.keys(grouped).length, 2);
     assert.strictEqual(grouped[1][0].get('x'), 1);
     assert.strictEqual(grouped[2][0].get('x'), 2);
@@ -1094,8 +1097,8 @@
 
   QUnit.test('#1655 - sortBy can be used with a string argument.', function(assert) {
     assert.expect(1);
-    var collection = new Skeletor.Collection([{x: 3}, {x: 1}, {x: 2}]);
-    var values = _.map(collection.sortBy('x'), function(model) {
+    const collection = new Skeletor.Collection([{x: 3}, {x: 1}, {x: 2}]);
+    const values = _.map(collection.sortBy('x'), function(model) {
       return model.get('x');
     });
     assert.deepEqual(values, [1, 2, 3]);
@@ -1103,7 +1106,7 @@
 
   QUnit.test('#1604 - Removal during iteration.', function(assert) {
     assert.expect(0);
-    var collection = new Skeletor.Collection([{}, {}]);
+    const collection = new Skeletor.Collection([{}, {}]);
     collection.on('add', function() {
       collection.at(0).destroy();
     });
@@ -1111,9 +1114,9 @@
   });
 
   QUnit.test('#1638 - `sort` during `add` triggers correctly.', function(assert) {
-    var collection = new Skeletor.Collection();
+    const collection = new Skeletor.Collection();
     collection.comparator = function(model) { return model.get('x'); };
-    var added = [];
+    const added = [];
     collection.on('add', function(model) {
       model.set({x: 3});
       collection.sort();
@@ -1125,25 +1128,23 @@
 
   QUnit.test('fetch parses models by default', function(assert) {
     assert.expect(1);
-    var model = {};
-    var Collection = Skeletor.Collection.extend({
+    const model = {};
+    const Collection = Skeletor.Collection.extend({
       url: 'test',
       model: Skeletor.Model.extend({
-        parse: function(resp) {
-          assert.strictEqual(resp, model);
-        }
+        parse: resp => assert.strictEqual(resp, model)
       })
     });
     new Collection().fetch();
-    this.ajaxSettings.success([model]);
+    window.fetch.lastCall.args[0].success([model]);
   });
 
   QUnit.test("`sort` shouldn't always fire on `add`", function(assert) {
     assert.expect(1);
-    var collection = new Skeletor.Collection([{id: 1}, {id: 2}, {id: 3}], {
+    const collection = new Skeletor.Collection([{id: 1}, {id: 2}, {id: 3}], {
       comparator: 'id'
     });
-    collection.sort = function(){ assert.ok(true); };
+    collection.sort = () => assert.ok(true);
     collection.add([]);
     collection.add({id: 1});
     collection.add([{id: 2}, {id: 3}]);
@@ -1152,10 +1153,10 @@
 
   QUnit.test('#1407 parse option on constructor parses collection and models', function(assert) {
     assert.expect(2);
-    var model = {
+    const model = {
       namespace: [{id: 1}, {id: 2}]
     };
-    var Collection = Skeletor.Collection.extend({
+    const Collection = Skeletor.Collection.extend({
       model: Skeletor.Model.extend({
         parse: function(m) {
           m.name = 'test';
@@ -1166,7 +1167,7 @@
         return m.namespace;
       }
     });
-    var collection = new Collection(model, {parse: true});
+    const collection = new Collection(model, {parse: true});
 
     assert.equal(collection.length, 2);
     assert.equal(collection.at(0).get('name'), 'test');
@@ -1174,10 +1175,10 @@
 
   QUnit.test('#1407 parse option on reset parses collection and models', function(assert) {
     assert.expect(2);
-    var model = {
+    const model = {
       namespace: [{id: 1}, {id: 2}]
     };
-    var Collection = Skeletor.Collection.extend({
+    const Collection = Skeletor.Collection.extend({
       model: Skeletor.Model.extend({
         parse: function(m) {
           m.name = 'test';
@@ -1188,7 +1189,7 @@
         return m.namespace;
       }
     });
-    var collection = new Collection();
+    const collection = new Collection();
     collection.reset(model, {parse: true});
 
     assert.equal(collection.length, 2);
@@ -1198,8 +1199,8 @@
 
   QUnit.test('Reset includes previous models in triggered event.', function(assert) {
     assert.expect(1);
-    var model = new Skeletor.Model();
-    var collection = new Skeletor.Collection([model]);
+    const model = new Skeletor.Model();
+    const collection = new Skeletor.Collection([model]);
     collection.on('reset', function(coll, options) {
       assert.deepEqual(options.previousModels, [model]);
     });
@@ -1207,10 +1208,10 @@
   });
 
   QUnit.test('set', function(assert) {
-    var m1 = new Skeletor.Model();
-    var m2 = new Skeletor.Model({id: 2});
-    var m3 = new Skeletor.Model();
-    var collection = new Skeletor.Collection([m1, m2]);
+    const m1 = new Skeletor.Model();
+    const m2 = new Skeletor.Model({id: 2});
+    const m3 = new Skeletor.Model();
+    const collection = new Skeletor.Collection([m1, m2]);
 
     // Test add/change/remove events
     collection.on('add', function(model) {
@@ -1261,9 +1262,9 @@
 
   QUnit.test('set with only cids', function(assert) {
     assert.expect(3);
-    var m1 = new Skeletor.Model();
-    var m2 = new Skeletor.Model();
-    var collection = new Skeletor.Collection();
+    const m1 = new Skeletor.Model();
+    const m2 = new Skeletor.Model();
+    const collection = new Skeletor.Collection();
     collection.set([m1, m2]);
     assert.equal(collection.length, 2);
     collection.set([m1]);
@@ -1274,14 +1275,14 @@
 
   QUnit.test('set with only idAttribute', function(assert) {
     assert.expect(3);
-    var m1 = {_id: 1};
-    var m2 = {_id: 2};
-    var Col = Skeletor.Collection.extend({
+    const m1 = {_id: 1};
+    const m2 = {_id: 2};
+    const Col = Skeletor.Collection.extend({
       model: Skeletor.Model.extend({
         idAttribute: '_id'
       })
     });
-    var collection = new Col();
+    const collection = new Col();
     collection.set([m1, m2]);
     assert.equal(collection.length, 2);
     collection.set([m1]);
@@ -1291,13 +1292,13 @@
   });
 
   QUnit.test('set + merge with default values defined', function(assert) {
-    var Model = Skeletor.Model.extend({
+    const Model = Skeletor.Model.extend({
       defaults: {
         key: 'value'
       }
     });
-    var m = new Model({id: 1});
-    var collection = new Skeletor.Collection([m], {model: Model});
+    const m = new Model({id: 1});
+    const collection = new Skeletor.Collection([m], {model: Model});
     assert.equal(collection.first().get('key'), 'value');
 
     collection.set({id: 1, key: 'other'});
@@ -1309,16 +1310,16 @@
   });
 
   QUnit.test('merge without mutation', function(assert) {
-    var Model = Skeletor.Model.extend({
+    const Model = Skeletor.Model.extend({
       initialize: function(attrs, options) {
         if (attrs.child) {
           this.set('child', new Model(attrs.child, options), options);
         }
       }
     });
-    var Collection = Skeletor.Collection.extend({model: Model});
-    var data = [{id: 1, child: {id: 2}}];
-    var collection = new Collection(data);
+    const Collection = Skeletor.Collection.extend({model: Model});
+    const data = [{id: 1, child: {id: 2}}];
+    const collection = new Collection(data);
     assert.equal(collection.first().id, 1);
     collection.set(data);
     assert.equal(collection.first().id, 1);
@@ -1327,13 +1328,13 @@
   });
 
   QUnit.test('`set` and model level `parse`', function(assert) {
-    var Model = Skeletor.Model.extend({});
-    var Collection = Skeletor.Collection.extend({
+    const Model = Skeletor.Model.extend({});
+    const Collection = Skeletor.Collection.extend({
       model: Model,
       parse: function(res) { return _.map(res.models, 'model'); }
     });
-    var model = new Model({id: 1});
-    var collection = new Collection(model);
+    const model = new Model({id: 1});
+    const collection = new Collection(model);
     collection.set({models: [
       {model: {id: 1}},
       {model: {id: 2}}
@@ -1342,7 +1343,7 @@
   });
 
   QUnit.test('`set` data is only parsed once', function(assert) {
-    var collection = new Skeletor.Collection();
+    const collection = new Skeletor.Collection();
     collection.model = Skeletor.Model.extend({
       parse: function(data) {
         assert.equal(data.parsed, undefined);
@@ -1354,10 +1355,10 @@
   });
 
   QUnit.test('`set` matches input order in the absence of a comparator', function(assert) {
-    var one = new Skeletor.Model({id: 1});
-    var two = new Skeletor.Model({id: 2});
-    var three = new Skeletor.Model({id: 3});
-    var collection = new Skeletor.Collection([one, two, three]);
+    const one = new Skeletor.Model({id: 1});
+    const two = new Skeletor.Model({id: 2});
+    const three = new Skeletor.Model({id: 3});
+    const collection = new Skeletor.Collection([one, two, three]);
     collection.set([{id: 3}, {id: 2}, {id: 1}]);
     assert.deepEqual(collection.models, [three, two, one]);
     collection.set([{id: 1}, {id: 2}]);
@@ -1374,7 +1375,7 @@
 
   QUnit.test('#1894 - Push should not trigger a sort', function(assert) {
     assert.expect(0);
-    var Collection = Skeletor.Collection.extend({
+    const Collection = Skeletor.Collection.extend({
       comparator: 'id',
       sort: function() { assert.ok(false); }
     });
@@ -1383,24 +1384,24 @@
 
   QUnit.test('#2428 - push duplicate models, return the correct one', function(assert) {
     assert.expect(1);
-    var collection = new Skeletor.Collection();
-    var model1 = collection.push({id: 101});
-    var model2 = collection.push({id: 101});
+    const collection = new Skeletor.Collection();
+    const model1 = collection.push({id: 101});
+    const model2 = collection.push({id: 101});
     assert.ok(model2.cid === model1.cid);
   });
 
   QUnit.test('`set` with non-normal id', function(assert) {
-    var Collection = Skeletor.Collection.extend({
+    const Collection = Skeletor.Collection.extend({
       model: Skeletor.Model.extend({idAttribute: '_id'})
     });
-    var collection = new Collection({_id: 1});
+    const collection = new Collection({_id: 1});
     collection.set([{_id: 1, a: 1}], {add: false});
     assert.equal(collection.first().get('a'), 1);
   });
 
   QUnit.test('#1894 - `sort` can optionally be turned off', function(assert) {
     assert.expect(0);
-    var Collection = Skeletor.Collection.extend({
+    const Collection = Skeletor.Collection.extend({
       comparator: 'id',
       sort: function() { assert.ok(false); }
     });
@@ -1408,40 +1409,40 @@
   });
 
   QUnit.test('#1915 - `parse` data in the right order in `set`', function(assert) {
-    var collection = new (Skeletor.Collection.extend({
+    const collection = new (Skeletor.Collection.extend({
       parse: function(data) {
         assert.strictEqual(data.status, 'ok');
         return data.data;
       }
-    }));
-    var res = {status: 'ok', data: [{id: 1}]};
+    }))();
+    const res = {status: 'ok', data: [{id: 1}]};
     collection.set(res, {parse: true});
   });
 
   QUnit.test('#1939 - `parse` is passed `options`', function(assert) {
-    var done = assert.async();
+    window.fetch.restore()
+    sinon.stub(window, 'fetch').callsFake((params) => {
+      _.defer(params.success, []);
+      return {someHeader: 'headerValue'};
+    });
+
+    const done = assert.async();
     assert.expect(1);
-    var collection = new (Skeletor.Collection.extend({
+    const collection = new (Skeletor.Collection.extend({
       url: '/',
       parse: function(data, options) {
         assert.strictEqual(options.xhr.someHeader, 'headerValue');
         return data;
       }
-    }));
-    var ajax = Skeletor.ajax;
-    Skeletor.ajax = function(params) {
-      _.defer(params.success, []);
-      return {someHeader: 'headerValue'};
-    };
+    }))();
     collection.fetch({
       success: function() { done(); }
     });
-    Skeletor.ajax = ajax;
   });
 
   QUnit.test('fetch will pass extra options to success callback', function(assert) {
     assert.expect(1);
-    var SpecialSyncCollection = Skeletor.Collection.extend({
+    const SpecialSyncCollection = Skeletor.Collection.extend({
       url: '/test',
       sync: function(method, collection, options) {
         _.extend(options, {specialSync: true});
@@ -1449,19 +1450,19 @@
       }
     });
 
-    var collection = new SpecialSyncCollection();
+    const collection = new SpecialSyncCollection();
 
-    var onSuccess = function(coll, resp, options) {
+    const onSuccess = function(coll, resp, options) {
       assert.ok(options.specialSync, 'Options were passed correctly to callback');
     };
 
     collection.fetch({success: onSuccess});
-    this.ajaxSettings.success();
+    window.fetch.lastCall.args[0].success();
   });
 
   QUnit.test('`add` only `sort`s when necessary', function(assert) {
     assert.expect(2);
-    var collection = new (Skeletor.Collection.extend({
+    const collection = new (Skeletor.Collection.extend({
       comparator: 'a'
     }))([{id: 1}, {id: 2}, {id: 3}]);
     collection.on('sort', function() { assert.ok(true); });
@@ -1475,7 +1476,7 @@
 
   QUnit.test('`add` only `sort`s when necessary with comparator function', function(assert) {
     assert.expect(3);
-    var collection = new (Skeletor.Collection.extend({
+    const collection = new (Skeletor.Collection.extend({
       comparator: function(m1, m2) {
         return m1.get('a') > m2.get('a') ? 1 : (m1.get('a') < m2.get('a') ? -1 : 0);
       }
@@ -1491,10 +1492,10 @@
 
   QUnit.test('Attach options to collection.', function(assert) {
     assert.expect(2);
-    var Model = Skeletor.Model;
-    var comparator = function(){};
+    const Model = Skeletor.Model;
+    const comparator = function(){};
 
-    var collection = new Skeletor.Collection([], {
+    const collection = new Skeletor.Collection([], {
       model: Model,
       comparator: comparator
     });
@@ -1505,22 +1506,22 @@
 
   QUnit.test('Pass falsey for `models` for empty Col with `options`', function(assert) {
     assert.expect(9);
-    var opts = {a: 1, b: 2};
+    const opts = {a: 1, b: 2};
     _.forEach([undefined, null, false], function(falsey) {
-      var Collection = Skeletor.Collection.extend({
+      const Collection = Skeletor.Collection.extend({
         initialize: function(models, options) {
           assert.strictEqual(models, falsey);
           assert.strictEqual(options, opts);
         }
       });
 
-      var collection = new Collection(falsey, opts);
+      const collection = new Collection(falsey, opts);
       assert.strictEqual(collection.length, 0);
     });
   });
 
   QUnit.test('`add` overrides `set` flags', function(assert) {
-    var collection = new Skeletor.Collection();
+    const collection = new Skeletor.Collection();
     collection.once('add', function(model, coll, options) {
       coll.add({id: 2}, options);
     });
@@ -1530,19 +1531,19 @@
 
   QUnit.test('#2606 - Collection#create, success arguments', function(assert) {
     assert.expect(1);
-    var collection = new Skeletor.Collection();
+    const collection = new Skeletor.Collection();
     collection.url = 'test';
     collection.create({}, {
       success: function(model, resp, options) {
         assert.strictEqual(resp, 'response');
       }
     });
-    this.ajaxSettings.success('response');
+    window.fetch.lastCall.args[0].success('response');
   });
 
   QUnit.test('#2612 - nested `parse` works with `Collection#set`', function(assert) {
 
-    var Job = Skeletor.Model.extend({
+    const Job = Skeletor.Model.extend({
       constructor: function() {
         this.items = new Items();
         Skeletor.Model.apply(this, arguments);
@@ -1553,7 +1554,7 @@
       }
     });
 
-    var Item = Skeletor.Model.extend({
+    const Item = Skeletor.Model.extend({
       constructor: function() {
         this.subItems = new Skeletor.Collection();
         Skeletor.Model.apply(this, arguments);
@@ -1564,11 +1565,11 @@
       }
     });
 
-    var Items = Skeletor.Collection.extend({
+    const Items = Skeletor.Collection.extend({
       model: Item
     });
 
-    var data = {
+    const data = {
       name: 'JobName',
       id: 1,
       items: [{
@@ -1588,7 +1589,7 @@
       }]
     };
 
-    var newData = {
+    const newData = {
       name: 'NewJobName',
       id: 1,
       items: [{
@@ -1608,7 +1609,7 @@
       }]
     };
 
-    var job = new Job(data, {parse: true});
+    const job = new Job(data, {parse: true});
     assert.equal(job.get('name'), 'JobName');
     assert.equal(job.items.at(0).get('name'), 'Sub1');
     assert.equal(job.items.length, 2);
@@ -1625,9 +1626,9 @@
   QUnit.test('_addReference binds all collection events & adds to the lookup hashes', function(assert) {
     assert.expect(8);
 
-    var calls = {add: 0, remove: 0};
+    const calls = {add: 0, remove: 0};
 
-    var Collection = Skeletor.Collection.extend({
+    const Collection = Skeletor.Collection.extend({
 
       _addReference: function(model) {
         Skeletor.Collection.prototype._addReference.apply(this, arguments);
@@ -1647,8 +1648,8 @@
 
     });
 
-    var collection = new Collection();
-    var model = collection.add({id: 1});
+    const collection = new Collection();
+    const model = collection.add({id: 1});
     collection.remove(model);
 
     assert.equal(calls.add, 1);
@@ -1656,7 +1657,7 @@
   });
 
   QUnit.test('Do not allow duplicate models to be `add`ed or `set`', function(assert) {
-    var collection = new Skeletor.Collection();
+    const collection = new Skeletor.Collection();
 
     collection.add([{id: 1}, {id: 1}]);
     assert.equal(collection.length, 1);
@@ -1669,7 +1670,7 @@
 
   QUnit.test('#3020: #set with {add: false} should not throw.', function(assert) {
     assert.expect(2);
-    var collection = new Skeletor.Collection();
+    const collection = new Skeletor.Collection();
     collection.set([{id: 1}], {add: false});
     assert.strictEqual(collection.length, 0);
     assert.strictEqual(collection.models.length, 0);
@@ -1677,8 +1678,8 @@
 
   QUnit.test('create with wait, model instance, #3028', function(assert) {
     assert.expect(1);
-    var collection = new Skeletor.Collection();
-    var model = new Skeletor.Model({id: 1});
+    const collection = new Skeletor.Collection();
+    const model = new Skeletor.Model({id: 1});
     model.sync = function(){
       assert.equal(this.collection, collection);
     };
@@ -1686,8 +1687,8 @@
   });
 
   QUnit.test('modelId', function(assert) {
-    var Stooge = Skeletor.Model.extend();
-    var StoogeCollection = Skeletor.Collection.extend({model: Stooge});
+    const Stooge = Skeletor.Model.extend();
+    const StoogeCollection = Skeletor.Collection.extend({model: Stooge});
 
     // Default to using `Collection::model::idAttribute`.
     assert.equal(StoogeCollection.prototype.modelId({id: 1}), 1);
@@ -1696,14 +1697,14 @@
   });
 
   QUnit.test('Polymorphic models work with "simple" constructors', function(assert) {
-    var A = Skeletor.Model.extend();
-    var B = Skeletor.Model.extend();
-    var C = Skeletor.Collection.extend({
+    const A = Skeletor.Model.extend();
+    const B = Skeletor.Model.extend();
+    const C = Skeletor.Collection.extend({
       model: function(attrs) {
         return attrs.type === 'a' ? new A(attrs) : new B(attrs);
       }
     });
-    var collection = new C([{id: 1, type: 'a'}, {id: 2, type: 'b'}]);
+    const collection = new C([{id: 1, type: 'a'}, {id: 2, type: 'b'}]);
     assert.equal(collection.length, 2);
     assert.ok(collection.at(0) instanceof A);
     assert.equal(collection.at(0).id, 1);
@@ -1712,9 +1713,9 @@
   });
 
   QUnit.test('Polymorphic models work with "advanced" constructors', function(assert) {
-    var A = Skeletor.Model.extend({idAttribute: '_id'});
-    var B = Skeletor.Model.extend({idAttribute: '_id'});
-    var C = Skeletor.Collection.extend({
+    const A = Skeletor.Model.extend({idAttribute: '_id'});
+    const B = Skeletor.Model.extend({idAttribute: '_id'});
+    let C = Skeletor.Collection.extend({
       model: Skeletor.Model.extend({
         constructor: function(attrs) {
           return attrs.type === 'a' ? new A(attrs) : new B(attrs);
@@ -1723,7 +1724,7 @@
         idAttribute: '_id'
       })
     });
-    var collection = new C([{_id: 1, type: 'a'}, {_id: 2, type: 'b'}]);
+    let collection = new C([{_id: 1, type: 'a'}, {_id: 2, type: 'b'}]);
     assert.equal(collection.length, 2);
     assert.ok(collection.at(0) instanceof A);
     assert.equal(collection.at(0), collection.get(1));
@@ -1750,29 +1751,29 @@
   QUnit.test('Collection with polymorphic models receives default id from modelId', function(assert) {
     assert.expect(6);
     // When the polymorphic models use 'id' for the idAttribute, all is fine.
-    var C1 = Skeletor.Collection.extend({
+    const C1 = Skeletor.Collection.extend({
       model: function(attrs) {
         return new Skeletor.Model(attrs);
       }
     });
-    var c1 = new C1({id: 1});
+    const c1 = new C1({id: 1});
     assert.equal(c1.get(1).id, 1);
     assert.equal(c1.modelId({id: 1}), 1);
 
     // If the polymorphic models define their own idAttribute,
     // the modelId method should be overridden, for the reason below.
-    var M = Skeletor.Model.extend({
+    const M = Skeletor.Model.extend({
       idAttribute: '_id'
     });
-    var C2 = Skeletor.Collection.extend({
+    const C2 = Skeletor.Collection.extend({
       model: function(attrs) {
         return new M(attrs);
       }
     });
-    var c2 = new C2({_id: 1});
+    const c2 = new C2({_id: 1});
     assert.equal(c2.get(1), undefined);
     assert.equal(c2.modelId(c2.at(0).attributes), undefined);
-    var m = new M({_id: 2});
+    const m = new M({_id: 2});
     c2.add(m);
     assert.equal(c2.get(2), undefined);
     assert.equal(c2.modelId(m.attributes), undefined);
@@ -1780,26 +1781,26 @@
 
   QUnit.test('Collection implements Iterable, values is default iterator function', function(assert) {
     /* global Symbol */
-    var $$iterator = typeof Symbol === 'function' && Symbol.iterator;
+    const $$iterator = typeof Symbol === 'function' && Symbol.iterator;
     // This test only applies to environments which define Symbol.iterator.
     if (!$$iterator) {
       assert.expect(0);
       return;
     }
     assert.expect(2);
-    var collection = new Skeletor.Collection([]);
+    const collection = new Skeletor.Collection([]);
     assert.strictEqual(collection[$$iterator], collection.values);
-    var iterator = collection[$$iterator]();
+    const iterator = collection[$$iterator]();
     assert.deepEqual(iterator.next(), {value: undefined, done: true});
   });
 
   QUnit.test('Collection.values iterates models in sorted order', function(assert) {
     assert.expect(4);
-    var one = new Skeletor.Model({id: 1});
-    var two = new Skeletor.Model({id: 2});
-    var three = new Skeletor.Model({id: 3});
-    var collection = new Skeletor.Collection([one, two, three]);
-    var iterator = collection.values();
+    const one = new Skeletor.Model({id: 1});
+    const two = new Skeletor.Model({id: 2});
+    const three = new Skeletor.Model({id: 3});
+    const collection = new Skeletor.Collection([one, two, three]);
+    const iterator = collection.values();
     assert.strictEqual(iterator.next().value, one);
     assert.strictEqual(iterator.next().value, two);
     assert.strictEqual(iterator.next().value, three);
@@ -1808,11 +1809,11 @@
 
   QUnit.test('Collection.keys iterates ids in sorted order', function(assert) {
     assert.expect(4);
-    var one = new Skeletor.Model({id: 1});
-    var two = new Skeletor.Model({id: 2});
-    var three = new Skeletor.Model({id: 3});
-    var collection = new Skeletor.Collection([one, two, three]);
-    var iterator = collection.keys();
+    const one = new Skeletor.Model({id: 1});
+    const two = new Skeletor.Model({id: 2});
+    const three = new Skeletor.Model({id: 3});
+    const collection = new Skeletor.Collection([one, two, three]);
+    const iterator = collection.keys();
     assert.strictEqual(iterator.next().value, 1);
     assert.strictEqual(iterator.next().value, 2);
     assert.strictEqual(iterator.next().value, 3);
@@ -1821,11 +1822,11 @@
 
   QUnit.test('Collection.entries iterates ids and models in sorted order', function(assert) {
     assert.expect(4);
-    var one = new Skeletor.Model({id: 1});
-    var two = new Skeletor.Model({id: 2});
-    var three = new Skeletor.Model({id: 3});
-    var collection = new Skeletor.Collection([one, two, three]);
-    var iterator = collection.entries();
+    const one = new Skeletor.Model({id: 1});
+    const two = new Skeletor.Model({id: 2});
+    const three = new Skeletor.Model({id: 3});
+    const collection = new Skeletor.Collection([one, two, three]);
+    const iterator = collection.entries();
     assert.deepEqual(iterator.next().value, [1, one]);
     assert.deepEqual(iterator.next().value, [2, two]);
     assert.deepEqual(iterator.next().value, [3, three]);
@@ -1834,7 +1835,7 @@
 
   QUnit.test('#3039 #3951: adding at index fires with correct at', function(assert) {
     assert.expect(4);
-    var collection = new Skeletor.Collection([{val: 0}, {val: 4}]);
+    const collection = new Skeletor.Collection([{val: 0}, {val: 4}]);
     collection.on('add', function(model, coll, options) {
       assert.equal(model.get('val'), options.index);
     });
@@ -1844,7 +1845,7 @@
 
   QUnit.test('#3039: index is not sent when at is not specified', function(assert) {
     assert.expect(2);
-    var collection = new Skeletor.Collection([{at: 0}]);
+    const collection = new Skeletor.Collection([{at: 0}]);
     collection.on('add', function(model, coll, options) {
       assert.equal(undefined, options.index);
     });
@@ -1853,10 +1854,10 @@
 
   QUnit.test('#3199 - Order changing should trigger a sort', function(assert) {
     assert.expect(1);
-    var one = new Skeletor.Model({id: 1});
-    var two = new Skeletor.Model({id: 2});
-    var three = new Skeletor.Model({id: 3});
-    var collection = new Skeletor.Collection([one, two, three]);
+    const one = new Skeletor.Model({id: 1});
+    const two = new Skeletor.Model({id: 2});
+    const three = new Skeletor.Model({id: 3});
+    const collection = new Skeletor.Collection([one, two, three]);
     collection.on('sort', function() {
       assert.ok(true);
     });
@@ -1865,10 +1866,10 @@
 
   QUnit.test('#3199 - Adding a model should trigger a sort', function(assert) {
     assert.expect(1);
-    var one = new Skeletor.Model({id: 1});
-    var two = new Skeletor.Model({id: 2});
-    var three = new Skeletor.Model({id: 3});
-    var collection = new Skeletor.Collection([one, two, three]);
+    const one = new Skeletor.Model({id: 1});
+    const two = new Skeletor.Model({id: 2});
+    const three = new Skeletor.Model({id: 3});
+    const collection = new Skeletor.Collection([one, two, three]);
     collection.on('sort', function() {
       assert.ok(true);
     });
@@ -1877,10 +1878,10 @@
 
   QUnit.test('#3199 - Order not changing should not trigger a sort', function(assert) {
     assert.expect(0);
-    var one = new Skeletor.Model({id: 1});
-    var two = new Skeletor.Model({id: 2});
-    var three = new Skeletor.Model({id: 3});
-    var collection = new Skeletor.Collection([one, two, three]);
+    const one = new Skeletor.Model({id: 1});
+    const two = new Skeletor.Model({id: 2});
+    const three = new Skeletor.Model({id: 3});
+    const collection = new Skeletor.Collection([one, two, three]);
     collection.on('sort', function() {
       assert.ok(false);
     });
@@ -1889,7 +1890,7 @@
 
   QUnit.test('add supports negative indexes', function(assert) {
     assert.expect(1);
-    var collection = new Skeletor.Collection([{id: 1}]);
+    const collection = new Skeletor.Collection([{id: 1}]);
     collection.add([{id: 2}, {id: 3}], {at: -1});
     collection.add([{id: 2.5}], {at: -2});
     collection.add([{id: 0.5}], {at: -6});
@@ -1898,41 +1899,41 @@
 
   QUnit.test('#set accepts options.at as a string', function(assert) {
     assert.expect(1);
-    var collection = new Skeletor.Collection([{id: 1}, {id: 2}]);
+    const collection = new Skeletor.Collection([{id: 1}, {id: 2}]);
     collection.add([{id: 3}], {at: '1'});
     assert.deepEqual(collection.pluck('id'), [1, 3, 2]);
   });
 
   QUnit.test('adding multiple models triggers `update` event once', function(assert) {
     assert.expect(1);
-    var collection = new Skeletor.Collection();
+    const collection = new Skeletor.Collection();
     collection.on('update', function() { assert.ok(true); });
     collection.add([{id: 1}, {id: 2}, {id: 3}]);
   });
 
   QUnit.test('removing models triggers `update` event once', function(assert) {
     assert.expect(1);
-    var collection = new Skeletor.Collection([{id: 1}, {id: 2}, {id: 3}]);
+    const collection = new Skeletor.Collection([{id: 1}, {id: 2}, {id: 3}]);
     collection.on('update', function() { assert.ok(true); });
     collection.remove([{id: 1}, {id: 2}]);
   });
 
   QUnit.test('remove does not trigger `update` when nothing removed', function(assert) {
     assert.expect(0);
-    var collection = new Skeletor.Collection([{id: 1}, {id: 2}]);
+    const collection = new Skeletor.Collection([{id: 1}, {id: 2}]);
     collection.on('update', function() { assert.ok(false); });
     collection.remove([{id: 3}]);
   });
 
   QUnit.test('set triggers `set` event once', function(assert) {
     assert.expect(1);
-    var collection = new Skeletor.Collection([{id: 1}, {id: 2}]);
+    const collection = new Skeletor.Collection([{id: 1}, {id: 2}]);
     collection.on('update', function() { assert.ok(true); });
     collection.set([{id: 1}, {id: 3}]);
   });
 
   QUnit.test('set does not trigger `update` event when nothing added nor removed', function(assert) {
-    var collection = new Skeletor.Collection([{id: 1}, {id: 2}]);
+    const collection = new Skeletor.Collection([{id: 1}, {id: 2}]);
     collection.on('update', function(coll, options) {
       assert.equal(options.changes.added.length, 0);
       assert.equal(options.changes.removed.length, 0);
@@ -1941,26 +1942,26 @@
     collection.set([{id: 1}, {id: 2}]);
   });
 
-  QUnit.test('#3610 - invoke collects arguments', function(assert) {
+  QUnit.test('#3610 - invokeMap collects arguments', function(assert) {
     assert.expect(3);
-    var Model = Skeletor.Model.extend({
+    const Model = Skeletor.Model.extend({
       method: function(x, y, z) {
         assert.equal(x, 1);
         assert.equal(y, 2);
         assert.equal(z, 3);
       }
     });
-    var Collection = Skeletor.Collection.extend({
+    const Collection = Skeletor.Collection.extend({
       model: Model
     });
-    var collection = new Collection([{id: 1}]);
-    collection.invoke('method', 1, 2, 3);
+    const collection = new Collection([{id: 1}]);
+    collection.invokeMap('method', 1, 2, 3);
   });
 
   QUnit.test('#3662 - triggering change without model will not error', function(assert) {
     assert.expect(1);
-    var collection = new Skeletor.Collection([{id: 1}]);
-    var model = collection.first();
+    const collection = new Skeletor.Collection([{id: 1}]);
+    const model = collection.first();
     collection.on('change', function(m) {
       assert.equal(m, undefined);
     });
@@ -1968,18 +1969,18 @@
   });
 
   QUnit.test('#3871 - falsy parse result creates empty collection', function(assert) {
-    var collection = new (Skeletor.Collection.extend({
+    const collection = new (Skeletor.Collection.extend({
       parse: function(data, options) {}
-    }));
+    }))();
     collection.set('', {parse: true});
     assert.equal(collection.length, 0);
   });
 
   QUnit.test("#3711 - remove's `update` event returns one removed model", function(assert) {
-    var model = new Skeletor.Model({id: 1, title: 'First Post'});
-    var collection = new Skeletor.Collection([model]);
+    const model = new Skeletor.Model({id: 1, title: 'First Post'});
+    const collection = new Skeletor.Collection([model]);
     collection.on('update', function(context, options) {
-      var changed = options.changes;
+      const changed = options.changes;
       assert.deepEqual(changed.added, []);
       assert.deepEqual(changed.merged, []);
       assert.strictEqual(changed.removed[0], model);
@@ -1988,11 +1989,11 @@
   });
 
   QUnit.test("#3711 - remove's `update` event returns multiple removed models", function(assert) {
-    var model = new Skeletor.Model({id: 1, title: 'First Post'});
-    var model2 = new Skeletor.Model({id: 2, title: 'Second Post'});
-    var collection = new Skeletor.Collection([model, model2]);
+    const model = new Skeletor.Model({id: 1, title: 'First Post'});
+    const model2 = new Skeletor.Model({id: 2, title: 'Second Post'});
+    const collection = new Skeletor.Collection([model, model2]);
     collection.on('update', function(context, options) {
-      var changed = options.changes;
+      const changed = options.changes;
       assert.deepEqual(changed.added, []);
       assert.deepEqual(changed.merged, []);
       assert.ok(changed.removed.length === 2);
@@ -2003,10 +2004,10 @@
   });
 
   QUnit.test("#3711 - set's `update` event returns one added model", function(assert) {
-    var model = new Skeletor.Model({id: 1, title: 'First Post'});
-    var collection = new Skeletor.Collection();
+    const model = new Skeletor.Model({id: 1, title: 'First Post'});
+    const collection = new Skeletor.Collection();
     collection.on('update', function(context, options) {
-      var addedModels = options.changes.added;
+      const addedModels = options.changes.added;
       assert.ok(addedModels.length === 1);
       assert.strictEqual(addedModels[0], model);
     });
@@ -2014,11 +2015,11 @@
   });
 
   QUnit.test("#3711 - set's `update` event returns multiple added models", function(assert) {
-    var model = new Skeletor.Model({id: 1, title: 'First Post'});
-    var model2 = new Skeletor.Model({id: 2, title: 'Second Post'});
-    var collection = new Skeletor.Collection();
+    const model = new Skeletor.Model({id: 1, title: 'First Post'});
+    const model2 = new Skeletor.Model({id: 2, title: 'Second Post'});
+    const collection = new Skeletor.Collection();
     collection.on('update', function(context, options) {
-      var addedModels = options.changes.added;
+      const addedModels = options.changes.added;
       assert.ok(addedModels.length === 2);
       assert.strictEqual(addedModels[0], model);
       assert.strictEqual(addedModels[1], model2);
@@ -2027,12 +2028,12 @@
   });
 
   QUnit.test("#3711 - set's `update` event returns one removed model", function(assert) {
-    var model = new Skeletor.Model({id: 1, title: 'First Post'});
-    var model2 = new Skeletor.Model({id: 2, title: 'Second Post'});
-    var model3 = new Skeletor.Model({id: 3, title: 'My Last Post'});
-    var collection = new Skeletor.Collection([model]);
+    const model = new Skeletor.Model({id: 1, title: 'First Post'});
+    const model2 = new Skeletor.Model({id: 2, title: 'Second Post'});
+    const model3 = new Skeletor.Model({id: 3, title: 'My Last Post'});
+    const collection = new Skeletor.Collection([model]);
     collection.on('update', function(context, options) {
-      var changed = options.changes;
+      const changed = options.changes;
       assert.equal(changed.added.length, 2);
       assert.equal(changed.merged.length, 0);
       assert.ok(changed.removed.length === 1);
@@ -2042,12 +2043,12 @@
   });
 
   QUnit.test("#3711 - set's `update` event returns multiple removed models", function(assert) {
-    var model = new Skeletor.Model({id: 1, title: 'First Post'});
-    var model2 = new Skeletor.Model({id: 2, title: 'Second Post'});
-    var model3 = new Skeletor.Model({id: 3, title: 'My Last Post'});
-    var collection = new Skeletor.Collection([model, model2]);
+    const model = new Skeletor.Model({id: 1, title: 'First Post'});
+    const model2 = new Skeletor.Model({id: 2, title: 'Second Post'});
+    const model3 = new Skeletor.Model({id: 3, title: 'My Last Post'});
+    const collection = new Skeletor.Collection([model, model2]);
     collection.on('update', function(context, options) {
-      var removedModels = options.changes.removed;
+      const removedModels = options.changes.removed;
       assert.ok(removedModels.length === 2);
       assert.strictEqual(removedModels[0], model);
       assert.strictEqual(removedModels[1], model2);
@@ -2056,12 +2057,12 @@
   });
 
   QUnit.test("#3711 - set's `update` event returns one merged model", function(assert) {
-    var model = new Skeletor.Model({id: 1, title: 'First Post'});
-    var model2 = new Skeletor.Model({id: 2, title: 'Second Post'});
-    var model2Update = new Skeletor.Model({id: 2, title: 'Second Post V2'});
-    var collection = new Skeletor.Collection([model, model2]);
+    const model = new Skeletor.Model({id: 1, title: 'First Post'});
+    const model2 = new Skeletor.Model({id: 2, title: 'Second Post'});
+    const model2Update = new Skeletor.Model({id: 2, title: 'Second Post V2'});
+    const collection = new Skeletor.Collection([model, model2]);
     collection.on('update', function(context, options) {
-      var mergedModels = options.changes.merged;
+      const mergedModels = options.changes.merged;
       assert.ok(mergedModels.length === 1);
       assert.strictEqual(mergedModels[0].get('title'), model2Update.get('title'));
     });
@@ -2069,13 +2070,13 @@
   });
 
   QUnit.test("#3711 - set's `update` event returns multiple merged models", function(assert) {
-    var model = new Skeletor.Model({id: 1, title: 'First Post'});
-    var modelUpdate = new Skeletor.Model({id: 1, title: 'First Post V2'});
-    var model2 = new Skeletor.Model({id: 2, title: 'Second Post'});
-    var model2Update = new Skeletor.Model({id: 2, title: 'Second Post V2'});
-    var collection = new Skeletor.Collection([model, model2]);
+    const model = new Skeletor.Model({id: 1, title: 'First Post'});
+    const modelUpdate = new Skeletor.Model({id: 1, title: 'First Post V2'});
+    const model2 = new Skeletor.Model({id: 2, title: 'Second Post'});
+    const model2Update = new Skeletor.Model({id: 2, title: 'Second Post V2'});
+    const collection = new Skeletor.Collection([model, model2]);
     collection.on('update', function(context, options) {
-      var mergedModels = options.changes.merged;
+      const mergedModels = options.changes.merged;
       assert.ok(mergedModels.length === 2);
       assert.strictEqual(mergedModels[0].get('title'), model2Update.get('title'));
       assert.strictEqual(mergedModels[1].get('title'), modelUpdate.get('title'));
@@ -2084,9 +2085,9 @@
   });
 
   QUnit.test("#3711 - set's `update` event should not be triggered adding a model which already exists exactly alike", function(assert) {
-    var fired = false;
-    var model = new Skeletor.Model({id: 1, title: 'First Post'});
-    var collection = new Skeletor.Collection([model]);
+    let fired = false;
+    const model = new Skeletor.Model({id: 1, title: 'First Post'});
+    const collection = new Skeletor.Collection([model]);
     collection.on('update', function(context, options) {
       fired = true;
     });
@@ -2095,8 +2096,8 @@
   });
 
   QUnit.test('get models with `attributes` key', function(assert) {
-    var model = {id: 1, attributes: {}};
-    var collection = new Skeletor.Collection([model]);
+    const model = {id: 1, attributes: {}};
+    const collection = new Skeletor.Collection([model]);
     assert.ok(collection.get(model));
   });
 })(QUnit);

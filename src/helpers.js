@@ -72,7 +72,7 @@ const methodMap = {
 // * Send up the models as XML instead of JSON.
 // * Persist models via WebSockets instead of Ajax.
 //
-export function sync(method, model, options) {
+export function sync(method, model, options={}) {
     const type = methodMap[method];
 
     // Default JSON-request options.

@@ -1,11 +1,12 @@
 (function(QUnit) {
 
-  var view;
+  let view;
 
   QUnit.module('Skeletor.View', {
 
     beforeEach: function() {
-      $('#qunit-fixture').append(
+      document.querySelector('#qunit-fixture').insertAdjacentHTML(
+        'beforeEnd',
         '<div id="testElement"><h1>Test</h1></div>'
      );
 
@@ -17,8 +18,10 @@
     },
 
     afterEach: function() {
-      $('#testElement').remove();
-      $('#test-view').remove();
+      const el = document.querySelector('#testElement');
+      el.parentElement.removeChild(el);
+      const view_el = document.querySelector('#test-view');
+      view_el && view_el.parentElement.removeChild(view_el);
     }
 
   });
@@ -27,27 +30,17 @@
     assert.expect(3);
     assert.equal(view.el.id, 'test-view');
     assert.equal(view.el.className, 'test-view');
-    assert.equal(view.el.other, void 0);
+    assert.equal(view.el.other, undefined);
   });
 
   QUnit.test('$', function(assert) {
     assert.expect(2);
-    var myView = new Skeletor.View;
+    var myView = new Skeletor.View();
     myView.setElement('<p><a><b>test</b></a></p>');
     var result = myView.$('a b');
 
     assert.strictEqual(result[0].innerHTML, 'test');
     assert.ok(result.length === +result.length);
-  });
-
-  QUnit.test('$el', function(assert) {
-    assert.expect(3);
-    var myView = new Skeletor.View;
-    myView.setElement('<p><a><b>test</b></a></p>');
-    assert.strictEqual(myView.el.nodeType, 1);
-
-    assert.ok(myView.$el instanceof Skeletor.$);
-    assert.strictEqual(myView.$el[0], myView.el);
   });
 
   QUnit.test('initialize', function(assert) {
@@ -85,69 +78,61 @@
 
   QUnit.test('render', function(assert) {
     assert.expect(1);
-    var myView = new Skeletor.View;
+    var myView = new Skeletor.View();
     assert.equal(myView.render(), myView, '#render returns the view instance');
   });
 
   QUnit.test('delegateEvents', function(assert) {
     assert.expect(6);
-    var counter1 = 0, counter2 = 0;
+    let counter1 = 0, counter2 = 0;
 
-    var myView = new Skeletor.View({el: '#testElement'});
-    myView.increment = function() { counter1++; };
-    myView.$el.on('click', function() { counter2++; });
+    const myView = new Skeletor.View({el: '#testElement'});
+    myView.increment = () => counter1++;
+    myView.el.addEventListener('click', () => counter2++);
 
-    var events = {'click h1': 'increment'};
+    const events = {'click h1': 'increment'};
 
     myView.delegateEvents(events);
-    myView.$('h1').trigger('click');
+    myView.el.querySelector('h1').click();
     assert.equal(counter1, 1);
     assert.equal(counter2, 1);
 
-    myView.$('h1').trigger('click');
+    myView.el.querySelector('h1').click();
     assert.equal(counter1, 2);
     assert.equal(counter2, 2);
 
     myView.delegateEvents(events);
-    myView.$('h1').trigger('click');
+    myView.el.querySelector('h1').click();
     assert.equal(counter1, 3);
     assert.equal(counter2, 3);
   });
 
   QUnit.test('delegate', function(assert) {
     assert.expect(3);
-    var myView = new Skeletor.View({el: '#testElement'});
-    myView.delegate('click', 'h1', function() {
-      assert.ok(true);
-    });
-    myView.delegate('click', function() {
-      assert.ok(true);
-    });
-    myView.$('h1').trigger('click');
-
+    const myView = new Skeletor.View({el: '#testElement'});
+    myView.delegate('click', 'h1', () => assert.ok(true));
+    myView.delegate('click', () => assert.ok(true));
+    myView.el.querySelector('h1').click();
     assert.equal(myView.delegate(), myView, '#delegate returns the view instance');
   });
 
   QUnit.test('delegateEvents allows functions for callbacks', function(assert) {
     assert.expect(3);
-    var myView = new Skeletor.View({el: '<p></p>'});
+    const myView = new Skeletor.View({el: '#testElement'});
     myView.counter = 0;
-
-    var events = {
-      click: function() {
-        this.counter++;
-      }
+    const events = {
+      click: () => myView.counter++
     };
 
     myView.delegateEvents(events);
-    myView.$el.trigger('click');
+    myView.el.querySelector('h1').click();
     assert.equal(myView.counter, 1);
 
-    myView.$el.trigger('click');
+    myView.el.querySelector('h1').click();
     assert.equal(myView.counter, 2);
 
     myView.delegateEvents(events);
-    myView.$el.trigger('click');
+    myView.el.querySelector('h1').click();
     assert.equal(myView.counter, 3);
   });
 
@@ -155,31 +140,31 @@
     assert.expect(0);
     var myView = new Skeletor.View({el: '<p></p>'});
     myView.delegateEvents({click: 'undefinedMethod'});
-    myView.$el.trigger('click');
+    myView.el.click();
   });
 
   QUnit.test('undelegateEvents', function(assert) {
     assert.expect(7);
-    var counter1 = 0, counter2 = 0;
+    let counter1 = 0, counter2 = 0;
 
-    var myView = new Skeletor.View({el: '#testElement'});
+    const myView = new Skeletor.View({el: '#testElement'});
     myView.increment = function() { counter1++; };
-    myView.$el.on('click', function() { counter2++; });
+    myView.el.addEventListener('click', () => counter2++);
 
-    var events = {'click h1': 'increment'};
+    const events = {'click h1': 'increment'};
 
     myView.delegateEvents(events);
-    myView.$('h1').trigger('click');
+    myView.el.querySelector('h1').click();
     assert.equal(counter1, 1);
     assert.equal(counter2, 1);
 
     myView.undelegateEvents();
-    myView.$('h1').trigger('click');
+    myView.el.querySelector('h1').click();
     assert.equal(counter1, 1);
     assert.equal(counter2, 2);
 
     myView.delegateEvents(events);
-    myView.$('h1').trigger('click');
+    myView.el.querySelector('h1').click();
     assert.equal(counter1, 2);
     assert.equal(counter2, 3);
 
@@ -191,44 +176,41 @@
     var myView = new Skeletor.View({el: '#testElement'});
     myView.delegate('click', function() { assert.ok(false); });
     myView.delegate('click', 'h1', function() { assert.ok(false); });
-
     myView.undelegate('click');
-
-    myView.$('h1').trigger('click');
-    myView.$el.trigger('click');
-
+    myView.el.querySelector('h1').click();
+    myView.el.click();
     assert.equal(myView.undelegate(), myView, '#undelegate returns the view instance');
   });
 
   QUnit.test('undelegate with passed handler', function(assert) {
     assert.expect(1);
-    var myView = new Skeletor.View({el: '#testElement'});
-    var listener = function() { assert.ok(false); };
+    const myView = new Skeletor.View({el: '#testElement'});
+    const listener = () => assert.ok(false);
     myView.delegate('click', listener);
     myView.delegate('click', function() { assert.ok(true); });
     myView.undelegate('click', listener);
-    myView.$el.trigger('click');
+    myView.el.click();
   });
 
   QUnit.test('undelegate with selector', function(assert) {
     assert.expect(2);
-    var myView = new Skeletor.View({el: '#testElement'});
-    myView.delegate('click', function() { assert.ok(true); });
-    myView.delegate('click', 'h1', function() { assert.ok(false); });
+    const myView = new Skeletor.View({el: '#testElement'});
+    myView.delegate('click', () => assert.ok(true));
+    myView.delegate('click', 'h1', () => assert.ok(false));
     myView.undelegate('click', 'h1');
-    myView.$('h1').trigger('click');
-    myView.$el.trigger('click');
+    myView.el.querySelector('h1').click();
+    myView.el.click();
   });
 
   QUnit.test('undelegate with handler and selector', function(assert) {
     assert.expect(2);
-    var myView = new Skeletor.View({el: '#testElement'});
-    myView.delegate('click', function() { assert.ok(true); });
-    var handler = function() { assert.ok(false); };
+    const myView = new Skeletor.View({el: '#testElement'});
+    myView.delegate('click', () => assert.ok(true));
+    const handler = () => assert.ok(false);
     myView.delegate('click', 'h1', handler);
     myView.undelegate('click', 'h1', handler);
-    myView.$('h1').trigger('click');
-    myView.$el.trigger('click');
+    myView.el.querySelector('h1').click();
+    myView.el.click();
   });
 
   QUnit.test('tagName can be provided as a string', function(assert) {
@@ -242,13 +224,10 @@
 
   QUnit.test('tagName can be provided as a function', function(assert) {
     assert.expect(1);
-    var View = Skeletor.View.extend({
-      tagName: function() {
-        return 'p';
-      }
+    const View = Skeletor.View.extend({
+      tagName: () => 'p'
     });
-
-    assert.ok(new View().$el.is('p'));
+    assert.ok(new View().el.matches('p'));
   });
 
   QUnit.test('_ensureElement with DOM node el', function(assert) {
@@ -270,7 +249,7 @@
     View = Skeletor.View.extend({
       el: '#testElement > h1'
     });
-    assert.strictEqual(new View().el, $('#testElement > h1').get(0));
+    assert.strictEqual(new View().el, document.querySelector('#testElement > h1'));
 
     View = Skeletor.View.extend({
       el: '#nonexistent'
@@ -319,7 +298,7 @@
 
   QUnit.test('should default to className/id properties', function(assert) {
     assert.expect(4);
-    var View = Skeletor.View.extend({
+    const View = Skeletor.View.extend({
       className: 'backboneClass',
       id: 'backboneId',
       attributes: {
@@ -327,21 +306,20 @@
         'id': 'attributeId'
       }
     });
-
-    var myView = new View;
+    const myView = new View();
     assert.strictEqual(myView.el.className, 'backboneClass');
     assert.strictEqual(myView.el.id, 'backboneId');
-    assert.strictEqual(myView.$el.attr('class'), 'backboneClass');
-    assert.strictEqual(myView.$el.attr('id'), 'backboneId');
+    assert.strictEqual(myView.el.getAttribute('class'), 'backboneClass');
+    assert.strictEqual(myView.el.getAttribute('id'), 'backboneId');
   });
 
   QUnit.test('multiple views per element', function(assert) {
     assert.expect(3);
-    var count = 0;
-    var $el = $('<p></p>');
+    let count = 0;
+    const el = document.createElement('p');
 
-    var View = Skeletor.View.extend({
-      el: $el,
+    const View = Skeletor.View.extend({
+      el: el,
       events: {
         click: function() {
           count++;
@@ -349,52 +327,51 @@
       }
     });
 
-    var view1 = new View;
-    $el.trigger('click');
+    const view1 = new View();
+    el.click();
     assert.equal(1, count);
 
-    var view2 = new View;
-    $el.trigger('click');
+    const view2 = new View();
+    el.click();
     assert.equal(3, count);
 
     view1.delegateEvents();
-    $el.trigger('click');
+    el.click();
     assert.equal(5, count);
   });
 
   QUnit.test('custom events', function(assert) {
     assert.expect(2);
-    var View = Skeletor.View.extend({
-      el: $('body'),
+    const View = Skeletor.View.extend({
+      el: document.querySelector('body'),
       events: {
-        fake$event: function() { assert.ok(true); }
+        'fake$event': () => assert.ok(true)
       }
     });
-
-    var myView = new View;
-    $('body').trigger('fake$event').trigger('fake$event');
-
-    $('body').off('fake$event');
-    $('body').trigger('fake$event');
+    const myView = new View();
+    const event = new Event('fake$event')
+    const body = document.querySelector('body');
+    body.dispatchEvent(event);
+    body.dispatchEvent(event);
+    myView.undelegateEvents();
+    body.dispatchEvent(event);
   });
 
   QUnit.test('#1048 - setElement uses provided object.', function(assert) {
     assert.expect(2);
-    var $el = $('body');
-
-    var myView = new Skeletor.View({el: $el});
-    assert.ok(myView.$el === $el);
-
-    myView.setElement($el = $($el));
-    assert.ok(myView.$el === $el);
+    let el = document.querySelector('body');
+    const myView = new Skeletor.View({el: el});
+    assert.ok(myView.el === el);
+    const new_el = document.createElement('div');
+    myView.setElement(el = new_el);
+    assert.ok(myView.el === new_el);
   });
 
   QUnit.test('#986 - Undelegate before changing element.', function(assert) {
     assert.expect(1);
-    var button1 = $('<button></button>');
-    var button2 = $('<button></button>');
-
-    var View = Skeletor.View.extend({
+    const button1 = document.createElement('button');
+    const button2 = document.createElement('button');
+    const View = Skeletor.View.extend({
       events: {
         click: function(e) {
           assert.ok(myView.el === e.target);
@@ -402,11 +379,10 @@
       }
     });
 
-    var myView = new View({el: button1});
+    const myView = new View({el: button1});
     myView.setElement(button2);
-
-    button1.trigger('click');
-    button2.trigger('click');
+    button1.click();
+    button2.click();
   });
 
   QUnit.test('#1172 - Clone attributes object', function(assert) {
@@ -432,8 +408,8 @@
     });
 
     var myView = new View({
-      model: new Skeletor.Model,
-      collection: new Skeletor.Collection
+      model: new Skeletor.Model(),
+      collection: new Skeletor.Collection()
     });
 
     myView.stopListening();
@@ -443,35 +419,33 @@
 
   QUnit.test('Provide function for el.', function(assert) {
     assert.expect(2);
-    var View = Skeletor.View.extend({
-      el: function() {
-        return '<p><a></a></p>';
-      }
+    const View = Skeletor.View.extend({
+      el: () => '<p><a></a></p>'
     });
-
-    var myView = new View;
-    assert.ok(myView.$el.is('p'));
-    assert.ok(myView.$el.has('a'));
+    const myView = new View();
+    assert.ok(myView.el.matches('p'));
+    assert.ok(myView.el.querySelectorAll('a').length);
   });
 
   QUnit.test('events passed in options', function(assert) {
     assert.expect(1);
-    var counter = 0;
+    let counter = 0;
 
-    var View = Skeletor.View.extend({
+    const View = Skeletor.View.extend({
       el: '#testElement',
       increment: function() {
         counter++;
       }
     });
 
-    var myView = new View({
+    const myView = new View({
       events: {
         'click h1': 'increment'
       }
     });
 
-    myView.$('h1').trigger('click').trigger('click');
+    myView.el.querySelector('h1').click();
+    myView.el.querySelector('h1').click();
     assert.equal(counter, 2);
   });
 
@@ -484,7 +458,7 @@
     myView.listenTo(myView, 'all x', function() { assert.ok(false); });
 
     assert.equal(myView.remove(), myView, '#remove returns the view instance');
-    myView.$el.trigger('click');
+    myView.el.click();
     myView.trigger('x');
 
     // In IE8 and below, parentNode still exists but is not document.body.
@@ -492,25 +466,20 @@
   });
 
   QUnit.test('setElement', function(assert) {
-    assert.expect(3);
-    var myView = new Skeletor.View({
+    assert.expect(2);
+    const myView = new Skeletor.View({
       events: {
-        click: function() { assert.ok(false); }
+        click: () => assert.ok(false)
       }
     });
     myView.events = {
-      click: function() { assert.ok(true); }
+      click: () => assert.ok(true)
     };
-    var oldEl = myView.el;
-    var $oldEl = myView.$el;
-
+    const oldEl = myView.el;
     myView.setElement(document.createElement('div'));
-
-    $oldEl.click();
-    myView.$el.click();
-
+    oldEl.click();
+    myView.el.click();
     assert.notEqual(oldEl, myView.el);
-    assert.notEqual($oldEl, myView.$el);
   });
 
 })(QUnit);

@@ -4,7 +4,7 @@
 
   QUnit.test('noConflict', function(assert) {
     assert.expect(2);
-    var noconflictSkeletor = Skeletor.noConflict();
+    const noconflictSkeletor = Skeletor.noConflict();
     assert.equal(window.Skeletor, undefined, 'Returned window.Skeletor');
     window.Skeletor = noconflictSkeletor;
     assert.equal(window.Skeletor, noconflictSkeletor, 'Skeletor is still pointing to the original Skeletor');

@@ -6,14 +6,14 @@
 // ------
 
 import { Events } from './events.js';
+import History from './history.js';
 import _ from 'lodash';
 import { extend } from './helpers.js';
-import { history } from './history.js';
 
 // Routers map faux-URLs to actions, and fire events when routes are
 // matched. Creating a new one sets its `routes` hash, if not set statically.
-export const Router = function(options) {
-  options || (options = {});
+export const Router = function(options={}) {
+  this.history = options.history || new History();
   this.preinitialize.apply(this, arguments);
   if (options.routes) this.routes = options.routes;
   this._bindRoutes();
@@ -53,13 +53,12 @@ _.extend(Router.prototype, Events, {
       name = '';
     }
     if (!callback) callback = this[name];
-    var router = this;
-    history.route(route, function(fragment) {
-      var args = router._extractParameters(route, fragment);
-      if (router.execute(callback, args, name) !== false) {
-        router.trigger.apply(router, ['route:' + name].concat(args));
-        router.trigger('route', name, args);
-        history.trigger('route', router, name, args);
+    this.history.route(route, (fragment) => {
+      const args = this._extractParameters(route, fragment);
+      if (this.execute(callback, args, name) !== false) {
+        this.trigger.apply(this, ['route:' + name].concat(args));
+        this.trigger('route', name, args);
+        this.history.trigger('route', this, name, args);
       }
     });
     return this;
@@ -73,7 +72,7 @@ _.extend(Router.prototype, Events, {
 
   // Simple proxy to `history` to save a fragment into the history.
   navigate: function(fragment, options) {
-    history.navigate(fragment, options);
+    this.history.navigate(fragment, options);
     return this;
   },
 

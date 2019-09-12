@@ -1,14 +1,15 @@
 (function(QUnit) {
 
-  var ProxyModel = Skeletor.Model.extend();
-  var Klass = Skeletor.Collection.extend({
+  const ProxyModel = Skeletor.Model.extend();
+  const Klass = Skeletor.Collection.extend({
     url: function() { return '/collection'; }
   });
-  var doc, collection;
+  let doc, collection;
 
   QUnit.module('Skeletor.Model', {
 
     beforeEach: function(assert) {
+      sinon.stub(window, 'fetch').callsFake(() => {});
       doc = new ProxyModel({
         id: '1-the-tempest',
         title: 'The Tempest',
@@ -17,69 +18,73 @@
       });
       collection = new Klass();
       collection.add(doc);
-    }
+    },
 
+    afterEach: function(assert) {
+      window.fetch.restore()
+    }
   });
+
 
   QUnit.test('initialize', function(assert) {
     assert.expect(3);
-    var Model = Skeletor.Model.extend({
+    const Model = Skeletor.Model.extend({
       initialize: function() {
         this.one = 1;
         assert.equal(this.collection, collection);
       }
     });
-    var model = new Model({}, {collection: collection});
+    const model = new Model({}, {collection: collection});
     assert.equal(model.one, 1);
     assert.equal(model.collection, collection);
   });
 
   QUnit.test('Object.prototype properties are overridden by attributes', function(assert) {
     assert.expect(1);
-    var model = new Skeletor.Model({hasOwnProperty: true});
+    const model = new Skeletor.Model({hasOwnProperty: true});
     assert.equal(model.get('hasOwnProperty'), true);
   });
 
   QUnit.test('initialize with attributes and options', function(assert) {
     assert.expect(1);
-    var Model = Skeletor.Model.extend({
+    const Model = Skeletor.Model.extend({
       initialize: function(attributes, options) {
         this.one = options.one;
       }
     });
-    var model = new Model({}, {one: 1});
+    const model = new Model({}, {one: 1});
     assert.equal(model.one, 1);
   });
 
   QUnit.test('initialize with parsed attributes', function(assert) {
     assert.expect(1);
-    var Model = Skeletor.Model.extend({
+    const Model = Skeletor.Model.extend({
       parse: function(attrs) {
         attrs.value += 1;
         return attrs;
       }
     });
-    var model = new Model({value: 1}, {parse: true});
+    const model = new Model({value: 1}, {parse: true});
     assert.equal(model.get('value'), 2);
   });
 
 
   QUnit.test('preinitialize', function(assert) {
     assert.expect(2);
-    var Model = Skeletor.Model.extend({
+    const Model = Skeletor.Model.extend({
 
       preinitialize: function() {
         this.one = 1;
       }
     });
-    var model = new Model({}, {collection: collection});
+    const model = new Model({}, {collection: collection});
     assert.equal(model.one, 1);
     assert.equal(model.collection, collection);
   });
 
   QUnit.test('preinitialize occurs before the model is set up', function(assert) {
     assert.expect(6);
-    var Model = Skeletor.Model.extend({
+    const Model = Skeletor.Model.extend({
 
       preinitialize: function() {
         assert.equal(this.collection, undefined);
@@ -87,7 +92,7 @@
         assert.equal(this.id, undefined);
       }
     });
-    var model = new Model({id: 'foo'}, {collection: collection});
+    const model = new Model({id: 'foo'}, {collection: collection});
     assert.equal(model.collection, collection);
     assert.equal(model.id, 'foo');
     assert.notEqual(model.cid, undefined);
@@ -95,13 +100,13 @@
 
   QUnit.test('parse can return null', function(assert) {
     assert.expect(1);
-    var Model = Skeletor.Model.extend({
+    const Model = Skeletor.Model.extend({
       parse: function(attrs) {
         attrs.value += 1;
         return null;
       }
     });
-    var model = new Model({value: 1}, {parse: true});
+    const model = new Model({value: 1}, {parse: true});
     assert.equal(JSON.stringify(model.toJSON()), '{}');
   });
 
@@ -118,10 +123,10 @@
 
   QUnit.test('url when using urlRoot, and uri encoding', function(assert) {
     assert.expect(2);
-    var Model = Skeletor.Model.extend({
+    const Model = Skeletor.Model.extend({
       urlRoot: '/collection'
     });
-    var model = new Model();
+    const model = new Model();
     assert.equal(model.url(), '/collection');
     model.set({id: '+1+'});
     assert.equal(model.url(), '/collection/%2B1%2B');
@@ -129,13 +134,13 @@
 
   QUnit.test('url when using urlRoot as a function to determine urlRoot at runtime', function(assert) {
     assert.expect(2);
-    var Model = Skeletor.Model.extend({
+    const Model = Skeletor.Model.extend({
       urlRoot: function() {
         return '/nested/' + this.get('parentId') + '/collection';
       }
     });
 
-    var model = new Model({parentId: 1});
+    const model = new Model({parentId: 1});
     assert.equal(model.url(), '/nested/1/collection');
     model.set({id: 2});
     assert.equal(model.url(), '/nested/1/collection/2');
@@ -143,8 +148,8 @@
 
   QUnit.test('underscore methods', function(assert) {
     assert.expect(5);
-    var model = new Skeletor.Model({foo: 'a', bar: 'b', baz: 'c'});
-    var model2 = model.clone();
+    const model = new Skeletor.Model({foo: 'a', bar: 'b', baz: 'c'});
+    const model2 = model.clone();
     assert.deepEqual(model.keys(), ['foo', 'bar', 'baz']);
     assert.deepEqual(model.values(), ['a', 'b', 'c']);
     assert.deepEqual(model.invert(), {a: 'foo', b: 'bar', c: 'baz'});
@@ -153,7 +158,7 @@
   });
 
   QUnit.test('chain', function(assert) {
-    var model = new Skeletor.Model({a: 0, b: 1, c: 2});
+    const model = new Skeletor.Model({a: 0, b: 1, c: 2});
     assert.deepEqual(model.chain().pick('a', 'b', 'c').values().compact().value(), [1, 2]);
   });
 
@@ -282,10 +287,10 @@
     assert.equal(changeCount, 1, 'Change count should NOT have incremented.');
 
     a.validate = function(attrs) {
-      assert.equal(attrs.foo, void 0, 'validate:true passed while unsetting');
+      assert.equal(attrs.foo, undefined, 'validate:true passed while unsetting');
     };
     a.unset('foo', {validate: true});
-    assert.equal(a.get('foo'), void 0, 'Foo should have changed');
+    assert.equal(a.get('foo'), undefined, 'Foo should have changed');
     delete a.validate;
     assert.equal(changeCount, 2, 'Change count should have incremented for unset.');
 
@@ -325,13 +330,13 @@
     assert.expect(2);
     var model = new Skeletor.Model({result: 'result'});
     model.on('change', function() {
-      assert.equal(model.changed.result, void 0);
+      assert.equal(model.changed.result, undefined);
       assert.equal(model.previous('result'), false);
     });
-    model.set({result: void 0}, {silent: true});
+    model.set({result: undefined}, {silent: true});
     model.set({result: null}, {silent: true});
     model.set({result: false}, {silent: true});
-    model.set({result: void 0});
+    model.set({result: undefined});
   });
 
   QUnit.test('nested set triggers with the correct options', function(assert) {
@@ -536,12 +541,15 @@
 
   QUnit.test('save within change event', function(assert) {
     assert.expect(1);
-    var env = this;
-    var model = new Skeletor.Model({firstName: 'Taylor', lastName: 'Swift'});
+    const env = this;
+    const model = new Skeletor.Model({firstName: 'Roger', lastName: 'Penrose'});
     model.url = '/test';
     model.on('change', function() {
+      sinon.spy(model, 'sync');
       model.save();
-      assert.ok(_.isEqual(env.syncArgs.model, model));
+      const syncArgs = model.sync.lastCall.args;
+      assert.ok(_.isEqual(syncArgs[1], model));
+      model.sync.restore();
     });
     model.set({lastName: 'Hicks'});
   });
@@ -565,10 +573,13 @@
   });
 
   QUnit.test('save', function(assert) {
+    sinon.spy(doc, 'sync');
     assert.expect(2);
     doc.save({title: 'Henry V'});
-    assert.equal(this.syncArgs.method, 'update');
-    assert.ok(_.isEqual(this.syncArgs.model, doc));
+    const syncArgs = doc.sync.lastCall.args;
+    assert.equal(syncArgs[0], 'update');
+    assert.ok(_.isEqual(syncArgs[1], doc));
+    doc.sync.restore();
   });
 
   QUnit.test('save, fetch, destroy triggers error event when an error occurs', function(assert) {
@@ -605,7 +616,7 @@
 
   QUnit.test('#3283 - save, fetch, destroy calls error with context', function(assert) {
     assert.expect(3);
-    var model = new Skeletor.Model();
+    const model = new Skeletor.Model();
     var obj = {};
     var options = {
       context: obj,
@@ -623,8 +634,8 @@
 
   QUnit.test('#3470 - save and fetch with parse false', function(assert) {
     assert.expect(2);
-    var i = 0;
-    var model = new Skeletor.Model();
+    let i = 0;
+    const model = new Skeletor.Model();
     model.parse = function() {
       assert.ok(false);
     };
@@ -638,30 +649,39 @@
   });
 
   QUnit.test('save with PATCH', function(assert) {
+    sinon.spy(doc, 'sync');
     doc.clear().set({id: 1, a: 1, b: 2, c: 3, d: 4});
     doc.save();
-    assert.equal(this.syncArgs.method, 'update');
-    assert.equal(this.syncArgs.options.attrs, undefined);
+    let syncArgs = doc.sync.lastCall.args;
+    assert.equal(syncArgs[0], 'update');
+    assert.equal(syncArgs[2].attrs, undefined);
 
     doc.save({b: 2, d: 4}, {patch: true});
-    assert.equal(this.syncArgs.method, 'patch');
-    assert.equal(_.size(this.syncArgs.options.attrs), 2);
-    assert.equal(this.syncArgs.options.attrs.d, 4);
-    assert.equal(this.syncArgs.options.attrs.a, undefined);
-    assert.equal(this.ajaxSettings.data, '{"b":2,"d":4}');
+    syncArgs = doc.sync.lastCall.args;
+    assert.equal(syncArgs[0], 'patch');
+    assert.equal(_.size(syncArgs[2].attrs), 2);
+    assert.equal(syncArgs[2].attrs.d, 4);
+    assert.equal(syncArgs[2].attrs.a, undefined);
+    const ajaxSettings = window.fetch.lastCall.args[0];
+    assert.equal(ajaxSettings.data, '{"b":2,"d":4}');
+    doc.sync.restore();
   });
 
   QUnit.test('save with PATCH and different attrs', function(assert) {
+    sinon.spy(doc, 'sync');
     doc.clear().save({b: 2, d: 4}, {patch: true, attrs: {B: 1, D: 3}});
-    assert.equal(this.syncArgs.options.attrs.D, 3);
-    assert.equal(this.syncArgs.options.attrs.d, undefined);
-    assert.equal(this.ajaxSettings.data, '{"B":1,"D":3}');
+    const syncArgs = doc.sync.lastCall.args;
+    const ajaxSettings = window.fetch.lastCall.args[0];
+    assert.equal(syncArgs[2].attrs.D, 3);
+    assert.equal(syncArgs[2].attrs.d, undefined);
+    assert.equal(ajaxSettings.data, '{"B":1,"D":3}');
     assert.deepEqual(doc.attributes, {b: 2, d: 4});
+    doc.sync.restore();
   });
 
   QUnit.test('save in positional style', function(assert) {
     assert.expect(1);
-    var model = new Skeletor.Model();
+    const model = new Skeletor.Model();
     model.sync = function(method, m, options) {
       options.success();
     };
@@ -671,7 +691,7 @@
 
   QUnit.test('save with non-object success response', function(assert) {
     assert.expect(2);
-    var model = new Skeletor.Model();
+    const model = new Skeletor.Model();
     model.sync = function(method, m, options) {
       options.success('', options);
       options.success(null, options);
@@ -684,17 +704,18 @@
   });
 
   QUnit.test('save with wait and supplied id', function(assert) {
-    var Model = Skeletor.Model.extend({
+    const Model = Skeletor.Model.extend({
       urlRoot: '/collection'
     });
-    var model = new Model();
+    const model = new Model();
     model.save({id: 42}, {wait: true});
-    assert.equal(this.ajaxSettings.url, '/collection/42');
+    const ajaxSettings = window.fetch.lastCall.args[0];
+    assert.equal(ajaxSettings.url, '/collection/42');
   });
 
   QUnit.test('save will pass extra options to success callback', function(assert) {
     assert.expect(1);
-    var SpecialSyncModel = Skeletor.Model.extend({
+    const SpecialSyncModel = Skeletor.Model.extend({
       sync: function(method, m, options) {
         _.extend(options, {specialSync: true});
         return Skeletor.Model.prototype.sync.call(this, method, m, options);
@@ -702,26 +723,28 @@
       urlRoot: '/test'
     });
 
-    var model = new SpecialSyncModel();
-
-    var onSuccess = function(m, response, options) {
+    const model = new SpecialSyncModel();
+    const onSuccess = function(m, response, options) {
       assert.ok(options.specialSync, 'Options were passed correctly to callback');
     };
-
     model.save(null, {success: onSuccess});
-    this.ajaxSettings.success();
+    const ajaxSettings = window.fetch.lastCall.args[0];
+    ajaxSettings.success();
   });
 
   QUnit.test('fetch', function(assert) {
     assert.expect(2);
+    sinon.spy(doc, 'sync');
     doc.fetch();
-    assert.equal(this.syncArgs.method, 'read');
-    assert.ok(_.isEqual(this.syncArgs.model, doc));
+    const syncArgs = doc.sync.lastCall.args;
+    assert.equal(syncArgs[0], 'read');
+    assert.ok(_.isEqual(syncArgs[1], doc));
+    doc.sync.restore();
   });
 
   QUnit.test('fetch will pass extra options to success callback', function(assert) {
     assert.expect(1);
-    var SpecialSyncModel = Skeletor.Model.extend({
+    const SpecialSyncModel = Skeletor.Model.extend({
       sync: function(method, m, options) {
         _.extend(options, {specialSync: true});
         return Skeletor.Model.prototype.sync.call(this, method, m, options);
@@ -729,29 +752,30 @@
       urlRoot: '/test'
     });
 
-    var model = new SpecialSyncModel();
-
-    var onSuccess = function(m, response, options) {
+    const model = new SpecialSyncModel();
+    const onSuccess = function(m, response, options) {
       assert.ok(options.specialSync, 'Options were passed correctly to callback');
     };
-
     model.fetch({success: onSuccess});
-    this.ajaxSettings.success();
+    const ajaxSettings = window.fetch.lastCall.args[0];
+    ajaxSettings.success();
   });
 
   QUnit.test('destroy', function(assert) {
     assert.expect(3);
+    sinon.spy(doc, 'sync');
     doc.destroy();
-    assert.equal(this.syncArgs.method, 'delete');
-    assert.ok(_.isEqual(this.syncArgs.model, doc));
-
-    var newModel = new Skeletor.Model();
+    const syncArgs = doc.sync.lastCall.args;
+    assert.equal(syncArgs[0], 'delete');
+    assert.ok(_.isEqual(syncArgs[1], doc));
+    const newModel = new Skeletor.Model();
     assert.equal(newModel.destroy(), false);
+    doc.sync.restore();
   });
 
   QUnit.test('destroy will pass extra options to success callback', function(assert) {
     assert.expect(1);
-    var SpecialSyncModel = Skeletor.Model.extend({
+    const SpecialSyncModel = Skeletor.Model.extend({
       sync: function(method, m, options) {
         _.extend(options, {specialSync: true});
         return Skeletor.Model.prototype.sync.call(this, method, m, options);
@@ -759,14 +783,13 @@
       urlRoot: '/test'
     });
 
-    var model = new SpecialSyncModel({id: 'id'});
-
-    var onSuccess = function(m, response, options) {
+    const model = new SpecialSyncModel({id: 'id'});
+    const onSuccess = function(m, response, options) {
       assert.ok(options.specialSync, 'Options were passed correctly to callback');
     };
-
     model.destroy({success: onSuccess});
-    this.ajaxSettings.success();
+    const ajaxSettings = window.fetch.lastCall.args[0];
+    ajaxSettings.success();
   });
 
   QUnit.test('non-persisted destroy', function(assert) {
@@ -867,8 +890,8 @@
       instancePropDiff: function() {}
     });
 
-    var adult = new Parent;
-    var kid   = new Child;
+    var adult = new Parent();
+    var kid   = new Child();
 
     assert.equal(Child.classProp, Parent.classProp);
     assert.notEqual(Child.classProp, undefined);
@@ -992,17 +1015,20 @@
 
   QUnit.test('save with `wait` succeeds without `validate`', function(assert) {
     assert.expect(1);
-    var model = new Skeletor.Model();
+    const model = new Skeletor.Model();
+    sinon.spy(model, 'sync');
     model.url = '/test';
     model.save({x: 1}, {wait: true});
-    assert.ok(this.syncArgs.model === model);
+    const syncArgs = model.sync.lastCall.args;
+    assert.ok(syncArgs[1] === model);
+    model.sync.restore();
   });
 
   QUnit.test("save without `wait` doesn't set invalid attributes", function(assert) {
     var model = new Skeletor.Model();
     model.validate = function() { return 1; };
     model.save({a: 1});
-    assert.equal(model.get('a'), void 0);
+    assert.equal(model.get('a'), undefined);
   });
 
   QUnit.test("save doesn't validate twice", function(assert) {
@@ -1037,25 +1063,26 @@
     model.url = '/test';
     model.on('change:x', function() { changed++; });
     model.save({x: 3}, {wait: true});
-    assert.deepEqual(JSON.parse(this.ajaxSettings.data), {x: 3, y: 2});
+    const ajaxSettings = window.fetch.lastCall.args[0];
+    assert.deepEqual(JSON.parse(ajaxSettings.data), {x: 3, y: 2});
     assert.equal(model.get('x'), 1);
     assert.equal(changed, 0);
-    this.syncArgs.options.success({});
+    ajaxSettings.success({});
     assert.equal(model.get('x'), 3);
     assert.equal(changed, 1);
   });
 
   QUnit.test("a failed `save` with `wait` doesn't leave attributes behind", function(assert) {
     assert.expect(1);
-    var model = new Skeletor.Model();
+    const model = new Skeletor.Model();
     model.url = '/test';
     model.save({x: 1}, {wait: true});
-    assert.equal(model.get('x'), void 0);
+    assert.equal(model.get('x'), undefined);
   });
 
   QUnit.test('#1030 - `save` with `wait` results in correct attributes if success is called during sync', function(assert) {
     assert.expect(2);
-    var model = new Skeletor.Model({x: 1, y: 2});
+    const model = new Skeletor.Model({x: 1, y: 2});
     model.sync = function(method, m, options) {
       options.success();
     };
@@ -1065,14 +1092,14 @@
   });
 
   QUnit.test('save with wait validates attributes', function(assert) {
-    var model = new Skeletor.Model();
+    const model = new Skeletor.Model();
     model.url = '/test';
     model.validate = function() { assert.ok(true); };
     model.save({x: 1}, {wait: true});
   });
 
   QUnit.test('save turns on parse flag', function(assert) {
-    var Model = Skeletor.Model.extend({
+    const Model = Skeletor.Model.extend({
       sync: function(method, m, options) { assert.ok(options.parse); }
     });
     new Model().save();
@@ -1080,8 +1107,8 @@
 
   QUnit.test("nested `set` during `'change:attr'`", function(assert) {
     assert.expect(2);
-    var events = [];
-    var model = new Skeletor.Model();
+    let events = [];
+    const model = new Skeletor.Model();
     model.on('all', function(event) { events.push(event); });
     model.on('change', function() {
       model.set({z: true}, {silent: true});
@@ -1098,7 +1125,7 @@
 
   QUnit.test('nested `change` only fires once', function(assert) {
     assert.expect(1);
-    var model = new Skeletor.Model();
+    const model = new Skeletor.Model();
     model.on('change', function() {
       assert.ok(true);
       model.set({x: true});
@@ -1108,8 +1135,8 @@
 
   QUnit.test("nested `set` during `'change'`", function(assert) {
     assert.expect(6);
-    var count = 0;
-    var model = new Skeletor.Model();
+    let count = 0;
+    const model = new Skeletor.Model();
     model.on('change', function() {
       switch (count++) {
         case 0:
@@ -1135,8 +1162,8 @@
 
   QUnit.test('nested `change` with silent', function(assert) {
     assert.expect(3);
-    var count = 0;
-    var model = new Skeletor.Model();
+    let count = 0;
+    const model = new Skeletor.Model();
     model.on('change:y', function() { assert.ok(false); });
     model.on('change', function() {
       switch (count++) {
@@ -1161,7 +1188,7 @@
 
   QUnit.test('nested `change:attr` with silent', function(assert) {
     assert.expect(0);
-    var model = new Skeletor.Model();
+    const model = new Skeletor.Model();
     model.on('change:y', function(){ assert.ok(false); });
     model.on('change', function() {
       model.set({y: true}, {silent: true});
@@ -1172,7 +1199,7 @@
 
   QUnit.test('multiple nested changes with silent', function(assert) {
     assert.expect(1);
-    var model = new Skeletor.Model();
+    const model = new Skeletor.Model();
     model.on('change:x', function() {
       model.set({y: 1}, {silent: true});
       model.set({y: 2});
@@ -1185,8 +1212,8 @@
 
   QUnit.test('multiple nested changes with silent', function(assert) {
     assert.expect(1);
-    var changes = [];
-    var model = new Skeletor.Model();
+    const changes = [];
+    const model = new Skeletor.Model();
     model.on('change:b', function(m, val) { changes.push(val); });
     model.on('change', function() {
       model.set({b: 1});
@@ -1197,7 +1224,7 @@
 
   QUnit.test('basic silent change semantics', function(assert) {
     assert.expect(1);
-    var model = new Skeletor.Model();
+    const model = new Skeletor.Model();
     model.set({x: 1});
     model.on('change', function(){ assert.ok(true); });
     model.set({x: 2}, {silent: true});
@@ -1206,7 +1233,7 @@
 
   QUnit.test('nested set multiple times', function(assert) {
     assert.expect(1);
-    var model = new Skeletor.Model();
+    const model = new Skeletor.Model();
     model.on('change:b', function() {
       assert.ok(true);
     });
@@ -1219,24 +1246,24 @@
 
   QUnit.test('#1122 - clear does not alter options.', function(assert) {
     assert.expect(1);
-    var model = new Skeletor.Model();
-    var options = {};
+    const model = new Skeletor.Model();
+    const options = {};
     model.clear(options);
     assert.ok(!options.unset);
   });
 
   QUnit.test('#1122 - unset does not alter options.', function(assert) {
     assert.expect(1);
-    var model = new Skeletor.Model();
-    var options = {};
+    const model = new Skeletor.Model();
+    const options = {};
     model.unset('x', options);
     assert.ok(!options.unset);
   });
 
   QUnit.test('#1355 - `options` is passed to success callbacks', function(assert) {
     assert.expect(3);
-    var model = new Skeletor.Model();
-    var opts = {
+    const model = new Skeletor.Model();
+    const opts = {
       success: function( m, resp, options ) {
         assert.ok(options);
       }
@@ -1251,7 +1278,7 @@
 
   QUnit.test("#1412 - Trigger 'sync' event.", function(assert) {
     assert.expect(3);
-    var model = new Skeletor.Model({id: 1});
+    const model = new Skeletor.Model({id: 1});
     model.sync = function(method, m, options) { options.success(); };
     model.on('sync', function(){ assert.ok(true); });
     model.fetch();
@@ -1260,7 +1287,7 @@
   });
 
   QUnit.test('#1365 - Destroy: New models execute success callback.', function(assert) {
-    var done = assert.async();
+    const done = assert.async();
     assert.expect(2);
     new Skeletor.Model()
     .on('sync', function() { assert.ok(false); })
@@ -1303,9 +1330,9 @@
   });
 
   QUnit.test('#1478 - Model `save` does not trigger change on unchanged attributes', function(assert) {
-    var done = assert.async();
+    const done = assert.async();
     assert.expect(0);
-    var Model = Skeletor.Model.extend({
+    const Model = Skeletor.Model.extend({
       sync: function(method, m, options) {
         setTimeout(function(){
           options.success();
@@ -1320,7 +1347,7 @@
 
   QUnit.test('#1664 - Changing from one value, silently to another, back to original triggers a change.', function(assert) {
     assert.expect(1);
-    var model = new Skeletor.Model({x: 1});
+    const model = new Skeletor.Model({x: 1});
     model.on('change:x', function() { assert.ok(true); });
     model.set({x: 2}, {silent: true});
     model.set({x: 3}, {silent: true});
@@ -1329,8 +1356,8 @@
 
   QUnit.test('#1664 - multiple silent changes nested inside a change event', function(assert) {
     assert.expect(2);
-    var changes = [];
-    var model = new Skeletor.Model();
+    const changes = [];
+    const model = new Skeletor.Model();
     model.on('change', function() {
       model.set({a: 'c'}, {silent: true});
       model.set({b: 2}, {silent: true});
@@ -1352,8 +1379,8 @@
 
   QUnit.test('silent changes in last `change` event back to original triggers change', function(assert) {
     assert.expect(2);
-    var changes = [];
-    var model = new Skeletor.Model();
+    const changes = [];
+    const model = new Skeletor.Model();
     model.on('change:a change:b change:c', function(m, val) { changes.push(val); });
     model.on('change', function() {
       model.set({a: 'c'}, {silent: true});
@@ -1365,14 +1392,14 @@
   });
 
   QUnit.test('#1943 change calculations should use _.isEqual', function(assert) {
-    var model = new Skeletor.Model({a: {key: 'value'}});
+    const model = new Skeletor.Model({a: {key: 'value'}});
     model.set('a', {key: 'value'}, {silent: true});
     assert.equal(model.changedAttributes(), false);
   });
 
   QUnit.test('#1964 - final `change` event is always fired, regardless of interim changes', function(assert) {
     assert.expect(1);
-    var model = new Skeletor.Model();
+    const model = new Skeletor.Model();
     model.on('change:property', function() {
       model.set('property', 'bar');
     });
@@ -1383,7 +1410,7 @@
   });
 
   QUnit.test('isValid', function(assert) {
-    var model = new Skeletor.Model({valid: true});
+    const model = new Skeletor.Model({valid: true});
     model.validate = function(attrs) {
       if (!attrs.valid) return 'invalid';
     };
@@ -1402,13 +1429,13 @@
       }
     });
 
-    var model1 = new Skeletor.Model({
+    const model1 = new Skeletor.Model({
       a: {b: 2}, c: 3
     });
-    var model2 = new Skeletor.Model({
+    const model2 = new Skeletor.Model({
       a: {b: 2}, c: 3
     });
-    var model3 = new Skeletor.Model({
+    const model3 = new Skeletor.Model({
       a: {b: 4}, c: 3
     });
 
@@ -1419,7 +1446,7 @@
 
   QUnit.test('#1179 - isValid returns true in the absence of validate.', function(assert) {
     assert.expect(1);
-    var model = new Skeletor.Model();
+    const model = new Skeletor.Model();
     model.validate = null;
     assert.ok(model.isValid());
   });
@@ -1436,20 +1463,20 @@
 
   QUnit.test('toJSON receives attrs during save(..., {wait: true})', function(assert) {
     assert.expect(1);
-    var Model = Skeletor.Model.extend({
+    const Model = Skeletor.Model.extend({
       url: '/test',
       toJSON: function() {
         assert.strictEqual(this.attributes.x, 1);
         return _.clone(this.attributes);
       }
     });
-    var model = new Model;
+    const model = new Model();
     model.save({x: 1}, {wait: true});
   });
 
   QUnit.test('#2034 - nested set with silent only triggers one change', function(assert) {
     assert.expect(1);
-    var model = new Skeletor.Model();
+    const model = new Skeletor.Model();
     model.on('change', function() {
       model.set({b: true}, {silent: true});
       assert.ok(true);
@@ -1459,7 +1486,7 @@
 
   QUnit.test('#3778 - id will only be updated if it is set', function(assert) {
     assert.expect(2);
-    var model = new Skeletor.Model({id: 1});
+    const model = new Skeletor.Model({id: 1});
     model.id = 2;
     model.set({foo: 'bar'});
     assert.equal(model.id, 2);

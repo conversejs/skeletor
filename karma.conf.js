@@ -20,7 +20,7 @@ module.exports = function(config) {
         'test/router.js',
         'test/sync.js',
         'test/view.js',
-        'test/collection.js'
+        'test/collection.js',
     ],
 
     // list of files to exclude
