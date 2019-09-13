@@ -1,20 +1,34 @@
-// Note some browser launchers should be installed before using karma start.
-// For example:
-// npm install karma-firefox-launcher
-// karma start --browsers=Firefox
+/* global module */
 module.exports = function(config) {
   config.set({
+    // base path that will be used to resolve all patterns (eg. files, exclude)
     basePath: '',
+    // frameworks to use
+    // available frameworks: https://npmjs.org/browse/keyword/karma-adapter
     frameworks: ['qunit'],
 
     // list of files / patterns to load in the browser
     files: [
         'node_modules/lodash/lodash.js',
+        'node_modules/sinon/pkg/sinon.js',
         'test/vendor/json2.js',
         'dist/skeletor.js',
-        'test/setup/*.js',
-        'test/*.js'
+        'test/setup/dom-setup.js',
+        'test/model.js',
+        'test/events.js',
+        'test/noconflict.js',
+        'test/router.js',
+        'test/sync.js',
+        'test/view.js',
+        'test/collection.js'
     ],
+
+    // list of files to exclude
+    exclude: [],
+
+    // preprocess matching files before serving them to the browser
+    // available preprocessors: https://npmjs.org/browse/keyword/karma-preprocessor
+    preprocessors: {},
 
     // test results reporter to use
     // possible values: 'dots', 'progress'
@@ -22,7 +36,7 @@ module.exports = function(config) {
     reporters: ['progress'],
 
     // web server port
-    port: 9877,
+    port: 9876,
 
     // enable / disable colors in the output (reporters and logs)
     colors: true,
@@ -32,7 +46,7 @@ module.exports = function(config) {
     logLevel: config.LOG_INFO,
 
     // enable / disable watching file and executing tests whenever any file changes
-    autoWatch: false,
+    autoWatch: true,
 
     // start these browsers
     // available browser launchers: https://npmjs.org/browse/keyword/karma-launcher
@@ -40,14 +54,10 @@ module.exports = function(config) {
 
     // Continuous Integration mode
     // if true, Karma captures browsers, runs the tests and exits
-    singleRun: true,
+    singleRun: false,
 
-    // See http://stackoverflow.com/a/27873086/1517919
-    customLaunchers: {
-        Chrome_sandbox: {
-            base: 'Chrome',
-            flags: ['--no-sandbox']
-        }
-    }
-  });
-};
+    // Concurrency level
+    // how many browser should be started simultaneous
+    concurrency: Infinity
+  })
+}

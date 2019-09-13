@@ -313,7 +313,7 @@
 
   QUnit.test('set triggers changes in the correct order', function(assert) {
     var value = null;
-    var model = new Skeletor.Model;
+    var model = new Skeletor.Model();
     model.on('last', function(){ value = 'last'; });
     model.on('first', function(){ value = 'first'; });
     model.trigger('first');
@@ -745,7 +745,7 @@
     assert.equal(this.syncArgs.method, 'delete');
     assert.ok(_.isEqual(this.syncArgs.model, doc));
 
-    var newModel = new Skeletor.Model;
+    var newModel = new Skeletor.Model();
     assert.equal(newModel.destroy(), false);
   });
 
@@ -911,7 +911,7 @@
 
   QUnit.test('#582, #425, change:attribute callbacks should fire after all changes have occurred', function(assert) {
     assert.expect(9);
-    var model = new Skeletor.Model;
+    var model = new Skeletor.Model();
 
     var assertion = function() {
       assert.equal(model.get('a'), 'a');
@@ -979,7 +979,7 @@
 
   QUnit.test('hasChanged gets cleared on the following set', function(assert) {
     assert.expect(4);
-    var model = new Skeletor.Model;
+    var model = new Skeletor.Model();
     model.set({x: 1});
     assert.ok(model.hasChanged());
     model.set({x: 1});
@@ -1047,7 +1047,7 @@
 
   QUnit.test("a failed `save` with `wait` doesn't leave attributes behind", function(assert) {
     assert.expect(1);
-    var model = new Skeletor.Model;
+    var model = new Skeletor.Model();
     model.url = '/test';
     model.save({x: 1}, {wait: true});
     assert.equal(model.get('x'), void 0);
@@ -1197,7 +1197,7 @@
 
   QUnit.test('basic silent change semantics', function(assert) {
     assert.expect(1);
-    var model = new Skeletor.Model;
+    var model = new Skeletor.Model();
     model.set({x: 1});
     model.on('change', function(){ assert.ok(true); });
     model.set({x: 2}, {silent: true});
@@ -1273,7 +1273,7 @@
 
   QUnit.test('#1433 - Save: An invalid model cannot be persisted.', function(assert) {
     assert.expect(1);
-    var model = new Skeletor.Model;
+    var model = new Skeletor.Model();
     model.validate = function(){ return 'invalid'; };
     model.sync = function(){ assert.ok(false); };
     assert.strictEqual(model.save(), false);
