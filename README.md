@@ -1,35 +1,29 @@
 # Skeletor
 
+[![XMPP Chat](https://inverse.chat/badge.svg?room=discuss@conference.conversejs.org)](https://inverse.chat/#converse/room?jid=discuss@conference.conversejs.org)
+[![Travis](https://api.travis-ci.org/skeletorjs/skeletor.png?branch=master)](https://travis-ci.org/skeletorjs/skeletor)
+
 ![](https://raw.githubusercontent.com/skeletorjs/skeletor/master/images/skeletor2.jpg)
 
+Skeletor is a work-in-progress [Backbone](http://backbonejs.org) fork.
+Your contributions are welcome and appreciated.
 
-Skeletor is a Backbone fork
+It adds the following changes:
 
-Backbone supplies structure to JavaScript-heavy applications by providing models with key-value binding and custom events, collections with a rich API of enumerable functions, views with declarative event handling, and connects it all to your existing application over a RESTful JSON interface.
+* Replaces [underscore](http://underscorejs.org) with [lodash](https://lodash.com)
+* Drop support for older browsers (including IE) and uses ES6+ language features
+* Splits models, views and collections into separate modules
 
-For Docs, License, Tests, pre-packed downloads, and everything else, really, see:
-http://backbonejs.org
+We also aim to do the following:
 
-To suggest a feature or report a bug:
-https://github.com/jashkenas/backbone/issues
+* Allow for tree-shaking by importing only the necessary lodash methods
+* Use the native browser API instead of lodash whereever possible
 
-For questions on working with Backbone or general discussions:
-https://groups.google.com/forum/#!forum/backbonejs,
-http://stackoverflow.com/questions/tagged/backbone.js, or
-https://gitter.im/jashkenas/backbone
+More speculatively:
 
-Backbone is an open-sourced component of DocumentCloud:
-https://github.com/documentcloud
-
-Many thanks to our contributors:
-https://github.com/jashkenas/backbone/graphs/contributors
-
-Special thanks to Robert Kieffer for the original philosophy behind Backbone.
-https://github.com/broofa
+* Update Views to be Web Components
 
 ![](https://raw.githubusercontent.com/skeletorjs/skeletor/master/images/skeletor.jpg)
-
-## Changes from Backbone
 
 ### Changes due to using Lodash instead of Underscore
 
