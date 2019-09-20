@@ -440,7 +440,7 @@
     };
 
     const obj = _.extend({}, Skeletor.Events);
-    obj.on('event', function() { this.assertTrue(); }, new TestClass);
+    obj.on('event', function() { this.assertTrue(); }, new TestClass());
     obj.trigger('event');
   });
 
