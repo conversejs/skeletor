@@ -3,16 +3,19 @@
 [![XMPP Chat](https://inverse.chat/badge.svg?room=discuss@conference.conversejs.org)](https://inverse.chat/#converse/room?jid=discuss@conference.conversejs.org)
 [![Travis](https://api.travis-ci.org/skeletorjs/skeletor.png?branch=master)](https://travis-ci.org/skeletorjs/skeletor)
 
-![](https://raw.githubusercontent.com/skeletorjs/skeletor/master/images/skeletor2.jpg)
 
 Skeletor is a work-in-progress [Backbone](http://backbonejs.org) fork.
 Your contributions are welcome and appreciated.
 
-It adds the following changes:
+![](https://raw.githubusercontent.com/skeletorjs/skeletor/master/images/skeletor2.jpg)
 
+## Sekeletor adds the following changes to Backbone
+
+* Removes the dependency on jQuery
 * Replaces [underscore](http://underscorejs.org) with [lodash](https://lodash.com)
-* Drop support for older browsers (including IE) and uses ES6+ language features
+* Drops support for older browsers (including IE) and uses ES6+ language features
 * Splits models, views and collections into separate modules
+* Returns promises for all asynchronous operations
 
 We also aim to do the following:
 
