@@ -2,6 +2,7 @@
   "name": "skeletor",
   "description": "",
   "url": "https://github.com/skeletorjs/skeletor",
+  "browser": "dist/skeletor.js",
   "keywords": [
     "model",
     "view",
@@ -47,6 +48,8 @@
     "url": "https://github.com/skeletorjs/skeletor.git"
   },
   "files": [
-    "LICENSE"
+    "LICENSE",
+    "dist/",
+    "src/"
   ]
 }
