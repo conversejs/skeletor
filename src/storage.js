@@ -17,7 +17,7 @@ function guid() {
 }
 
 
-class BrowserStorage {
+class Storage {
 
     constructor (name, type) {
         if (type === 'local' && !window.localStorage ) {
@@ -209,6 +209,6 @@ class BrowserStorage {
     }
 }
 
-BrowserStorage.sessionStorageInitialized = localForage.defineDriver(sessionStorageWrapper);
-BrowserStorage.localForage = localForage;
-export default BrowserStorage;
+Storage.sessionStorageInitialized = localForage.defineDriver(sessionStorageWrapper);
+Storage.localForage = localForage;
+export default Storage;
