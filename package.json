@@ -20,7 +20,6 @@
     "lodash": "^4.17.14"
   },
   "devDependencies": {
-    "docco": "0.8.0",
     "eslint": "^6.5.1",
     "eslint-plugin-lodash": "^6.0.0",
     "karma": "^4.3.0",
@@ -37,10 +36,9 @@
     "test": "karma start && npm run lint",
     "dev": "karma start --single-run=false",
     "build": "rollup -c",
-    "doc": "docco src/*.js && docco examples/todos/todos.js examples/backbone.localStorage.js",
     "lint": "eslint src/*.js test/*.js"
   },
-  "module": "src/skeletor.js",
+  "module": "src/main.js",
   "version": "0.0.1",
   "license": "MIT",
   "repository": {

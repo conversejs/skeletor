@@ -12,7 +12,7 @@
 // belonging to this particular author, and so on. Collections maintain
 // indexes of their models, both in order, and for lookup by `id`.
 
-import { addMethodsToObject, extend, sync, urlError, wrapError } from './helpers.js';
+import { addMethodsToObject, extend, getSyncMethod, urlError, wrapError } from './helpers.js';
 import { Events } from './events.js';
 import { Model } from './model.js';
 import _ from 'lodash';
@@ -73,8 +73,8 @@ _.extend(Collection.prototype, Events, {
   },
 
   // Proxy `Backbone.sync` by default.
-  sync: function() {
-    return sync.apply(this, arguments);
+  sync: function(method, model, options) {
+    return getSyncMethod(this)(method, model, options);
   },
 
   // Add a model, or list of models to the set. `models` may be Backbone

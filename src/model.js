@@ -12,7 +12,7 @@
 // Create a new model with the specified attributes. A client id (`cid`)
 // is automatically generated and assigned for you.
 
-import { addMethodsToObject, extend, sync, urlError, wrapError } from './helpers.js';
+import { addMethodsToObject, extend, getSyncMethod, urlError, wrapError } from './helpers.js';
 import { Events } from './events.js';
 import _ from 'lodash';
 
@@ -66,8 +66,8 @@ _.extend(Model.prototype, Events, {
 
   // Proxy `Backbone.sync` by default -- but override this if you need
   // custom syncing semantics for *this* particular model.
-  sync: function() {
-    return sync.apply(this, arguments);
+  sync: function(method, model, options) {
+    return getSyncMethod(this)(method, model, options);
   },
 
   // Get the value of an attribute.

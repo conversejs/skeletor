@@ -60,6 +60,11 @@ const methodMap = {
     read: 'GET'
 };
 
+export function getSyncMethod(model) {
+    const store = _.result(model, 'browserStorage') || _.result(model.collection, 'browserStorage');
+    return store ? store.sync : sync;
+}
+
 // sync
 // ----
 
