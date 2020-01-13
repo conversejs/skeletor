@@ -62,7 +62,7 @@ const methodMap = {
 
 export function getSyncMethod(model) {
     const store = _.result(model, 'browserStorage') || _.result(model.collection, 'browserStorage');
-    return store ? store.sync : sync;
+    return store ? store.sync() : sync;
 }
 
 // sync
