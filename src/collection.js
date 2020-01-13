@@ -216,6 +216,21 @@ _.extend(Collection.prototype, Events, {
     return singular ? models[0] : models;
   },
 
+  clearStore: async function(options={}) {
+      await Promise.all(Array.from(this.models).map(m => {
+          return new Promise(
+              resolve => {
+                  m.destroy(Object.assign(options, {
+                      'success': resolve,
+                      'error': (m, e) => { log.error(e); resolve() }
+                  }));
+              }
+          );
+      }));
+      await this.browserStorage.clear();
+      this.reset();
+  },
+
   // When you have more items than you want to add or remove individually,
   // you can reset the entire set with a new list of models, without firing
   // any granular `add` or `remove` events. Fires `reset` when finished.
