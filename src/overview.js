@@ -1,7 +1,6 @@
 /*!
  * Copyright (c) JC Brand <jc@opkode.com>
  */
-import { View } from "./view";
 import  {
    chain, includes, debounce, detect,
    difference, drop, each,
@@ -17,6 +16,7 @@ import  {
    some, sortBy, tail,
    take, toArray, without
 } from 'lodash';
+import { View } from "./view";
 
 
 const Overview = function (options) {

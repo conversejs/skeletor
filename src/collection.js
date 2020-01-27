@@ -222,7 +222,7 @@ _.extend(Collection.prototype, Events, {
               resolve => {
                   m.destroy(Object.assign(options, {
                       'success': resolve,
-                      'error': (m, e) => { log.error(e); resolve() }
+                      'error': (m, e) => { console.error(e); resolve() }
                   }));
               }
           );
