@@ -42,7 +42,7 @@
     "window-or-global": "^1.0.1"
   },
   "scripts": {
-    "test": "karma start && npm run lint",
+    "test": "karma start && karma start karma.mocha.conf && npm run lint",
     "dev": "karma start --single-run=false",
     "build": "rollup -c",
     "lint": "eslint src/*.js test/*.js"
