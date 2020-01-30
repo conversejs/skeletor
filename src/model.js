@@ -12,7 +12,7 @@
 // Create a new model with the specified attributes. A client id (`cid`)
 // is automatically generated and assigned for you.
 
-import { addMethodsToObject, extend, getSyncMethod, urlError, wrapError } from './helpers.js';
+import { addMethodsToObject, inherits, getSyncMethod, urlError, wrapError } from './helpers.js';
 import { Events } from './events.js';
 import _ from 'lodash';
 
@@ -32,7 +32,7 @@ export const Model = function(attributes, options) {
   this.initialize.apply(this, arguments);
 };
 
-Model.extend = extend;
+Model.extend = inherits;
 
 // Attach all inheritable methods to the Model prototype.
 _.extend(Model.prototype, Events, {

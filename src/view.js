@@ -13,9 +13,10 @@
 // having to worry about render order ... and makes it easy for the view to
 // react to specific changes in the state of your models.
 
-import { addMethodsToObject, extend, sync, urlError, wrapError } from './helpers.js';
 import { Events } from './events.js';
-import _ from 'lodash';
+import { addMethodsToObject, inherits, sync, urlError, wrapError } from './helpers.js';
+import { isFunction, extend, isElement, pick, result, uniqueId } from "lodash";
+import { render} from 'lit-html';
 
 const paddedLt = /^\s*</;
 
@@ -47,15 +48,15 @@ const matchesSelector = ElementProto.matches ||
 // Creating a View creates its initial element outside of the DOM,
 // if an existing element is not provided...
 export const View = function(options) {
-  this.cid = _.uniqueId('view');
+  this.cid = uniqueId('view');
   this._domEvents = [];
   this.preinitialize.apply(this, arguments);
-  _.extend(this, _.pick(options, viewOptions));
+  extend(this, pick(options, viewOptions));
   this._ensureElement();
   this.initialize.apply(this, arguments);
 };
 
-View.extend = extend;
+View.extend = inherits;
 
 // Cached regex to split keys for `delegate`.
 var delegateEventSplitter = /^(\S+)\s*(.*)$/;
@@ -64,7 +65,7 @@ var delegateEventSplitter = /^(\S+)\s*(.*)$/;
 var viewOptions = ['model', 'collection', 'el', 'id', 'attributes', 'className', 'tagName', 'events'];
 
 // Set up all inheritable **View** properties and methods.
-_.extend(View.prototype, Events, {
+extend(View.prototype, Events, {
 
   // The default `tagName` of a View's element is `"div"`.
   tagName: 'div',
@@ -85,6 +86,9 @@ _.extend(View.prototype, Events, {
   // to populate its element (`this.el`), with the appropriate HTML. The
   // convention is for **render** to always return `this`.
   render: function() {
+    isFunction(this.beforeRender) && this.beforeRender();
+    isFunction(this.toHTML) && render(this.toHTML(), this.el);
+    isFunction(this.afterRender) && this.afterRender();
     return this;
   },
 
@@ -125,7 +129,7 @@ _.extend(View.prototype, Events, {
       } else {
         this.el = document.querySelector(element);
       }
-    } else if (element && !_.isElement(element) && element.length) {
+    } else if (element && !isElement(element) && element.length) {
       this.el = element[0];
     } else {
       this.el = element;
@@ -146,12 +150,12 @@ _.extend(View.prototype, Events, {
   // Uses event delegation for efficiency.
   // Omitting the selector binds the event to `this.el`.
   delegateEvents: function(events) {
-    events || (events = _.result(this, 'events'));
+    events || (events = result(this, 'events'));
     if (!events) return this;
     this.undelegateEvents();
     for (var key in events) {
       var method = events[key];
-      if (!_.isFunction(method)) method = this[method];
+      if (!isFunction(method)) method = this[method];
       if (!method) continue;
       var match = key.match(delegateEventSplitter);
       this.delegate(match[1], match[2], method.bind(this));
@@ -254,13 +258,13 @@ _.extend(View.prototype, Events, {
   // an element from the `id`, `className` and `tagName` properties.
   _ensureElement: function() {
     if (!this.el) {
-      var attrs = _.extend({}, _.result(this, 'attributes'));
-      if (this.id) attrs.id = _.result(this, 'id');
-      if (this.className) attrs['class'] = _.result(this, 'className');
-      this.setElement(this._createElement(_.result(this, 'tagName')));
+      var attrs = extend({}, result(this, 'attributes'));
+      if (this.id) attrs.id = result(this, 'id');
+      if (this.className) attrs['class'] = result(this, 'className');
+      this.setElement(this._createElement(result(this, 'tagName')));
       this._setAttributes(attrs);
     } else {
-      this.setElement(_.result(this, 'el'));
+      this.setElement(result(this, 'el'));
     }
   },
 

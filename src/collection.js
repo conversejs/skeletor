@@ -12,7 +12,7 @@
 // belonging to this particular author, and so on. Collections maintain
 // indexes of their models, both in order, and for lookup by `id`.
 
-import { addMethodsToObject, extend, getSyncMethod, urlError, wrapError } from './helpers.js';
+import { addMethodsToObject, inherits, getSyncMethod, urlError, wrapError } from './helpers.js';
 import { Events } from './events.js';
 import { Model } from './model.js';
 import _ from 'lodash';
@@ -32,7 +32,7 @@ export const Collection = function(models, options) {
   if (models) this.reset(models, _.extend({silent: true}, options));
 };
 
-Collection.extend = extend;
+Collection.extend = inherits;
 
 
 // Default options for `Collection#set`.

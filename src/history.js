@@ -4,7 +4,7 @@
 
 import { Events } from './events.js';
 import _ from 'lodash';
-import { extend } from './helpers.js';
+import { inherits } from './helpers.js';
 
 // History
 // -------
@@ -25,7 +25,7 @@ const History = function() {
   }
 };
 
-History.extend = extend;
+History.extend = inherits;
 
 // Cached regex for stripping a leading hash/slash and trailing space.
 const routeStripper = /^[#\/]|\s+$/g;

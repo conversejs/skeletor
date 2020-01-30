@@ -8,7 +8,7 @@
 import { Events } from './events.js';
 import History from './history.js';
 import _ from 'lodash';
-import { extend } from './helpers.js';
+import { inherits } from './helpers.js';
 
 // Routers map faux-URLs to actions, and fire events when routes are
 // matched. Creating a new one sets its `routes` hash, if not set statically.
@@ -20,7 +20,7 @@ export const Router = function(options={}) {
   this.initialize.apply(this, arguments);
 };
 
-Router.extend = extend;
+Router.extend = inherits;
 
 // Cached regular expressions for matching named param parts and splatted
 // parts of route strings.

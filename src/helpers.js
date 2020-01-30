@@ -9,7 +9,7 @@ import _ from 'lodash';
 // Similar to `goog.inherits`, but uses a hash of prototype properties and
 // class properties to be extended.
 //
-export function extend(protoProps, staticProps) {
+export function inherits(protoProps, staticProps) {
     var parent = this;
     var child;
 
