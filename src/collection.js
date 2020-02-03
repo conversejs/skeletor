@@ -12,7 +12,7 @@
 // belonging to this particular author, and so on. Collections maintain
 // indexes of their models, both in order, and for lookup by `id`.
 
-import { addMethodsToObject, inherits, getSyncMethod, urlError, wrapError } from './helpers.js';
+import { addMethodsToObject, inherits, getResolveablePromise, getSyncMethod, urlError, wrapError } from './helpers.js';
 import { Events } from './events.js';
 import { Model } from './model.js';
 import _ from 'lodash';
@@ -354,18 +354,32 @@ _.extend(Collection.prototype, Events, {
   // wait for the server to agree.
   create: function(model, options) {
     options = options ? _.clone(options) : {};
-    var wait = options.wait;
+    const wait = options.wait;
+    const return_promise = options.promise;
+    const promise = return_promise && getResolveablePromise();
+
     model = this._prepareModel(model, options);
     if (!model) return false;
     if (!wait) this.add(model, options);
-    var collection = this;
-    var success = options.success;
+    const collection = this;
+    const success = options.success;
     options.success = function(m, resp, callbackOpts) {
-      if (wait) collection.add(m, callbackOpts);
-      if (success) success.call(callbackOpts.context, m, resp, callbackOpts);
+      if (wait) {
+        collection.add(m, callbackOpts);
+      }
+      if (success) {
+        success.call(callbackOpts.context, m, resp, callbackOpts);
+      }
+      if (return_promise) {
+        promise.resolve(m);
+      }
     };
     model.save(null, options);
-    return model;
+    if (return_promise) {
+      return promise;
+    } else {
+      return model;
+    }
   },
 
   // **parse** converts a response into a list of models to be added to the
