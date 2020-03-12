@@ -14,19 +14,19 @@
 
 import { addMethodsToObject, inherits, getResolveablePromise, getSyncMethod, urlError, wrapError } from './helpers.js';
 import { Events } from './events.js';
-import _ from 'lodash';
+import { clone, defaults, defer, escape, extend, has, isEmpty, isEqual, iteratee, result, uniqueId} from 'lodash';
 
 
 export const Model = function(attributes, options) {
   let attrs = attributes || {};
   options || (options = {});
   this.preinitialize.apply(this, arguments);
-  this.cid = _.uniqueId(this.cidPrefix);
+  this.cid = uniqueId(this.cidPrefix);
   this.attributes = {};
   if (options.collection) this.collection = options.collection;
   if (options.parse) attrs = this.parse(attrs, options) || {};
-  const defaults = _.result(this, 'defaults');
-  attrs = _.defaults(_.extend({}, defaults, attrs), defaults);
+  const default_attrs = result(this, 'defaults');
+  attrs = defaults(extend({}, default_attrs, attrs), default_attrs);
   this.set(attrs, options);
   this.changed = {};
   this.initialize.apply(this, arguments);
@@ -35,7 +35,7 @@ export const Model = function(attributes, options) {
 Model.extend = inherits;
 
 // Attach all inheritable methods to the Model prototype.
-_.extend(Model.prototype, Events, {
+extend(Model.prototype, Events, {
 
   // A hash of attributes whose current and previous value differ.
   changed: null,
@@ -61,7 +61,7 @@ _.extend(Model.prototype, Events, {
 
   // Return a copy of the model's `attributes` object.
   toJSON: function(options) {
-    return _.clone(this.attributes);
+    return clone(this.attributes);
   },
 
   // Proxy `Backbone.sync` by default -- but override this if you need
@@ -77,7 +77,7 @@ _.extend(Model.prototype, Events, {
 
   // Get the HTML-escaped value of an attribute.
   escape: function(attr) {
-    return _.escape(this.get(attr));
+    return escape(this.get(attr));
   },
 
   // Returns `true` if the attribute contains a value that is not null
@@ -86,9 +86,9 @@ _.extend(Model.prototype, Events, {
     return this.get(attr) != null;
   },
 
-  // Special-cased proxy to lodash's `_.matches` method.
+  // Special-cased proxy to lodash's `matches` method.
   matches: function(attrs) {
-    return !!_.iteratee(attrs, this)(this.attributes);
+    return !!iteratee(attrs, this)(this.attributes);
   },
 
   // Set a hash of model attributes on the object, firing `"change"`. This is
@@ -119,7 +119,7 @@ _.extend(Model.prototype, Events, {
     this._changing = true;
 
     if (!changing) {
-      this._previousAttributes = _.clone(this.attributes);
+      this._previousAttributes = clone(this.attributes);
       this.changed = {};
     }
 
@@ -130,8 +130,8 @@ _.extend(Model.prototype, Events, {
     // For each `set` attribute, update or delete the current value.
     for (const attr in attrs) {
       val = attrs[attr];
-      if (!_.isEqual(current[attr], val)) changes.push(attr);
-      if (!_.isEqual(prev[attr], val)) {
+      if (!isEqual(current[attr], val)) changes.push(attr);
+      if (!isEqual(prev[attr], val)) {
         changed[attr] = val;
       } else {
         delete changed[attr];
@@ -168,21 +168,21 @@ _.extend(Model.prototype, Events, {
   // Remove an attribute from the model, firing `"change"`. `unset` is a noop
   // if the attribute doesn't exist.
   unset: function(attr, options) {
-    return this.set(attr, undefined, _.extend({}, options, {unset: true}));
+    return this.set(attr, undefined, extend({}, options, {unset: true}));
   },
 
   // Clear all attributes on the model, firing `"change"`.
   clear: function(options) {
     const attrs = {};
     for (const key in this.attributes) attrs[key] = undefined;
-    return this.set(attrs, _.extend({}, options, {unset: true}));
+    return this.set(attrs, extend({}, options, {unset: true}));
   },
 
   // Determine if the model has changed since the last `"change"` event.
   // If you specify an attribute name, determine if that attribute has changed.
   hasChanged: function(attr) {
-    if (attr == null) return !_.isEmpty(this.changed);
-    return _.has(this.changed, attr);
+    if (attr == null) return !isEmpty(this.changed);
+    return has(this.changed, attr);
   },
 
   // Return an object containing all the attributes that have changed, or
@@ -192,13 +192,13 @@ _.extend(Model.prototype, Events, {
   // You can also pass an attributes object to diff against the model,
   // determining if there *would be* a change.
   changedAttributes: function(diff) {
-    if (!diff) return this.hasChanged() ? _.clone(this.changed) : false;
+    if (!diff) return this.hasChanged() ? clone(this.changed) : false;
     const old = this._changing ? this._previousAttributes : this.attributes;
     const changed = {};
     let hasChanged;
     for (const attr in diff) {
       const val = diff[attr];
-      if (_.isEqual(old[attr], val)) continue;
+      if (isEqual(old[attr], val)) continue;
       changed[attr] = val;
       hasChanged = true;
     }
@@ -215,13 +215,13 @@ _.extend(Model.prototype, Events, {
   // Get all of the attributes of the model at the time of the previous
   // `"change"` event.
   previousAttributes: function() {
-    return _.clone(this._previousAttributes);
+    return clone(this._previousAttributes);
   },
 
   // Fetch the model from the server, merging the response with the model's
   // local attributes. Any changed attributes will trigger a "change" event.
   fetch: function(options) {
-    options = _.extend({parse: true}, options);
+    options = extend({parse: true}, options);
     const model = this;
     const success = options.success;
     options.success = function(resp) {
@@ -247,7 +247,7 @@ _.extend(Model.prototype, Events, {
       (attrs = {})[key] = val;
     }
 
-    options = _.extend({validate: true, parse: true}, options);
+    options = extend({validate: true, parse: true}, options);
     const wait = options.wait;
     const return_promise = options.promise;
     const promise = return_promise && getResolveablePromise();
@@ -270,7 +270,7 @@ _.extend(Model.prototype, Events, {
       // Ensure attributes are restored during synchronous saves.
       model.attributes = attributes;
       let serverAttrs = options.parse ? model.parse(resp, options) : resp;
-      if (wait) serverAttrs = _.extend({}, attrs, serverAttrs);
+      if (wait) serverAttrs = extend({}, attrs, serverAttrs);
       if (serverAttrs && !model.set(serverAttrs, options)) return false;
       if (success) success.call(options.context, model, resp, options);
       model.trigger('sync', model, resp, options);
@@ -279,7 +279,7 @@ _.extend(Model.prototype, Events, {
     wrapError(this, options);
 
     // Set temporary attributes if `{wait: true}` to properly find new ids.
-    if (attrs && wait) this.attributes = _.extend({}, attributes, attrs);
+    if (attrs && wait) this.attributes = extend({}, attributes, attrs);
 
     const method = this.isNew() ? 'create' : options.patch ? 'patch' : 'update';
     if (method === 'patch' && !options.attrs) options.attrs = attrs;
@@ -300,7 +300,7 @@ _.extend(Model.prototype, Events, {
   // Optimistically removes the model from its collection, if it has one.
   // If `wait: true` is passed, waits for the server to respond before removal.
   destroy: function(options) {
-    options = options ? _.clone(options) : {};
+    options = options ? clone(options) : {};
     const model = this;
     const success = options.success;
     const wait = options.wait;
@@ -318,7 +318,7 @@ _.extend(Model.prototype, Events, {
 
     let xhr = false;
     if (this.isNew()) {
-      _.defer(options.success);
+      defer(options.success);
     } else {
       wrapError(this, options);
       xhr = this.sync('delete', this, options);
@@ -332,8 +332,8 @@ _.extend(Model.prototype, Events, {
   // that will be called.
   url: function() {
     const base =
-      _.result(this, 'urlRoot') ||
-      _.result(this.collection, 'url') ||
+      result(this, 'urlRoot') ||
+      result(this.collection, 'url') ||
       urlError();
     if (this.isNew()) return base;
     const id = this.get(this.idAttribute);
@@ -358,17 +358,17 @@ _.extend(Model.prototype, Events, {
 
   // Check if the model is currently in a valid state.
   isValid: function(options) {
-    return this._validate({}, _.extend({}, options, {validate: true}));
+    return this._validate({}, extend({}, options, {validate: true}));
   },
 
   // Run validation against the next complete set of model attributes,
   // returning `true` if all is well. Otherwise, fire an `"invalid"` event.
   _validate: function(attrs, options) {
     if (!options.validate || !this.validate) return true;
-    attrs = _.extend({}, this.attributes, attrs);
+    attrs = extend({}, this.attributes, attrs);
     const error = this.validationError = this.validate(attrs, options) || null;
     if (!error) return true;
-    this.trigger('invalid', this, error, _.extend(options, {validationError: error}));
+    this.trigger('invalid', this, error, extend(options, {validationError: error}));
     return false;
   }
 });
