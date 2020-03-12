@@ -274,6 +274,40 @@ _.extend(Collection.prototype, Events, {
     return slice.apply(this.models, arguments);
   },
 
+  filter: function(callback, thisArg) {
+    return this.models.filter(
+      _.isFunction(callback) ? callback : m => m.matches(callback),
+      thisArg
+    );
+  },
+
+  each: function(callback, thisArg) {
+    return this.forEach(callback, thisArg);
+  },
+
+  forEach: function(callback, thisArg) {
+    return this.models.forEach(callback, thisArg);
+  },
+
+  includes: function(callback, fromIndex) {
+    return this.models.includes(callback, fromIndex);
+  },
+
+  map: function(cb, thisArg) {
+    return this.models.map(
+      _.isFunction(cb) ? cb : m => _.isString(cb) ? m.get(cb) : m.matches(cb),
+      thisArg
+    );
+  },
+
+  reduce: function(callback, initialValue) {
+    return this.models.reduce(callback, initialValue || this.models[0]);
+  },
+
+  reduceRight: function(callback, initialValue) {
+    return this.models.reduceRight(callback, initialValue || this.models[0]);
+  },
+
   // Get a model from the set by id, cid, model object with id or cid
   // properties, or an attributes object that is transformed through modelId.
   get: function(obj) {
@@ -642,14 +676,12 @@ const collectionMethods = {
   drop: 3,
   each: 3,
   every: 3,
-  filter: 3,
   find: 3,
   findIndex: 3,
   findLastIndex: 3,
   first: 3,
   foldl: 0,
   foldr: 0,
-  forEach: 3,
   groupBy: 3,
   head: 3,
   include: 3,
@@ -662,12 +694,9 @@ const collectionMethods = {
   isEmpty: 1,
   last: 3,
   lastIndexOf: 3,
-  map: 3,
   max: 3,
   min: 3,
   partition: 3,
-  reduce: 0,
-  reduceRight: 0,
   reject: 3,
   sample: 3,
   select: 3,
