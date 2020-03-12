@@ -582,6 +582,22 @@
     doc.sync.restore();
   });
 
+  QUnit.test('save and return promise', async function(assert) {
+    const done = assert.async();
+    sinon.spy(doc, 'sync');
+    assert.expect(3);
+    const promise = doc.save({title: 'Henry V'}, {'promise': true, 'wait': true});
+    assert.equal(promise.isResolved, false);
+    const ajaxSettings = window.fetch.lastCall.args[0];
+    ajaxSettings.success();
+    await promise;
+    const syncArgs = doc.sync.lastCall.args;
+    assert.equal(syncArgs[0], 'update');
+    assert.ok(_.isEqual(syncArgs[1], doc));
+    doc.sync.restore();
+    done();
+  });
+
   QUnit.test('save, fetch, destroy triggers error event when an error occurs', function(assert) {
     assert.expect(3);
     var model = new Skeletor.Model();

@@ -12,7 +12,7 @@
 // Create a new model with the specified attributes. A client id (`cid`)
 // is automatically generated and assigned for you.
 
-import { addMethodsToObject, inherits, getSyncMethod, urlError, wrapError } from './helpers.js';
+import { addMethodsToObject, inherits, getResolveablePromise, getSyncMethod, urlError, wrapError } from './helpers.js';
 import { Events } from './events.js';
 import _ from 'lodash';
 
@@ -248,7 +248,9 @@ _.extend(Model.prototype, Events, {
     }
 
     options = _.extend({validate: true, parse: true}, options);
-    var wait = options.wait;
+    const wait = options.wait;
+    const return_promise = options.promise;
+    const promise = return_promise && getResolveablePromise();
 
     // If we're not waiting and attributes exist, save acts as
     // `set(attr).save(null, opts)` with validation. Otherwise, check if
@@ -272,6 +274,7 @@ _.extend(Model.prototype, Events, {
       if (serverAttrs && !model.set(serverAttrs, options)) return false;
       if (success) success.call(options.context, model, resp, options);
       model.trigger('sync', model, resp, options);
+      if (return_promise) promise.resolve();
     };
     wrapError(this, options);
 
@@ -285,7 +288,12 @@ _.extend(Model.prototype, Events, {
     // Restore attributes.
     this.attributes = attributes;
 
-    return xhr;
+    if (return_promise) {
+      return promise;
+    } else {
+      return xhr;
+    }
+
   },
 
   // Destroy this model on the server if it was already persisted.
