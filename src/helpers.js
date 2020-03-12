@@ -10,8 +10,8 @@ import _ from 'lodash';
 // class properties to be extended.
 //
 export function inherits(protoProps, staticProps) {
-    var parent = this;
-    var child;
+    const parent = this;
+    let child;
 
     // The constructor function for the new subclass is either defined by you
     // (the "constructor" property in your `extend` definition), or defaulted
@@ -74,7 +74,7 @@ export function urlError() {
 
 // Wrap an optional error callback with a fallback error event.
 export function wrapError(model, options) {
-    var error = options.error;
+    const error = options.error;
     options.error = function(resp) {
         if (error) error.call(options.context, model, resp, options);
         model.trigger('error', model, resp, options);
@@ -130,7 +130,7 @@ export function sync(method, model, options={}) {
     }
 
     // Pass along `textStatus` and `errorThrown` from jQuery.
-    var error = options.error;
+    const error = options.error;
     options.error = function(xhr, textStatus, errorThrown) {
         options.textStatus = textStatus;
         options.errorThrown = errorThrown;
@@ -138,7 +138,7 @@ export function sync(method, model, options={}) {
     };
 
     // Make the request, allowing the user to override any Ajax options.
-    var xhr = options.xhr = ajax(_.extend(params, options));
+    const xhr = options.xhr = ajax(_.extend(params, options));
     model.trigger('request', model, xhr, options);
     return xhr;
 }
@@ -148,7 +148,7 @@ export function ajax() {
 }
 
 // Create a local reference to a common array method we'll want to use later.
-var slice = Array.prototype.slice;
+const slice = Array.prototype.slice;
 
 // Proxy Backbone class methods to Underscore functions, wrapping the model's
 // `attributes` object or collection's `models` array behind the scenes.
@@ -157,7 +157,7 @@ var slice = Array.prototype.slice;
 // collection.each(this.addView);
 //
 // `Function#apply` can be slow so we use the method's arg count, if we know it.
-var addMethod = function(base, length, method, attribute) {
+const addMethod = function(base, length, method, attribute) {
     switch (length) {
         case 1: return function() {
             return base[method](this[attribute]);
@@ -172,41 +172,41 @@ var addMethod = function(base, length, method, attribute) {
             return base[method](this[attribute], cb(iteratee, this), defaultVal, context);
         };
         default: return function() {
-            var args = slice.call(arguments);
+            const args = slice.call(arguments);
             args.unshift(this[attribute]);
             return base[method].apply(base, args);
         };
     }
 };
 
-var addUnderscoreMethods = function(Class, base, methods, attribute) {
+const addUnderscoreMethods = function(Class, base, methods, attribute) {
     _.each(methods, function(length, method) {
         if (base[method]) Class.prototype[method] = addMethod(base, length, method, attribute);
     });
 };
 
 // Support `collection.sortBy('attr')` and `collection.findWhere({id: 1})`.
-var cb = function(iteratee, instance) {
+const cb = function(iteratee, instance) {
     if (_.isFunction(iteratee)) return iteratee;
     if (_.isObject(iteratee) && !instance._isModel(iteratee)) return modelMatcher(iteratee);
     if (_.isString(iteratee)) return function(model) { return model.get(iteratee); };
     return iteratee;
 };
 
-var modelMatcher = function(attrs) {
-    var matcher = _.matches(attrs);
+const modelMatcher = function(attrs) {
+    const matcher = _.matches(attrs);
     return function(model) {
         return matcher(model.attributes);
     };
 };
 
 export function addMethodsToObject(config) {
-    var Base = config[0],
+    const Base = config[0],
         methods = config[1],
         attribute = config[2];
 
     Base.mixin = function(obj) {
-        var mappings = _.reduce(_.functions(obj), function(memo, name) {
+        const mappings = _.reduce(_.functions(obj), function(memo, name) {
             memo[name] = 0;
             return memo;
         }, {});

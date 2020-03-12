@@ -46,14 +46,14 @@ _.extend(History.prototype, Events, {
 
   // Are we at the app root?
   atRoot: function() {
-    var path = this.location.pathname.replace(/[^\/]$/, '$&/');
+    const path = this.location.pathname.replace(/[^\/]$/, '$&/');
     return path === this.root && !this.getSearch();
   },
 
   // Does the pathname match the root?
   matchRoot: function() {
-    var path = this.decodeFragment(this.location.pathname);
-    var rootPath = path.slice(0, this.root.length - 1) + '/';
+    const path = this.decodeFragment(this.location.pathname);
+    const rootPath = path.slice(0, this.root.length - 1) + '/';
     return rootPath === this.root;
   },
 
@@ -67,20 +67,20 @@ _.extend(History.prototype, Events, {
   // In IE6, the hash fragment and search params are incorrect if the
   // fragment contains `?`.
   getSearch: function() {
-    var match = this.location.href.replace(/#.*/, '').match(/\?.+/);
+    const match = this.location.href.replace(/#.*/, '').match(/\?.+/);
     return match ? match[0] : '';
   },
 
   // Gets the true hash value. Cannot use location.hash directly due to bug
   // in Firefox where location.hash will always be decoded.
   getHash: function(window) {
-    var match = (window || this).location.href.match(/#(.*)$/);
+    const match = (window || this).location.href.match(/#(.*)$/);
     return match ? match[1] : '';
   },
 
   // Get the pathname and search params, without the root.
   getPath: function() {
-    var path = this.decodeFragment(
+    const path = this.decodeFragment(
       this.location.pathname + this.getSearch()
     ).slice(this.root.length - 1);
     return path.charAt(0) === '/' ? path.slice(1) : path;
@@ -126,7 +126,7 @@ _.extend(History.prototype, Events, {
       // If we've started off with a route from a `pushState`-enabled
       // browser, but we're currently in a browser that doesn't support it...
       if (!this._hasPushState && !this.atRoot()) {
-        var rootPath = this.root.slice(0, -1) || '/';
+        const rootPath = this.root.slice(0, -1) || '/';
         this.location.replace(rootPath + '#' + this.getPath());
         // Return immediately as browser will do redirect to new url
         return true;
@@ -147,9 +147,9 @@ _.extend(History.prototype, Events, {
       this.iframe.src = 'javascript:0';
       this.iframe.style.display = 'none';
       this.iframe.tabIndex = -1;
-      var body = document.body;
+      const body = document.body;
       // Using `appendChild` will throw on IE < 9 if the document is not ready.
-      var iWindow = body.insertBefore(this.iframe, body.firstChild).contentWindow;
+      const iWindow = body.insertBefore(this.iframe, body.firstChild).contentWindow;
       iWindow.document.open();
       iWindow.document.close();
       iWindow.location.hash = '#' + this.fragment;
@@ -198,7 +198,7 @@ _.extend(History.prototype, Events, {
   // Checks the current URL to see if it has changed, and if it has,
   // calls `loadUrl`, normalizing across the hidden iframe.
   checkUrl: function(e) {
-    var current = this.getFragment();
+    let current = this.getFragment();
 
     // If the user pressed the back button, the iframe's hash will have
     // changed and we should use that for comparison.
@@ -241,17 +241,17 @@ _.extend(History.prototype, Events, {
     fragment = this.getFragment(fragment || '');
 
     // Don't include a trailing slash on the root.
-    var rootPath = this.root;
+    let rootPath = this.root;
     if (fragment === '' || fragment.charAt(0) === '?') {
       rootPath = rootPath.slice(0, -1) || '/';
     }
-    var url = rootPath + fragment;
+    const url = rootPath + fragment;
 
     // Strip the fragment of the query and hash for matching.
     fragment = fragment.replace(pathStripper, '');
 
     // Decode for matching.
-    var decodedFragment = this.decodeFragment(fragment);
+    const decodedFragment = this.decodeFragment(fragment);
 
     if (this.fragment === decodedFragment) return;
     this.fragment = decodedFragment;
@@ -265,7 +265,7 @@ _.extend(History.prototype, Events, {
     } else if (this._wantsHashChange) {
       this._updateHash(this.location, fragment, options.replace);
       if (this.iframe && fragment !== this.getHash(this.iframe.contentWindow)) {
-        var iWindow = this.iframe.contentWindow;
+        const iWindow = this.iframe.contentWindow;
 
         // Opening and closing the iframe tricks IE7 and earlier to push a
         // history entry on hash-tag change.  When replace is true, we don't
@@ -288,7 +288,7 @@ _.extend(History.prototype, Events, {
   // a new one to the browser history.
   _updateHash: function(location, fragment, replace) {
     if (replace) {
-      var href = location.href.replace(/(javascript:|#).*$/, '');
+      const href = location.href.replace(/(javascript:|#).*$/, '');
       location.replace(href + '#' + fragment);
     } else {
       // Some browsers require that `hash` contains a leading #.

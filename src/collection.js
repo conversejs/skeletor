@@ -36,15 +36,15 @@ Collection.extend = inherits;
 
 
 // Default options for `Collection#set`.
-var setOptions = {add: true, remove: true, merge: true};
-var addOptions = {add: true, remove: false};
+const setOptions = {add: true, remove: true, merge: true};
+const addOptions = {add: true, remove: false};
 
 // Splices `insert` into `array` at index `at`.
-var splice = function(array, insert, at) {
+const splice = function(array, insert, at) {
   at = Math.min(Math.max(at, 0), array.length);
-  var tail = Array(array.length - at);
-  var length = insert.length;
-  var i;
+  const tail = Array(array.length - at);
+  const length = insert.length;
+  let i;
   for (i = 0; i < tail.length; i++) tail[i] = array[i + at];
   for (i = 0; i < length; i++) array[i + at] = insert[i];
   for (i = 0; i < tail.length; i++) array[i + length + at] = tail[i];
@@ -87,9 +87,9 @@ _.extend(Collection.prototype, Events, {
   // Remove a model, or a list of models from the set.
   remove: function(models, options) {
     options = _.extend({}, options);
-    var singular = !_.isArray(models);
+    const singular = !_.isArray(models);
     models = singular ? [models] : models.slice();
-    var removed = this._removeModels(models, options);
+    const removed = this._removeModels(models, options);
     if (!options.silent && removed.length) {
       options.changes = {added: [], merged: [], removed: removed};
       this.trigger('update', this, options);
@@ -109,40 +109,40 @@ _.extend(Collection.prototype, Events, {
       models = this.parse(models, options) || [];
     }
 
-    var singular = !_.isArray(models);
+    const singular = !_.isArray(models);
     models = singular ? [models] : models.slice();
 
-    var at = options.at;
+    let at = options.at;
     if (at != null) at = +at;
     if (at > this.length) at = this.length;
     if (at < 0) at += this.length + 1;
 
-    var set = [];
-    var toAdd = [];
-    var toMerge = [];
-    var toRemove = [];
-    var modelMap = {};
+    const set = [];
+    const toAdd = [];
+    const toMerge = [];
+    const toRemove = [];
+    const modelMap = {};
 
-    var add = options.add;
-    var merge = options.merge;
-    var remove = options.remove;
+    const add = options.add;
+    const merge = options.merge;
+    const remove = options.remove;
 
-    var sort = false;
-    var sortable = this.comparator && at == null && options.sort !== false;
-    var sortAttr = _.isString(this.comparator) ? this.comparator : null;
+    let sort = false;
+    const sortable = this.comparator && at == null && options.sort !== false;
+    const sortAttr = _.isString(this.comparator) ? this.comparator : null;
 
     // Turn bare objects into model references, and prevent invalid models
     // from being added.
-    var model, i;
+    let model, i;
     for (i = 0; i < models.length; i++) {
       model = models[i];
 
       // If a duplicate is found, prevent it from being added and
       // optionally merge it into the existing model.
-      var existing = this.get(model);
+      const existing = this.get(model);
       if (existing) {
         if (merge && model !== existing) {
-          var attrs = this._isModel(model) ? model.attributes : model;
+          let attrs = this._isModel(model) ? model.attributes : model;
           if (options.parse) attrs = existing.parse(attrs, options);
           existing.set(attrs, options);
           toMerge.push(existing);
@@ -176,8 +176,8 @@ _.extend(Collection.prototype, Events, {
     }
 
     // See if sorting is needed, update `length` and splice in new models.
-    var orderChanged = false;
-    var replace = !sortable && add && remove;
+    let orderChanged = false;
+    const replace = !sortable && add && remove;
     if (set.length && replace) {
       orderChanged = this.length !== set.length || _.some(this.models, function(m, index) {
         return m !== set[index];
@@ -237,7 +237,7 @@ _.extend(Collection.prototype, Events, {
   // Useful for bulk operations and optimizations.
   reset: function(models, options) {
     options = options ? _.clone(options) : {};
-    for (var i = 0; i < this.models.length; i++) {
+    for (let i = 0; i < this.models.length; i++) {
       this._removeReference(this.models[i], options);
     }
     options.previousModels = this.models;
@@ -254,7 +254,7 @@ _.extend(Collection.prototype, Events, {
 
   // Remove a model from the end of the collection.
   pop: function(options) {
-    var model = this.at(this.length - 1);
+    const model = this.at(this.length - 1);
     return this.remove(model, options);
   },
 
@@ -265,7 +265,7 @@ _.extend(Collection.prototype, Events, {
 
   // Remove a model from the beginning of the collection.
   shift: function(options) {
-    var model = this.at(0);
+    const model = this.at(0);
     return this.remove(model, options);
   },
 
@@ -310,11 +310,11 @@ _.extend(Collection.prototype, Events, {
   // normal circumstances, as the set will maintain sort order as each item
   // is added.
   sort: function(options) {
-    var comparator = this.comparator;
+    let comparator = this.comparator;
     if (!comparator) throw new Error('Cannot sort a set without a comparator');
     options || (options = {});
 
-    var length = comparator.length;
+    const length = comparator.length;
     if (_.isFunction(comparator)) comparator = comparator.bind(this);
 
     // Run sort based on type of `comparator`.
@@ -337,10 +337,10 @@ _.extend(Collection.prototype, Events, {
   // data will be passed through the `reset` method instead of `set`.
   fetch: function(options) {
     options = _.extend({parse: true}, options);
-    var success = options.success;
-    var collection = this;
+    const success = options.success;
+    const collection = this;
     options.success = function(resp) {
-      var method = options.reset ? 'reset' : 'set';
+      const method = options.reset ? 'reset' : 'set';
       collection[method](resp, options);
       if (success) success.call(options.context, collection, resp, options);
       collection.trigger('sync', collection, resp, options);
@@ -433,7 +433,7 @@ _.extend(Collection.prototype, Events, {
     }
     options = options ? _.clone(options) : {};
     options.collection = this;
-    var model = new this.model(attrs, options);
+    const model = new this.model(attrs, options);
     if (!model.validationError) return model;
     this.trigger('invalid', this, model.validationError, options);
     return false;
@@ -441,19 +441,19 @@ _.extend(Collection.prototype, Events, {
 
   // Internal method called by both remove and set.
   _removeModels: function(models, options) {
-    var removed = [];
-    for (var i = 0; i < models.length; i++) {
-      var model = this.get(models[i]);
+    const removed = [];
+    for (let i = 0; i < models.length; i++) {
+      const model = this.get(models[i]);
       if (!model) continue;
 
-      var index = this.indexOf(model);
+      const index = this.indexOf(model);
       this.models.splice(index, 1);
       this.length--;
 
       // Remove references before triggering 'remove' event to prevent an
       // infinite loop. #3693
       delete this._byId[model.cid];
-      var id = this.modelId(model.attributes);
+      const id = this.modelId(model.attributes);
       if (id != null) delete this._byId[id];
 
       if (!options.silent) {
@@ -476,7 +476,7 @@ _.extend(Collection.prototype, Events, {
   // Internal method to create a model's ties to a collection.
   _addReference: function(model, options) {
     this._byId[model.cid] = model;
-    var id = this.modelId(model.attributes);
+    const id = this.modelId(model.attributes);
     if (id != null) this._byId[id] = model;
     model.on('all', this._onModelEvent, this);
   },
@@ -484,7 +484,7 @@ _.extend(Collection.prototype, Events, {
   // Internal method to sever a model's ties to a collection.
   _removeReference: function(model, options) {
     delete this._byId[model.cid];
-    var id = this.modelId(model.attributes);
+    const id = this.modelId(model.attributes);
     if (id != null) delete this._byId[id];
     if (this === model.collection) delete model.collection;
     model.off('all', this._onModelEvent, this);
@@ -499,8 +499,8 @@ _.extend(Collection.prototype, Events, {
       if ((event === 'add' || event === 'remove') && collection !== this) return;
       if (event === 'destroy') this.remove(model, options);
       if (event === 'change') {
-        var prevId = this.modelId(model.previousAttributes());
-        var id = this.modelId(model.attributes);
+        const prevId = this.modelId(model.previousAttributes());
+        const id = this.modelId(model.attributes);
         if (prevId !== id) {
           if (prevId != null) delete this._byId[prevId];
           if (id != null) this._byId[id] = model;
@@ -515,7 +515,7 @@ _.extend(Collection.prototype, Events, {
 // Defining an @@iterator method implements JavaScript's Iterable protocol.
 // In modern ES2015 browsers, this value is found at Symbol.iterator.
 /* global Symbol */
-var $$iterator = typeof Symbol === 'function' && Symbol.iterator;
+const $$iterator = typeof Symbol === 'function' && Symbol.iterator;
 if ($$iterator) {
   Collection.prototype[$$iterator] = Collection.prototype.values;
 }
@@ -527,7 +527,7 @@ if ($$iterator) {
 // use of `for of` loops in modern browsers and interoperation between
 // Collection and other JavaScript functions and third-party libraries
 // which can operate on Iterables.
-var CollectionIterator = function(collection, kind) {
+const CollectionIterator = function(collection, kind) {
   this._collection = collection;
   this._kind = kind;
   this._index = 0;
@@ -536,9 +536,9 @@ var CollectionIterator = function(collection, kind) {
 // This "enum" defines the three possible kinds of values which can be emitted
 // by a CollectionIterator that correspond to the values(), keys() and entries()
 // methods on Collection, respectively.
-var ITERATOR_VALUES = 1;
-var ITERATOR_KEYS = 2;
-var ITERATOR_KEYSVALUES = 3;
+const ITERATOR_VALUES = 1;
+const ITERATOR_KEYS = 2;
+const ITERATOR_KEYSVALUES = 3;
 
 // All Iterators should themselves be Iterable.
 if ($$iterator) {
@@ -552,15 +552,15 @@ CollectionIterator.prototype.next = function() {
 
     // Only continue iterating if the iterated collection is long enough.
     if (this._index < this._collection.length) {
-      var model = this._collection.at(this._index);
+      const model = this._collection.at(this._index);
       this._index++;
 
       // Construct a value depending on what kind of values should be iterated.
-      var value;
+      let value;
       if (this._kind === ITERATOR_VALUES) {
         value = model;
       } else {
-        var id = this._collection.modelId(model.attributes);
+        const id = this._collection.modelId(model.attributes);
         if (this._kind === ITERATOR_KEYS) {
           value = id;
         } else { // ITERATOR_KEYSVALUES
@@ -585,7 +585,7 @@ CollectionIterator.prototype.next = function() {
 // collection.each(this.addView);
 //
 // `Function#apply` can be slow so we use the method's arg count, if we know it.
-var addMethod = function(base, length, method, attribute) {
+const addMethod = function(base, length, method, attribute) {
   switch (length) {
     case 1: return function() {
       return base[method](this[attribute]);
@@ -600,28 +600,28 @@ var addMethod = function(base, length, method, attribute) {
       return base[method](this[attribute], cb(iteratee, this), defaultVal, context);
     };
     default: return function() {
-      var args = slice.call(arguments);
+      const args = slice.call(arguments);
       args.unshift(this[attribute]);
       return base[method].apply(base, args);
     };
   }
 };
 
-var addUnderscoreMethods = function(Class, base, methods, attribute) {
+const addUnderscoreMethods = function(Class, base, methods, attribute) {
   _.each(methods, function(length, method) {
     if (base[method]) Class.prototype[method] = addMethod(base, length, method, attribute);
   });
 };
 
 // Support `collection.sortBy('attr')` and `collection.findWhere({id: 1})`.
-var cb = function(iteratee, instance) {
+const cb = function(iteratee, instance) {
   if (_.isFunction(iteratee)) return iteratee;
   if (_.isObject(iteratee) && !instance._isModel(iteratee)) return modelMatcher(iteratee);
   if (_.isString(iteratee)) return function(model) { return model.get(iteratee); };
   return iteratee;
 };
-var modelMatcher = function(attrs) {
-  var matcher = _.matches(attrs);
+const modelMatcher = function(attrs) {
+  const matcher = _.matches(attrs);
   return function(model) {
     return matcher(model.attributes);
   };
@@ -701,12 +701,12 @@ _.each([
   [Collection, collectionMethods, 'models'],
   [Model, modelMethods, 'attributes']
 ], function(config) {
-  var Base = config[0],
+  const Base = config[0],
       methods = config[1],
       attribute = config[2];
 
   Base.mixin = function(obj) {
-    var mappings = _.reduce(_.functions(obj), function(memo, name) {
+    const mappings = _.reduce(_.functions(obj), function(memo, name) {
       memo[name] = 0;
       return memo;
     }, {});

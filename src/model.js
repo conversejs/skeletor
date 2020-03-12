@@ -18,14 +18,14 @@ import _ from 'lodash';
 
 
 export const Model = function(attributes, options) {
-  var attrs = attributes || {};
+  let attrs = attributes || {};
   options || (options = {});
   this.preinitialize.apply(this, arguments);
   this.cid = _.uniqueId(this.cidPrefix);
   this.attributes = {};
   if (options.collection) this.collection = options.collection;
   if (options.parse) attrs = this.parse(attrs, options) || {};
-  var defaults = _.result(this, 'defaults');
+  const defaults = _.result(this, 'defaults');
   attrs = _.defaults(_.extend({}, defaults, attrs), defaults);
   this.set(attrs, options);
   this.changed = {};
@@ -98,7 +98,7 @@ _.extend(Model.prototype, Events, {
     if (key == null) return this;
 
     // Handle both `"key", value` and `{key: value}` -style arguments.
-    var attrs;
+    let attrs;
     if (typeof key === 'object') {
       attrs = key;
       options = val;
@@ -112,10 +112,10 @@ _.extend(Model.prototype, Events, {
     if (!this._validate(attrs, options)) return false;
 
     // Extract attributes and options.
-    var unset      = options.unset;
-    var silent     = options.silent;
-    var changes    = [];
-    var changing   = this._changing;
+    const unset      = options.unset;
+    const silent     = options.silent;
+    const changes    = [];
+    const changing   = this._changing;
     this._changing = true;
 
     if (!changing) {
@@ -123,12 +123,12 @@ _.extend(Model.prototype, Events, {
       this.changed = {};
     }
 
-    var current = this.attributes;
-    var changed = this.changed;
-    var prev    = this._previousAttributes;
+    const current = this.attributes;
+    const changed = this.changed;
+    const prev    = this._previousAttributes;
 
     // For each `set` attribute, update or delete the current value.
-    for (var attr in attrs) {
+    for (const attr in attrs) {
       val = attrs[attr];
       if (!_.isEqual(current[attr], val)) changes.push(attr);
       if (!_.isEqual(prev[attr], val)) {
@@ -145,7 +145,7 @@ _.extend(Model.prototype, Events, {
     // Trigger all relevant attribute changes.
     if (!silent) {
       if (changes.length) this._pending = options;
-      for (var i = 0; i < changes.length; i++) {
+      for (let i = 0; i < changes.length; i++) {
         this.trigger('change:' + changes[i], this, current[changes[i]], options);
       }
     }
@@ -173,8 +173,8 @@ _.extend(Model.prototype, Events, {
 
   // Clear all attributes on the model, firing `"change"`.
   clear: function(options) {
-    var attrs = {};
-    for (var key in this.attributes) attrs[key] = undefined;
+    const attrs = {};
+    for (const key in this.attributes) attrs[key] = undefined;
     return this.set(attrs, _.extend({}, options, {unset: true}));
   },
 
@@ -193,11 +193,11 @@ _.extend(Model.prototype, Events, {
   // determining if there *would be* a change.
   changedAttributes: function(diff) {
     if (!diff) return this.hasChanged() ? _.clone(this.changed) : false;
-    var old = this._changing ? this._previousAttributes : this.attributes;
-    var changed = {};
-    var hasChanged;
-    for (var attr in diff) {
-      var val = diff[attr];
+    const old = this._changing ? this._previousAttributes : this.attributes;
+    const changed = {};
+    let hasChanged;
+    for (const attr in diff) {
+      const val = diff[attr];
       if (_.isEqual(old[attr], val)) continue;
       changed[attr] = val;
       hasChanged = true;
@@ -222,10 +222,10 @@ _.extend(Model.prototype, Events, {
   // local attributes. Any changed attributes will trigger a "change" event.
   fetch: function(options) {
     options = _.extend({parse: true}, options);
-    var model = this;
-    var success = options.success;
+    const model = this;
+    const success = options.success;
     options.success = function(resp) {
-      var serverAttrs = options.parse ? model.parse(resp, options) : resp;
+      const serverAttrs = options.parse ? model.parse(resp, options) : resp;
       if (!model.set(serverAttrs, options)) return false;
       if (success) success.call(options.context, model, resp, options);
       model.trigger('sync', model, resp, options);
@@ -239,7 +239,7 @@ _.extend(Model.prototype, Events, {
   // state will be `set` again.
   save: function(key, val, options) {
     // Handle both `"key", value` and `{key: value}` -style arguments.
-    var attrs;
+    let attrs;
     if (key == null || typeof key === 'object') {
       attrs = key;
       options = val;
@@ -263,13 +263,13 @@ _.extend(Model.prototype, Events, {
 
     // After a successful server-side save, the client is (optionally)
     // updated with the server-side state.
-    var model = this;
-    var success = options.success;
-    var attributes = this.attributes;
+    const model = this;
+    const success = options.success;
+    const attributes = this.attributes;
     options.success = function(resp) {
       // Ensure attributes are restored during synchronous saves.
       model.attributes = attributes;
-      var serverAttrs = options.parse ? model.parse(resp, options) : resp;
+      let serverAttrs = options.parse ? model.parse(resp, options) : resp;
       if (wait) serverAttrs = _.extend({}, attrs, serverAttrs);
       if (serverAttrs && !model.set(serverAttrs, options)) return false;
       if (success) success.call(options.context, model, resp, options);
@@ -281,9 +281,9 @@ _.extend(Model.prototype, Events, {
     // Set temporary attributes if `{wait: true}` to properly find new ids.
     if (attrs && wait) this.attributes = _.extend({}, attributes, attrs);
 
-    var method = this.isNew() ? 'create' : options.patch ? 'patch' : 'update';
+    const method = this.isNew() ? 'create' : options.patch ? 'patch' : 'update';
     if (method === 'patch' && !options.attrs) options.attrs = attrs;
-    var xhr = this.sync(method, this, options);
+    const xhr = this.sync(method, this, options);
 
     // Restore attributes.
     this.attributes = attributes;
@@ -301,11 +301,11 @@ _.extend(Model.prototype, Events, {
   // If `wait: true` is passed, waits for the server to respond before removal.
   destroy: function(options) {
     options = options ? _.clone(options) : {};
-    var model = this;
-    var success = options.success;
-    var wait = options.wait;
+    const model = this;
+    const success = options.success;
+    const wait = options.wait;
 
-    var destroy = function() {
+    const destroy = function() {
       model.stopListening();
       model.trigger('destroy', model, model.collection, options);
     };
@@ -316,7 +316,7 @@ _.extend(Model.prototype, Events, {
       if (!model.isNew()) model.trigger('sync', model, resp, options);
     };
 
-    var xhr = false;
+    let xhr = false;
     if (this.isNew()) {
       _.defer(options.success);
     } else {
@@ -331,12 +331,12 @@ _.extend(Model.prototype, Events, {
   // using Backbone's restful methods, override this to change the endpoint
   // that will be called.
   url: function() {
-    var base =
+    const base =
       _.result(this, 'urlRoot') ||
       _.result(this.collection, 'url') ||
       urlError();
     if (this.isNew()) return base;
-    var id = this.get(this.idAttribute);
+    const id = this.get(this.idAttribute);
     return base.replace(/[^\/]$/, '$&/') + encodeURIComponent(id);
   },
 
@@ -366,7 +366,7 @@ _.extend(Model.prototype, Events, {
   _validate: function(attrs, options) {
     if (!options.validate || !this.validate) return true;
     attrs = _.extend({}, this.attributes, attrs);
-    var error = this.validationError = this.validate(attrs, options) || null;
+    const error = this.validationError = this.validate(attrs, options) || null;
     if (!error) return true;
     this.trigger('invalid', this, error, _.extend(options, {validationError: error}));
     return false;

@@ -42,7 +42,7 @@ function isSessionStorageValid () {
 }
 
 function _getKeyPrefix(options, defaultConfig) {
-    var keyPrefix = options.name + '/';
+    let keyPrefix = options.name + '/';
 
     if (options.storeName !== defaultConfig.storeName) {
         keyPrefix += options.storeName + '/';
@@ -60,7 +60,7 @@ const dbInfo = {
 function _initStorage(options) {
     dbInfo.keyPrefix = _getKeyPrefix(options, this._defaultConfig);
     if (options) {
-        for (var i in options) { // eslint-disable-line guard-for-in
+        for (const i in options) { // eslint-disable-line guard-for-in
             dbInfo[i] = options[i];
         }
     }
@@ -69,7 +69,7 @@ function _initStorage(options) {
 // Remove all keys from the datastore, effectively destroying all data in
 // the app's key/value store!
 function clear(callback) {
-    var promise = this.ready().then(function() {
+    const promise = this.ready().then(function() {
         const keyPrefix = dbInfo.keyPrefix;
 
         for (let i = sessionStorage.length - 1; i >= 0; i--) {
@@ -108,12 +108,12 @@ function getItem(key, callback) {
 
 // Iterate over all items in the store.
 function iterate(iterator, callback) {
-    var self = this;
+    const self = this;
 
-    var promise = self.ready().then(function() {
-        var keyPrefix = dbInfo.keyPrefix;
-        var keyPrefixLength = keyPrefix.length;
-        var length = sessionStorage.length;
+    const promise = self.ready().then(function() {
+        const keyPrefix = dbInfo.keyPrefix;
+        const keyPrefixLength = keyPrefix.length;
+        const length = sessionStorage.length;
 
         // We use a dedicated iterator instead of the `i` variable below
         // so other keys we fetch in sessionStorage aren't counted in
@@ -121,14 +121,14 @@ function iterate(iterator, callback) {
         // callback.
         //
         // See: github.com/mozilla/localForage/pull/435#discussion_r38061530
-        var iterationNumber = 1;
+        let iterationNumber = 1;
 
-        for (var i = 0; i < length; i++) {
-            var key = sessionStorage.key(i);
+        for (let i = 0; i < length; i++) {
+            const key = sessionStorage.key(i);
             if (key.indexOf(keyPrefix) !== 0) {
                 continue;
             }
-            var value = sessionStorage.getItem(key);
+            let value = sessionStorage.getItem(key);
 
             // If a result was found, parse it from the serialized
             // string into a JS object. If result isn't truthy, the
@@ -156,9 +156,9 @@ function iterate(iterator, callback) {
 
 // Same as sessionStorage's key() method, except takes a callback.
 function key(n, callback) {
-    var self = this;
-    var promise = self.ready().then(function() {
-        var result;
+    const self = this;
+    const promise = self.ready().then(function() {
+        let result;
         try {
             result = sessionStorage.key(n);
         } catch (error) {
@@ -178,13 +178,13 @@ function key(n, callback) {
 }
 
 function keys(callback) {
-    var self = this;
-    var promise = self.ready().then(function() {
-        var length = sessionStorage.length;
-        var keys = [];
+    const self = this;
+    const promise = self.ready().then(function() {
+        const length = sessionStorage.length;
+        const keys = [];
 
-        for (var i = 0; i < length; i++) {
-            var itemKey = sessionStorage.key(i);
+        for (let i = 0; i < length; i++) {
+            const itemKey = sessionStorage.key(i);
             if (itemKey.indexOf(dbInfo.keyPrefix) === 0) {
                 keys.push(itemKey.substring(dbInfo.keyPrefix.length));
             }
@@ -198,8 +198,8 @@ function keys(callback) {
 
 // Supply the number of keys in the datastore to the callback function.
 function length(callback) {
-    var self = this;
-    var promise = self.keys().then(function(keys) {
+    const self = this;
+    const promise = self.keys().then(function(keys) {
         return keys.length;
     });
 
@@ -232,7 +232,7 @@ function setItem(key, value, callback) {
         }
 
         // Save the original value to pass to the callback.
-        var originalValue = value;
+        const originalValue = value;
 
         return new Promise(function(resolve, reject) {
             dbInfo.serializer.serialize(value, function(value, error) {
@@ -267,13 +267,13 @@ function dropInstance(options, callback) {
 
     options = (typeof options !== 'function' && options) || {};
     if (!options.name) {
-        var currentConfig = this.config();
+        const currentConfig = this.config();
         options.name = options.name || currentConfig.name;
         options.storeName = options.storeName || currentConfig.storeName;
     }
 
-    var self = this;
-    var promise;
+    const self = this;
+    let promise;
     if (!options.name) {
         promise = Promise.reject(new Error('Invalid arguments'));
     } else {
@@ -284,9 +284,8 @@ function dropInstance(options, callback) {
                 resolve(_getKeyPrefix(options, self._defaultConfig));
             }
         }).then(function(keyPrefix) {
-            for (var i = sessionStorage.length - 1; i >= 0; i--) {
-                var key = sessionStorage.key(i);
-
+            for (let i = sessionStorage.length - 1; i >= 0; i--) {
+                const key = sessionStorage.key(i);
                 if (key.indexOf(keyPrefix) === 0) {
                     sessionStorage.removeItem(key);
                 }

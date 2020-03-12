@@ -40,7 +40,7 @@ const matchesSelector = ElementProto.matches ||
       // then check if the given element is included in that list.
       // Executing the query on the parentNode reduces the resulting nodeList,
       // (document doesn't have a parentNode).
-      var nodeList = (this.parentNode || document).querySelectorAll(selector) || [];
+      const nodeList = (this.parentNode || document).querySelectorAll(selector) || [];
       return ~indexOf(nodeList, this);
     };
 
@@ -59,10 +59,10 @@ export const View = function(options) {
 View.extend = inherits;
 
 // Cached regex to split keys for `delegate`.
-var delegateEventSplitter = /^(\S+)\s*(.*)$/;
+const delegateEventSplitter = /^(\S+)\s*(.*)$/;
 
 // List of view options to be set as properties.
-var viewOptions = ['model', 'collection', 'el', 'id', 'attributes', 'className', 'tagName', 'events'];
+const viewOptions = ['model', 'collection', 'el', 'id', 'attributes', 'className', 'tagName', 'events'];
 
 // Set up all inheritable **View** properties and methods.
 extend(View.prototype, Events, {
@@ -123,7 +123,7 @@ extend(View.prototype, Events, {
   _setElement: function(element) {
     if (typeof element == 'string') {
       if (paddedLt.test(element)) {
-        var el = document.createElement('div');
+        const el = document.createElement('div');
         el.innerHTML = element;
         this.el = el.firstChild;
       } else {
@@ -153,11 +153,11 @@ extend(View.prototype, Events, {
     events || (events = result(this, 'events'));
     if (!events) return this;
     this.undelegateEvents();
-    for (var key in events) {
-      var method = events[key];
+    for (const key in events) {
+      let method = events[key];
       if (!isFunction(method)) method = this[method];
       if (!method) continue;
-      var match = key.match(delegateEventSplitter);
+      const match = key.match(delegateEventSplitter);
       this.delegate(match[1], match[2], method.bind(this));
     }
     return this;
@@ -172,7 +172,7 @@ extend(View.prototype, Events, {
   // result of calling bound `listener` with the parameters given to the
   // handler.
   delegate: function(eventName, selector, listener) {
-    var root = this.el;
+    const root = this.el;
     if (!root) {
       return this;
     }
@@ -182,17 +182,17 @@ extend(View.prototype, Events, {
     }
     // Given that `focus` and `blur` events do not bubble, do not delegate these events
     if (['focus', 'blur'].indexOf(eventName) !== -1) {
-      var els = this.el.querySelectorAll(selector);
-      for (var i = 0, len = els.length; i < len; i++) {
-        var item = els[i];
+      const els = this.el.querySelectorAll(selector);
+      for (let i = 0, len = els.length; i < len; i++) {
+        const item = els[i];
         item.addEventListener(eventName, listener, false);
         this._domEvents.push({el: item, eventName: eventName, handler: listener});
       }
       return listener;
     }
 
-    var handler = selector ? function (e) {
-      var node = e.target || e.srcElement;
+    const handler = selector ? function (e) {
+      let node = e.target || e.srcElement;
       for (; node && node != root; node = node.parentNode) {
         if (matchesSelector.call(node, selector)) {
           e.delegateTarget = node;
@@ -258,7 +258,7 @@ extend(View.prototype, Events, {
   // an element from the `id`, `className` and `tagName` properties.
   _ensureElement: function() {
     if (!this.el) {
-      var attrs = extend({}, result(this, 'attributes'));
+      const attrs = extend({}, result(this, 'attributes'));
       if (this.id) attrs.id = result(this, 'id');
       if (this.className) attrs['class'] = result(this, 'className');
       this.setElement(this._createElement(result(this, 'tagName')));
@@ -271,7 +271,7 @@ extend(View.prototype, Events, {
   // Set attributes from a hash on this view's element.  Exposed for
   // subclasses using an alternative DOM manipulation API.
   _setAttributes: function(attrs) {
-    for (var attr in attrs) {
+    for (const attr in attrs) {
       attr in this.el ? this.el[attr] = attrs[attr] : this.el.setAttribute(attr, attrs[attr]);
     }
   },

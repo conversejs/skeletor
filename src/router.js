@@ -82,7 +82,8 @@ _.extend(Router.prototype, Events, {
   _bindRoutes: function() {
     if (!this.routes) return;
     this.routes = _.result(this, 'routes');
-    var route, routes = _.keys(this.routes);
+    let route;
+    const routes = _.keys(this.routes);
     while ((route = routes.pop()) != null) {
       this.route(route, this.routes[route]);
     }
@@ -104,7 +105,7 @@ _.extend(Router.prototype, Events, {
   // extracted decoded parameters. Empty or unmatched parameters will be
   // treated as `null` to normalize cross-browser behavior.
   _extractParameters: function(route, fragment) {
-    var params = route.exec(fragment).slice(1);
+    const params = route.exec(fragment).slice(1);
     return _.map(params, function(param, i) {
       // Don't decode the search params.
       if (i === params.length - 1) return param || null;
