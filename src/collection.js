@@ -373,14 +373,16 @@ _.extend(Collection.prototype, Events, {
     options = _.extend({parse: true}, options);
     const success = options.success;
     const collection = this;
+    const promise = options.promise && getResolveablePromise();
     options.success = function(resp) {
       const method = options.reset ? 'reset' : 'set';
       collection[method](resp, options);
       if (success) success.call(options.context, collection, resp, options);
+      promise && promise.resolve();
       collection.trigger('sync', collection, resp, options);
     };
     wrapError(this, options);
-    return this.sync('read', this, options);
+    return promise ? promise : this.sync('read', this, options);
   },
 
   // Create a new instance of a model in this collection. Add the model to the
