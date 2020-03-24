@@ -308,6 +308,10 @@ _.extend(Collection.prototype, Events, {
     return this.models.reduceRight(callback, initialValue || this.models[0]);
   },
 
+  toArray: function () {
+    return Array.from(this.models);
+  },
+
   // Get a model from the set by id, cid, model object with id or cid
   // properties, or an attributes object that is transformed through modelId.
   get: function(obj) {
@@ -708,7 +712,6 @@ const collectionMethods = {
   sortBy: 3,
   tail: 3,
   take: 3,
-  toArray: 1,
   without: 0,
 };
 
@@ -728,10 +731,10 @@ const modelMethods = {
 
 // Mix in each Underscore method as a proxy to `Collection#models`.
 
-_.each([
+[
   [Collection, collectionMethods, 'models'],
   [Model, modelMethods, 'attributes']
-], function(config) {
+].forEach((config) => {
   const Base = config[0],
       methods = config[1],
       attribute = config[2];
