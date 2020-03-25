@@ -12,9 +12,31 @@
 // Create a new model with the specified attributes. A client id (`cid`)
 // is automatically generated and assigned for you.
 
-import { addMethodsToObject, inherits, getResolveablePromise, getSyncMethod, urlError, wrapError } from './helpers.js';
+import {
+  addMethodsToObject,
+  getResolveablePromise,
+  getSyncMethod,
+  inherits,
+  urlError,
+  wrapError
+} from './helpers.js';
 import { Events } from './events.js';
-import { clone, defaults, defer, escape, extend, has, isEmpty, isEqual, iteratee, result, uniqueId} from 'lodash';
+import {
+  clone,
+  defaults,
+  defer,
+  escape,
+  extend,
+  has,
+  invert,
+  isEmpty,
+  isEqual,
+  iteratee,
+  omit,
+  pick,
+  result,
+  uniqueId
+} from 'lodash';
 
 
 export const Model = function(attributes, options) {
@@ -73,6 +95,44 @@ extend(Model.prototype, Events, {
   // Get the value of an attribute.
   get: function(attr) {
     return this.attributes[attr];
+  },
+
+  keys: function() {
+    return Object.keys(this.attributes);
+  },
+
+  values: function() {
+    return Object.values(this.attributes);
+  },
+
+  pairs: function() {
+    return this.entries();
+  },
+
+  entries: function() {
+    return Object.entries(this.attributes);
+  },
+
+  invert: function() {
+    return invert(this.attributes);
+  },
+
+  pick: function(...args) {
+    if (args.length === 1 && Array.isArray(args[0])) {
+      args = args[0];
+    }
+    return pick(this.attributes, args);
+  },
+
+  omit: function(...args) {
+    if (args.length === 1 && Array.isArray(args[0])) {
+      args = args[0];
+    }
+    return omit(this.attributes, args);
+  },
+
+  isEmpty: function() {
+    return isEmpty(this.attributes);
   },
 
   // Get the HTML-escaped value of an attribute.

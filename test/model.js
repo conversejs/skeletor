@@ -157,11 +157,6 @@
     assert.deepEqual(model.omit('foo', 'bar'), {baz: 'c'});
   });
 
-  QUnit.test('chain', function(assert) {
-    const model = new Skeletor.Model({a: 0, b: 1, c: 2});
-    assert.deepEqual(model.chain().pick('a', 'b', 'c').values().compact().value(), [1, 2]);
-  });
-
   QUnit.test('clone', function(assert) {
     assert.expect(10);
     var a = new Skeletor.Model({foo: 1, bar: 2, baz: 3});
@@ -1437,28 +1432,6 @@
     assert.equal(model.isValid(), false);
     assert.ok(!model.set('valid', false, {validate: true}));
   });
-
-  QUnit.test('mixin', function(assert) {
-    Skeletor.Model.mixin({
-      isEqual: function(model1, model2) {
-        return _.isEqual(model1, model2.attributes);
-      }
-    });
-
-    const model1 = new Skeletor.Model({
-      a: {b: 2}, c: 3
-    });
-    const model2 = new Skeletor.Model({
-      a: {b: 2}, c: 3
-    });
-    const model3 = new Skeletor.Model({
-      a: {b: 4}, c: 3
-    });
-
-    assert.equal(model1.isEqual(model2), true);
-    assert.equal(model1.isEqual(model3), false);
-  });
-
 
   QUnit.test('#1179 - isValid returns true in the absence of validate.', function(assert) {
     assert.expect(1);

@@ -714,29 +714,8 @@
     assert.equal(coll.findWhere({a: 4}), undefined);
   });
 
-  QUnit.test('mixin', function(assert) {
-    Skeletor.Collection.mixin({
-      sum: function(models, iteratee) {
-        return _.reduce(models, function(s, m) {
-          return s + iteratee(m);
-        }, 0);
-      }
-    });
-
-    const coll = new Skeletor.Collection([
-      {a: 1},
-      {a: 1, b: 2},
-      {a: 2, b: 2},
-      {a: 3}
-    ]);
-
-    assert.equal(coll.sum(function(m) {
-      return m.get('a');
-    }), 7);
-  });
-
   QUnit.test('Lodash methods', function(assert) {
-    assert.expect(21);
+    assert.expect(16);
     assert.equal(col.map(model => model.get('label')).join(' '), 'a b c d');
     assert.equal(col.some(model => model.id === 100), false);
     assert.equal(col.some(model => model.id === 0), true);
@@ -745,21 +724,11 @@
     assert.equal(col.indexOf(b), 1);
     assert.equal(col.size(), 4);
     assert.equal(col.drop().length, 3);
-    assert.ok(!_.includes(col.drop(), a));
-    assert.ok(_.includes(col.drop(), d));
+    assert.ok(!col.drop().includes(a));
+    assert.ok(col.drop().includes(d));
     assert.ok(!col.isEmpty());
-    assert.ok(!_.includes(col.without(d), d));
 
-    const wrapped = col.chain();
-    assert.equal(wrapped.map('id').max().value(), 3);
-    assert.equal(wrapped.map('id').min().value(), 0);
-    assert.deepEqual(wrapped
-      .filter(o => o.id % 2 === 0)
-      .map(o => o.id * 2)
-      .value(),
-      [4, 0]);
     assert.deepEqual(col.difference([c, d]), [a, b]);
-    assert.ok(col.includes(col.sample()));
 
     const first = col.first();
     assert.deepEqual(col.groupBy(model => model.id)[first.id], [first]);
@@ -769,7 +738,7 @@
   });
 
   QUnit.test('Underscore methods with object-style and property-style iteratee', function(assert) {
-    assert.expect(26);
+    assert.expect(20);
     const model = new Skeletor.Model({a: 4, b: 1, e: 3});
     const coll = new Skeletor.Collection([
       {a: 1, b: 1},
@@ -785,14 +754,8 @@
     assert.deepEqual(coll.filter({a: 4}), [model]);
     assert.equal(coll.some({a: 0}), false);
     assert.equal(coll.some({a: 1}), true);
-    assert.equal(coll.reject({a: 0}).length, 4);
-    assert.deepEqual(coll.reject({a: 4}), _.without(coll.models, model));
     assert.equal(coll.every({a: 0}), false);
     assert.equal(coll.every({b: 1}), true);
-    assert.deepEqual(coll.partition({a: 0})[0], []);
-    assert.deepEqual(coll.partition({a: 0})[1], coll.models);
-    assert.deepEqual(coll.partition({a: 4})[0], [model]);
-    assert.deepEqual(coll.partition({a: 4})[1], _.without(coll.models, model));
     assert.deepEqual(coll.map({a: 2}), [false, true, false, false]);
     assert.deepEqual(coll.map('a'), [1, 2, 3, 4]);
     assert.deepEqual(coll.sortBy('a')[3], model);
@@ -1940,22 +1903,6 @@
       assert.equal(options.changes.merged.length, 2);
     });
     collection.set([{id: 1}, {id: 2}]);
-  });
-
-  QUnit.test('#3610 - invokeMap collects arguments', function(assert) {
-    assert.expect(3);
-    const Model = Skeletor.Model.extend({
-      method: function(x, y, z) {
-        assert.equal(x, 1);
-        assert.equal(y, 2);
-        assert.equal(z, 3);
-      }
-    });
-    const Collection = Skeletor.Collection.extend({
-      model: Model
-    });
-    const collection = new Collection([{id: 1}]);
-    collection.invokeMap('method', 1, 2, 3);
   });
 
   QUnit.test('#3662 - triggering change without model will not error', function(assert) {

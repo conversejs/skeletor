@@ -199,19 +199,3 @@ const modelMatcher = function(attrs) {
         return matcher(model.attributes);
     };
 };
-
-export function addMethodsToObject(config) {
-    const Base = config[0],
-        methods = config[1],
-        attribute = config[2];
-
-    Base.mixin = function(obj) {
-        const mappings = _.reduce(_.functions(obj), function(memo, name) {
-            memo[name] = 0;
-            return memo;
-        }, {});
-        addUnderscoreMethods(Base, obj, mappings, attribute);
-    };
-
-    addUnderscoreMethods(Base, _, methods, attribute);
-}

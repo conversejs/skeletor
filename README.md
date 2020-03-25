@@ -23,11 +23,17 @@ Skeletor is a work-in-progress [Backbone](http://backbonejs.org) fork.
 
 * Collection.prototype.forEach no longer returns the items being iterated over.
   If you need that, use `map` instead.
+* The `chain` method on Models has been removed.
+* The `inject`, `foldl` and `foldr` methods on Collections has been removed. You can use `reduce` instead.
+* Removed the `sample`, `take`, `tail` and `initial` method on Collections.
+* Removed the `without`, `reject` and `select` methods on Collections, use `filter`.
 
 #### Changes due to using Lodash instead of Underscore
 
 1. Use `drop` instead of `rest`.
 2. `indexBy` is called `keyBy`
-2. Use `invokeMap` for collections instead of `invoke`.
+3. Use `invokeMap` for collections instead of `invoke`.
+4. Use `includes` instead of `contains`
+5. The `partition` and `invokeMap` methods have been removed.
 
 ![](https://raw.githubusercontent.com/skeletorjs/skeletor/master/images/skeletor3.jpg)
