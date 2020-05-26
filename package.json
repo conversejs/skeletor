@@ -27,7 +27,7 @@
     "karma-chrome-launcher": "^3.1.0",
     "karma-firefox-launcher": "^1.2.0",
     "karma-mocha": "^2.0.1",
-    "karma-qunit": "^4.0.0",
+    "karma-qunit": "^4.1.1",
     "karma-webpack": "^4.0.2",
     "localforage": "^1.7.3",
     "mocha": "^7.2.0",
