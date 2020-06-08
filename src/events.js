@@ -11,12 +11,15 @@
 // succession.
 //
 //     let object = {};
-//     _.extend(object, Backbone.Events);
+//     extend(object, Backbone.Events);
 //     object.on('expand', function(){ alert('expanded'); });
 //     object.trigger('expand');
 //
 
-import _ from 'lodash';
+import isEmpty from 'lodash-es/isEmpty.js';
+import keys from 'lodash-es/keys.js';
+import once from 'lodash-es/once.js';
+import uniqueId from 'lodash-es/uniqueId.js';
 
 export const Events = {};
 
@@ -34,7 +37,7 @@ const eventsApi = function(iteratee, events, name, callback, opts) {
   if (name && typeof name === 'object') {
     // Handle event maps.
     if (callback !== undefined && 'context' in opts && opts.context === undefined) opts.context = callback;
-    for (names = _.keys(name); i < names.length ; i++) {
+    for (names = keys(name); i < names.length ; i++) {
       events = eventsApi(iteratee, events, names[i], name[names[i]], opts);
     }
   } else if (name && eventSplitter.test(name)) {
@@ -74,14 +77,14 @@ Events.on = function(name, callback, context) {
 // for easier unbinding later.
 Events.listenTo = function(obj, name, callback) {
   if (!obj) return this;
-  const id = obj._listenId || (obj._listenId = _.uniqueId('l'));
+  const id = obj._listenId || (obj._listenId = uniqueId('l'));
   const listeningTo = this._listeningTo || (this._listeningTo = {});
   let listening = _listening = listeningTo[id];
 
   // This object is not listening to any other events on `obj` yet.
   // Setup the necessary references to track the listening callbacks.
   if (!listening) {
-    this._listenId || (this._listenId = _.uniqueId('l'));
+    this._listenId || (this._listenId = uniqueId('l'));
     listening = _listening = listeningTo[id] = new Listening(this, obj);
   }
 
@@ -138,7 +141,7 @@ Events.stopListening = function(obj, name, callback) {
   const listeningTo = this._listeningTo;
   if (!listeningTo) return this;
 
-  const ids = obj ? [obj._listenId] : _.keys(listeningTo);
+  const ids = obj ? [obj._listenId] : keys(listeningTo);
   for (let i = 0; i < ids.length; i++) {
     const listening = listeningTo[ids[i]];
 
@@ -149,7 +152,7 @@ Events.stopListening = function(obj, name, callback) {
     listening.obj.off(name, callback, this);
     if (listening.interop) listening.off(name, callback);
   }
-  if (_.isEmpty(listeningTo)) this._listeningTo = undefined;
+  if (isEmpty(listeningTo)) this._listeningTo = undefined;
 
   return this;
 };
@@ -163,13 +166,13 @@ const offApi = function(events, name, callback, options) {
 
   // Delete all event listeners and "drop" events.
   if (!name && !context && !callback) {
-    for (names = _.keys(listeners); i < names.length; i++) {
+    for (names = keys(listeners); i < names.length; i++) {
       listeners[names[i]].cleanup();
     }
     return;
   }
 
-  names = name ? [name] : _.keys(events);
+  names = name ? [name] : keys(events);
   for (; i < names.length; i++) {
     name = names[i];
     const handlers = events[name];
@@ -228,11 +231,11 @@ Events.listenToOnce = function(obj, name, callback) {
 // `offer` unbinds the `onceWrapper` after it has been called.
 const onceMap = function(map, name, callback, offer) {
   if (callback) {
-    const once = map[name] = _.once(function() {
-      offer(name, once);
+    const _once = map[name] = once(function() {
+      offer(name, _once);
       callback.apply(this, arguments);
     });
-    once._callback = callback;
+    _once._callback = callback;
   }
   return map;
 };

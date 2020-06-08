@@ -1,21 +1,42 @@
 /*!
  * Copyright (c) JC Brand <jc@opkode.com>
  */
-import  {
-   chain, includes, debounce, detect,
-   difference, drop, each,
-   every, extend, filter,
-   find, first, forEach, get,
-   head, indexOf,
-   initial, invoke,
-   isEmpty, last, lastIndexOf,
-   map, max, min,
-   reduce, reduceRight,
-   reject, rest, sample,
-   shuffle, size,
-   some, sortBy, tail,
-   take, toArray, without
-} from 'lodash';
+import debounce from 'lodash-es/debounce.js';
+import detect from 'lodash-es/detect.js';
+import difference from 'lodash-es/difference.js';
+import drop from 'lodash-es/drop.js';
+import each from 'lodash-es/each.js';
+import every from 'lodash-es/every.js';
+import extend from 'lodash-es/extend.js';
+import filter from 'lodash-es/filter.js';
+import find from 'lodash-es/find.js';
+import first from 'lodash-es/first.js';
+import forEach from 'lodash-es/forEach.js';
+import get from 'lodash-es/get.js';
+import head from 'lodash-es/head.js';
+import includes from 'lodash-es/includes.js';
+import indexOf from 'lodash-es/indexOf.js';
+import initial from 'lodash-es/initial.js';
+import invoke from 'lodash-es/invoke.js';
+import isEmpty from 'lodash-es/isEmpty.js';
+import last from 'lodash-es/last.js';
+import lastIndexOf from 'lodash-es/lastIndexOf.js';
+import map from 'lodash-es/map.js';
+import max from 'lodash-es/max.js';
+import min from 'lodash-es/min.js';
+import reduce from 'lodash-es/reduce.js';
+import reduceRight from 'lodash-es/reduceRight.js';
+import reject from 'lodash-es/reject.js';
+import rest from 'lodash-es/rest.js';
+import sample from 'lodash-es/sample.js';
+import shuffle from 'lodash-es/shuffle.js';
+import size from 'lodash-es/size.js';
+import some from 'lodash-es/some.js';
+import sortBy from 'lodash-es/sortBy.js';
+import tail from 'lodash-es/tail.js';
+import take from 'lodash-es/take.js';
+import toArray from 'lodash-es/toArray.js';
+import without from 'lodash-es/without.js';
 import { View } from "./view";
 
 
@@ -65,7 +86,7 @@ const Overview = function (options) {
 
 
 const methods = {
-   chain, includes, difference, drop,
+   includes, difference, drop,
    every, filter, find,
    first, forEach, head,
    indexOf, initial, invoke, isEmpty,

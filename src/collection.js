@@ -15,25 +15,22 @@
 import { inherits, getResolveablePromise, getSyncMethod, wrapError } from './helpers.js';
 import { Events } from './events.js';
 import { Model } from './model.js';
-import {
-  clone,
-  countBy,
-  difference,
-  every,
-  extend,
-  find,
-  findIndex,
-  findLastIndex,
-  groupBy,
-  indexOf,
-  isEmpty,
-  isFunction,
-  isString,
-  keyBy,
-  lastIndexOf,
-  some,
-  sortBy,
-} from 'lodash';
+import clone from "lodash-es/clone.js";
+import countBy from 'lodash-es/countBy.js';
+import difference from 'lodash-es/difference.js';
+import every from 'lodash-es/every.js';
+import extend from "lodash-es/extend.js";
+import findIndex from 'lodash-es/findIndex.js';
+import findLastIndex from 'lodash-es/findLastIndex.js';
+import groupBy from 'lodash-es/groupBy.js';
+import indexOf from 'lodash-es/indexOf.js';
+import isEmpty from "lodash-es/isEmpty.js";
+import isFunction from "lodash-es/isFunction.js";
+import isString from 'lodash-es/isString.js';
+import keyBy from 'lodash-es/keyBy.js';
+import lastIndexOf from 'lodash-es/lastIndexOf.js';
+import some from 'lodash-es/some.js';
+import sortBy from 'lodash-es/sortBy.js';
 
 const slice = Array.prototype.slice;
 
@@ -69,7 +66,7 @@ const splice = function(array, insert, at) {
 };
 
 // Define the Collection's inheritable methods.
-extend(Collection.prototype, Events, {
+Object.assign(Collection.prototype, Events, {
 
   // The default model for a collection is just a **Backbone.Model**.
   // This should be overridden in most cases.

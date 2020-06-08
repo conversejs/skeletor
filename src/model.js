@@ -13,7 +13,6 @@
 // is automatically generated and assigned for you.
 
 import {
-  addMethodsToObject,
   getResolveablePromise,
   getSyncMethod,
   inherits,
@@ -21,22 +20,22 @@ import {
   wrapError
 } from './helpers.js';
 import { Events } from './events.js';
-import {
-  clone,
-  defaults,
-  defer,
-  escape,
-  extend,
-  has,
-  invert,
-  isEmpty,
-  isEqual,
-  iteratee,
-  omit,
-  pick,
-  result,
-  uniqueId
-} from 'lodash';
+import clone from "lodash-es/clone.js";
+import defaults from "lodash-es/defaults.js";
+import defer from "lodash-es/defer.js";
+import escape from "lodash-es/escape.js";
+import extend from "lodash-es/extend.js";
+import has from "lodash-es/has.js";
+import invert from "lodash-es/invert.js";
+import isElement from "lodash-es/isElement.js";
+import isEmpty from "lodash-es/isEmpty.js";
+import isEqual from "lodash-es/isEqual.js";
+import isFunction from "lodash-es/isFunction.js";
+import iteratee from "lodash-es/iteratee.js";
+import omit from "lodash-es/omit.js";
+import pick from "lodash-es/pick.js";
+import result from "lodash-es/result.js";
+import uniqueId from "lodash-es/uniqueId.js";
 
 
 export const Model = function(attributes, options) {
@@ -57,7 +56,7 @@ export const Model = function(attributes, options) {
 Model.extend = inherits;
 
 // Attach all inheritable methods to the Model prototype.
-extend(Model.prototype, Events, {
+Object.assign(Model.prototype, Events, {
 
   // A hash of attributes whose current and previous value differ.
   changed: null,

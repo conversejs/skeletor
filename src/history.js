@@ -2,8 +2,9 @@
 //  (c) 2010-2019 Jeremy Ashkenas and DocumentCloud
 //  Backbone may be freely distributed under the MIT license.
 
+import extend from 'lodash-es/extend.js';
+import some from 'lodash-es/some.js';
 import { Events } from './events.js';
-import _ from 'lodash';
 import { inherits } from './helpers.js';
 
 // History
@@ -38,7 +39,7 @@ const pathStripper = /#.*$/;
 History.started = false;
 
 // Set up all inheritable **History** properties and methods.
-_.extend(History.prototype, Events, {
+Object.assign(History.prototype, Events, {
 
   // The default interval to poll for hash changes, if necessary, is
   // twenty times a second.
@@ -106,7 +107,7 @@ _.extend(History.prototype, Events, {
 
     // Figure out the initial configuration. Do we need an iframe?
     // Is pushState desired ... is it available?
-    this.options          = _.extend({root: '/'}, this.options, options);
+    this.options          = extend({root: '/'}, this.options, options);
     this.root             = this.options.root;
     this._wantsHashChange = this.options.hashChange !== false;
     this._hasHashChange   = 'onhashchange' in window && (document.documentMode === undefined|| document.documentMode > 7);
@@ -218,7 +219,7 @@ _.extend(History.prototype, Events, {
     // If the root doesn't match, no routes can match either.
     if (!this.matchRoot()) return false;
     fragment = this.fragment = this.getFragment(fragment);
-    return _.some(this.handlers, function(handler) {
+    return some(this.handlers, function(handler) {
       if (handler.route.test(fragment)) {
         handler.callback(fragment);
         return true;
