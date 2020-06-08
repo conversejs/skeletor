@@ -3,7 +3,7 @@
 [![XMPP Chat](https://inverse.chat/badge.svg?room=discuss@conference.conversejs.org)](https://inverse.chat/#converse/room?jid=discuss@conference.conversejs.org)
 [![Travis](https://api.travis-ci.org/skeletorjs/skeletor.png?branch=master)](https://travis-ci.org/skeletorjs/skeletor)
 
-Skeletor is a work-in-progress [Backbone](http://backbonejs.org) fork.
+Skeletor is a [Backbone](http://backbonejs.org) fork.
 
 ![](https://raw.githubusercontent.com/skeletorjs/skeletor/master/images/skeletor2.jpg)
 

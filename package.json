@@ -1,5 +1,5 @@
 {
-  "name": "skeletor.js",
+  "name": "@conversejs/skeletor",
   "description": "",
   "url": "https://github.com/skeletorjs/skeletor",
   "browser": "dist/skeletor.js",
