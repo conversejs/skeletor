@@ -2,10 +2,8 @@
  * Copyright (c) JC Brand <jc@opkode.com>
  */
 import debounce from 'lodash-es/debounce.js';
-import detect from 'lodash-es/detect.js';
 import difference from 'lodash-es/difference.js';
 import drop from 'lodash-es/drop.js';
-import each from 'lodash-es/each.js';
 import every from 'lodash-es/every.js';
 import extend from 'lodash-es/extend.js';
 import filter from 'lodash-es/filter.js';
@@ -103,7 +101,7 @@ Object.keys(methods).forEach(name => {
    };
 });
 
-extend(Overview.prototype, View.prototype);
+Object.assign(Overview.prototype, View.prototype);
 Overview.extend = View.extend;
 
 
