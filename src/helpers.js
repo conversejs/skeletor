@@ -5,6 +5,13 @@ import extend from 'lodash-es/extend.js';
 import has from 'lodash-es/has.js';
 import result from 'lodash-es/result.js';
 
+/**
+ * Custom error for indicating timeouts
+ * @namespace _converse
+ */
+export class NotImplementedError extends Error {}
+
+
 // Helpers
 // -------
 
