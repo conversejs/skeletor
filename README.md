@@ -12,6 +12,18 @@ similarly to how components are rendered in React and other frameworks.
 
 We can solve this by making Views web components. Check out the `ElementView` class, which does this.
 
+## Why bother?
+
+The goal of this fork is to allow the Converse team to gradually update the [Converse](https://conversejs.org)
+XMPP webchat client to use web components (using [LitElement](https://lit-element.polymer-project.org/)
+without requiring us to put everything on hold in order to do a massive rewrite.
+
+The end-goal is to not have any Backbone/Skeletor Views at all, only LitElement components.
+
+We can cheat a little by letting the existing Views also be web components
+(more accurately, "custom elements"), this allows us to declaratively render the
+UI, while we're progressively getting rid of the views.
+
 
 ![](https://raw.githubusercontent.com/conversejs/skeletor/master/images/skeletor2.jpg)
 
