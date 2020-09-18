@@ -1,7 +1,7 @@
 {
   "name": "@converse/skeletor",
   "description": "",
-  "url": "https://github.com/skeletorjs/skeletor",
+  "url": "https://github.com/conversejs/skeletor",
   "browser": "dist/skeletor.js",
   "keywords": [
     "model",
@@ -18,7 +18,7 @@
   ],
   "dependencies": {
     "lit-html": "^1.2.1",
-    "lodash-es": "^4.17.14"
+    "lodash-es": "^4.17.15"
   },
   "devDependencies": {
     "@babel/core": "^7.10.2",
@@ -26,6 +26,7 @@
     "@babel/preset-env": "^7.9.5",
     "@rollup/plugin-babel": "^5.0.3",
     "@rollup/plugin-node-resolve": "^8.0.1",
+    "babel-eslint": "^10.1.0",
     "babel-plugin-lodash": "^3.3.4",
     "chai": "^4.2.0",
     "eslint": "^7.2.0",
@@ -58,7 +59,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/skeletorjs/skeletor.git"
+    "url": "https://github.com/conversejs/skeletor.git"
   },
   "files": [
     "LICENSE",

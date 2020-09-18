@@ -1,23 +1,35 @@
 # Skeletor
 
 [![XMPP Chat](https://inverse.chat/badge.svg?room=discuss@conference.conversejs.org)](https://inverse.chat/#converse/room?jid=discuss@conference.conversejs.org)
-[![Travis](https://api.travis-ci.org/skeletorjs/skeletor.png?branch=master)](https://travis-ci.org/skeletorjs/skeletor)
+[![Travis](https://api.travis-ci.org/conversejs/skeletor.png?branch=master)](https://travis-ci.org/conversejs/skeletor)
 
 Skeletor is a [Backbone](http://backbonejs.org) fork.
 
-![](https://raw.githubusercontent.com/skeletorjs/skeletor/master/images/skeletor2.jpg)
+Its goal is to modernize and componentize Backbone.
+
+Original Backbone Views can't be rendered in a nested and declarative way,
+similarly to how components are rendered in React and other frameworks.
+
+We can solve this by making Views web components. Check out the `ElementView` class, which does this.
+
+
+![](https://raw.githubusercontent.com/conversejs/skeletor/master/images/skeletor2.jpg)
 
 ## Sekeletor adds the following changes to Backbone
 
 * Removes the dependency on jQuery
+* Instead of the `render` method Views can have a `toHTML` method which must return a [lit-html](https://lit-html.polymer-project.org/) `TemplateResult`.
 * Replaces [underscore](http://underscorejs.org) with [lodash](https://lodash.com)
 * Imports lodash methods individually to allow for tree-shaking
-* Use the native browser API instead of lodash whereever possible
+* Uses the native browser API instead of lodash whereever possible
 * Drops support for older browsers (including IE) and uses ES6+ language features
 * Splits models, views and collections into separate modules
 * Adds the possibility to returns promises for asynchronous operations
+* Adds a new `ElementView` class, which is a like a Backbone View, but doubles
+  as an instance of HTMLElement and can be used to register a custom element or
+  web-component.
 
-![](https://raw.githubusercontent.com/skeletorjs/skeletor/master/images/skeletor.jpg)
+![](https://raw.githubusercontent.com/conversejs/skeletor/master/images/skeletor.jpg)
 
 ### Backwards incompatible changes
 
@@ -36,4 +48,4 @@ Skeletor is a [Backbone](http://backbonejs.org) fork.
 4. Use `includes` instead of `contains`
 5. The `partition` and `invokeMap` methods have been removed.
 
-![](https://raw.githubusercontent.com/skeletorjs/skeletor/master/images/skeletor3.jpg)
+![](https://raw.githubusercontent.com/conversejs/skeletor/master/images/skeletor3.jpg)

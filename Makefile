@@ -1,5 +1,11 @@
 ESLINT			?= ./node_modules/.bin/eslint
 
+.PHONY: release
+release:
+	$(SED) -i '/"version":/s/:.*/: "$(VERSION)",/' package.json
+	$(SED) -i "s/[Uu]nreleased/`date +%Y-%m-%d`/" CHANGES.md
+	npm pack
+
 node_modules: package.json package-lock.json
 	npm install
 
