@@ -1,4 +1,5 @@
 ESLINT			?= ./node_modules/.bin/eslint
+SED				?= sed
 
 .PHONY: release
 release:
