@@ -15,7 +15,7 @@ We can solve this by making Views web components. Check out the `ElementView` cl
 ## Why bother?
 
 The goal of this fork is to allow the Converse team to gradually update the [Converse](https://conversejs.org)
-XMPP webchat client to use web components (using [LitElement](https://lit-element.polymer-project.org/)
+XMPP webchat client to use web components (using [LitElement](https://lit-element.polymer-project.org/))
 without requiring us to put everything on hold in order to do a massive rewrite.
 
 The end-goal is to not have any Backbone/Skeletor Views at all, only LitElement components.
