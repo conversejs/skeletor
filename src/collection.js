@@ -515,6 +515,7 @@ Object.assign(Collection.prototype, Events, {
     if (!wait) this.add(model, options);
     const collection = this;
     const success = options.success;
+    const error = options.error;
     options.success = function(m, resp, callbackOpts) {
       if (wait) {
         collection.add(m, callbackOpts);
@@ -526,7 +527,12 @@ Object.assign(Collection.prototype, Events, {
         promise.resolve(m);
       }
     };
-    model.save(null, options);
+    options.error = function(model, e, options) {
+      error && error.call(options.context, model, e, options);
+      return_promise && promise.reject(e);
+    }
+
+    model.save(null, Object.assign(options, {'promise': false}));
     if (return_promise) {
       return promise;
     } else {

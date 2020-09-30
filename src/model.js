@@ -324,6 +324,7 @@ Object.assign(Model.prototype, Events, {
     // updated with the server-side state.
     const model = this;
     const success = options.success;
+    const error = options.error;
     const attributes = this.attributes;
     options.success = function(resp) {
       // Ensure attributes are restored during synchronous saves.
@@ -333,8 +334,13 @@ Object.assign(Model.prototype, Events, {
       if (serverAttrs && !model.set(serverAttrs, options)) return false;
       if (success) success.call(options.context, model, resp, options);
       model.trigger('sync', model, resp, options);
-      if (return_promise) promise.resolve();
+      return_promise && promise.resolve();
     };
+    options.error = function(model, e, options) {
+      error && error.call(options.context, model, e, options);
+      return_promise && promise.reject(e);
+    }
+
     wrapError(this, options);
 
     // Set temporary attributes if `{wait: true}` to properly find new ids.
