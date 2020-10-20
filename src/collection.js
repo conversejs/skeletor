@@ -229,17 +229,20 @@ Object.assign(Collection.prototype, Events, {
     return singular ? models[0] : models;
   },
 
-  clearStore: async function(options={}) {
-      await Promise.all(Array.from(this.models).map(m => {
-          return new Promise(
-              resolve => {
-                  m.destroy(Object.assign(options, {
-                      'success': resolve,
-                      'error': (m, e) => { console.error(e); resolve() }
-                  }));
-              }
-          );
-      }));
+  clearStore: async function(options={}, filter=(o) => o) {
+      await Promise.all(this.models
+          .filter(filter)
+          .map(m => {
+              return new Promise(
+                resolve => {
+                    m.destroy(Object.assign(options, {
+                        'success': resolve,
+                        'error': (m, e) => { console.error(e); resolve() }
+                    }));
+                }
+            );
+          })
+      );
       await this.browserStorage.clear();
       this.reset();
   },
