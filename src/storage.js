@@ -41,8 +41,9 @@ class Storage {
             localForage.setDriver(sessionStorageWrapper._driver);
         } else if (type === 'local') {
             await localForage.config({'driver': localForage.LOCALSTORAGE});
-        } else if (type === 'noStorage') {
-            localForage.setDriver(noStorageWrapper._driver);
+        } else if (type === 'in_memory') {
+            localforage.defineDriver(memoryDriver);
+            localforage.setDriver(memoryDriver._driver);
         } else if (type !== 'indexed') {
             throw new Error("Skeletor.storage: No storage type was specified");
         }
