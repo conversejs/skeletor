@@ -3,6 +3,8 @@
  */
 import * as localForage from "localforage";
 import * as memoryDriver from 'localforage-driver-memory';
+const IN_MEMORY = memoryDriver._driver
+localForage.defineDriver(memoryDriver);
 import cloneDeep from 'lodash-es/cloneDeep.js';
 import isString from 'lodash-es/isString.js';
 import sessionStorageWrapper from "./drivers/sessionStorage.js";
@@ -41,8 +43,7 @@ class Storage {
         } else if (type === 'local') {
             await localForage.config({'driver': localForage.LOCALSTORAGE});
         } else if (type === 'in_memory') {
-            localForage.defineDriver(memoryDriver);
-            localForage.setDriver(memoryDriver._driver);
+            localForage.config({'driver': IN_MEMORY});
         } else if (type !== 'indexed') {
             throw new Error("Skeletor.storage: No storage type was specified");
         }
