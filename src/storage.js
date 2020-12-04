@@ -3,11 +3,12 @@
  */
 import * as localForage from "localforage";
 import * as memoryDriver from 'localforage-driver-memory';
-const IN_MEMORY = memoryDriver._driver
-localForage.defineDriver(memoryDriver);
 import cloneDeep from 'lodash-es/cloneDeep.js';
 import isString from 'lodash-es/isString.js';
 import sessionStorageWrapper from "./drivers/sessionStorage.js";
+
+const IN_MEMORY = memoryDriver._driver
+localForage.defineDriver(memoryDriver);
 
 function S4() {
     // Generate four random hex digits.
