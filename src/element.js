@@ -23,19 +23,34 @@ const viewOptions = ['model', 'collection', 'events'];
 
 export class ElementView extends HTMLElement {
 
+  events = {}
+
   constructor(options) {
     super();
     // Creating a View creates its initial element outside of the DOM,
     // if an existing element is not provided...
     this.cid = uniqueId('view');
     this._domEvents = [];
-    this.preinitialize.apply(this, arguments);
     extend(this, pick(options, viewOptions));
-    this.initialize.apply(this, arguments);
   }
 
-  get events () { // eslint-disable-line class-methods-use-this
-      return null;
+  createRenderRoot () {
+    // Render without the shadow DOM
+    return this;
+  }
+
+  connectedCallback () {
+    if (!this._initialized) {
+      this.preinitialize.apply(this, arguments);
+      this.initialize.apply(this, arguments);
+      this._initialized = true;
+    }
+    this.delegateEvents();
+  }
+
+  disconnectedCallback () {
+    this.undelegateEvents();
+    this.stopListening();
   }
 
   // preinitialize is an empty function by default. You can override it with a function
@@ -52,25 +67,9 @@ export class ElementView extends HTMLElement {
   // convention is for **render** to always return `this`.
   render() {
     isFunction(this.beforeRender) && this.beforeRender();
-    isFunction(this.toHTML) && render(this.toHTML(), this.el);
+    isFunction(this.toHTML) && render(this.toHTML(), this);
     isFunction(this.afterRender) && this.afterRender();
     return this;
-  }
-
-  // Remove this view by taking the element out of the DOM, and removing any
-  // applicable Backbone.Events listeners.
-  remove() {
-    this._removeElement();
-    this.stopListening();
-    return this;
-  }
-
-  // Remove this view's element from the document and all event listeners
-  // attached to it. Exposed for subclasses using an alternative DOM
-  // manipulation API.
-  _removeElement() {
-    this.undelegateEvents();
-    this.el.parentNode?.removeChild(this.el);
   }
 
   // Set callbacks, where `this.events` is a hash of
@@ -110,7 +109,7 @@ export class ElementView extends HTMLElement {
   // result of calling bound `listener` with the parameters given to the
   // handler.
   delegate(eventName, selector, listener) {
-    const root = this.el;
+    const root = this;
     if (!root) {
       return this;
     }
@@ -120,7 +119,7 @@ export class ElementView extends HTMLElement {
     }
     // Given that `focus` and `blur` events do not bubble, do not delegate these events
     if (['focus', 'blur'].indexOf(eventName) !== -1) {
-      const els = this.el.querySelectorAll(selector);
+      const els = this.querySelectorAll(selector);
       for (let i = 0, len = els.length; i < len; i++) {
         const item = els[i];
         item.addEventListener(eventName, listener, false);
@@ -139,8 +138,8 @@ export class ElementView extends HTMLElement {
       }
     } : listener;
 
-    this.el.addEventListener(eventName, handler, false);
-    this._domEvents.push({el: this.el, eventName: eventName, handler: handler, listener: listener, selector: selector});
+    this.addEventListener(eventName, handler, false);
+    this._domEvents.push({el: this, eventName: eventName, handler: handler, listener: listener, selector: selector});
     return this;
   }
 
@@ -148,7 +147,7 @@ export class ElementView extends HTMLElement {
   // You usually don't need to use this, but may wish to if you have multiple
   // Backbone views attached to the same DOM element.
   undelegateEvents() {
-    if (this.el) {
+    if (this) {
       for (let i = 0, len = this._domEvents.length; i < len; i++) {
         const item = this._domEvents[i];
         item.el.removeEventListener(item.eventName, item.handler, false);
@@ -165,7 +164,7 @@ export class ElementView extends HTMLElement {
       listener = selector;
       selector = null;
     }
-    if (this.el) {
+    if (this) {
       const handlers = this._domEvents.slice();
       let i = handlers.length;
       while (i--) {
