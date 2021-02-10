@@ -1,6 +1,9 @@
 ESLINT			?= ./node_modules/.bin/eslint
 SED				?= sed
 
+dev: node_modules build
+	npm run dev
+
 .PHONY: release
 release:
 	$(SED) -i '/"version":/s/:.*/: "$(VERSION)",/' package.json
@@ -12,9 +15,6 @@ node_modules: package.json package-lock.json
 
 build: node_modules
 	npm run build
-
-dev: node_modules build
-	npm run dev
 
 check: node_modules build eslint
 	npm run test

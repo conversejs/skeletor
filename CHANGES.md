@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.0.3 (Unreleased)
+
+- Create the `ElementView`, which is like a Backbone View but extends
+  `HTMLElement` and is therefore also a custom element or web component.
+
 ## 0.0.2 (2020-09-18)
 
 Initial fork from Backbone
@@ -15,4 +20,3 @@ Initial fork from Backbone
 - Adds a new `ElementView` class, which is a like a Backbone View, but doubles
   as an instance of HTMLElement and can be used to register a custom element or
   web-component.
-

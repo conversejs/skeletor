@@ -56,7 +56,7 @@
     "lint": "eslint src/*.js test/*.js"
   },
   "module": "src/main.js",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "license": "MIT",
   "repository": {
     "type": "git",
