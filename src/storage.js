@@ -6,9 +6,11 @@ import * as memoryDriver from 'localforage-driver-memory';
 import cloneDeep from 'lodash-es/cloneDeep.js';
 import isString from 'lodash-es/isString.js';
 import sessionStorageWrapper from "./drivers/sessionStorage.js";
+import { extendPrototype } from 'localforage-setitems';
 
 const IN_MEMORY = memoryDriver._driver
 localForage.defineDriver(memoryDriver);
+extendPrototype(localForage);
 
 function S4() {
     // Generate four random hex digits.
@@ -164,11 +166,36 @@ class Storage {
         return this.store.setItem(this.name, ids);
     }
 
+    getCollectionReferenceData (model) {
+        const ids = model.collection.map(m => this.getItemName(m.id));
+        const new_id = this.getItemName(model.id);
+        if (!ids.includes(new_id)) {
+            ids.push(new_id);
+        }
+        return {
+            'key': this.name,
+            'value': ids
+        }
+    }
+
     async save (model, options={}) {
-        const key = this.getItemName(model.id);
-        const data = await this.store.setItem(key, model.toJSON());
-        await this.addCollectionReference(model, model.collection);
-        return data;
+        if (this.store.setItems) {
+            const mdata = {
+                'key': this.getItemName(model.id),
+                'value': model.toJSON()
+            };
+            const items = [];
+            items.push(mdata);
+            if (model.collection) {
+                items.push(this.getCollectionReferenceData(model));
+            }
+            return await this.store.setItems(items);
+        } else {
+            const key = this.getItemName(model.id);
+            const data = await this.store.setItem(key, model.toJSON());
+            await this.addCollectionReference(model, model.collection);
+            return data;
+        }
     }
 
     create (model, options) {
