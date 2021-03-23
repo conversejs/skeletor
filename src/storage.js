@@ -1,6 +1,7 @@
 /**
  * IndexedDB, localStorage and sessionStorage adapter
  */
+import mergebounce from 'mergebounce';
 import * as localForage from "localforage";
 import * as memoryDriver from 'localforage-driver-memory';
 import cloneDeep from 'lodash-es/cloneDeep.js';
@@ -25,22 +26,29 @@ function guid() {
 
 class Storage {
 
-    constructor (name, type) {
+    constructor (id, type, batchedWrites=false) {
         if (type === 'local' && !window.localStorage ) {
             throw new Error("Skeletor.storage: Environment does not support localStorage.");
         } else if (type === 'session' && !window.sessionStorage ) {
             throw new Error("Skeletor.storage: Environment does not support sessionStorage.");
         }
         if (isString(type)) {
-            this.storeInitialized = this.initStore(type);
+            this.storeInitialized = this.initStore(type, batchedWrites);
         } else {
             this.store = type;
+            if (batchedWrites) {
+                this.store.debouncedSetItems = mergebounce(
+                    items => this.store.setItems(items),
+                    50,
+                    {'promise': true}
+                );
+            }
             this.storeInitialized = Promise.resolve();
         }
-        this.name = name;
+        this.name = id;
     }
 
-    async initStore (type) {
+    async initStore (type, batchedWrites) {
         if (type === 'session') {
             localForage.setDriver(sessionStorageWrapper._driver);
         } else if (type === 'local') {
@@ -51,6 +59,17 @@ class Storage {
             throw new Error("Skeletor.storage: No storage type was specified");
         }
         this.store = localForage;
+        if (batchedWrites) {
+            this.store.debouncedSetItems = mergebounce(
+                items => this.store.setItems(items),
+                50,
+                {'promise': true}
+            );
+        }
+    }
+
+    flush () {
+        return this.store.debouncedSetItems?.flush();
     }
 
     async clear () {
@@ -172,24 +191,19 @@ class Storage {
         if (!ids.includes(new_id)) {
             ids.push(new_id);
         }
-        return {
-            'key': this.name,
-            'value': ids
-        }
+        const result = {};
+        result[this.name] = ids;
+        return result;
     }
 
-    async save (model, options={}) {
+    async save (model) {
         if (this.store.setItems) {
-            const mdata = {
-                'key': this.getItemName(model.id),
-                'value': model.toJSON()
-            };
-            const items = [];
-            items.push(mdata);
-            if (model.collection) {
-                items.push(this.getCollectionReferenceData(model));
-            }
-            return await this.store.setItems(items);
+            const items = {}
+            items[this.getItemName(model.id)] = model.toJSON();
+            Object.assign(items, this.getCollectionReferenceData(model));
+            return (this.store.debouncedSetItems) ?
+                this.store.debouncedSetItems(items) :
+                this.store.setItems(items);
         } else {
             const key = this.getItemName(model.id);
             const data = await this.store.setItem(key, model.toJSON());
@@ -209,8 +223,8 @@ class Storage {
         return this.save(model);
     }
 
-    update (model, options) {
-        return this.save(model, options);
+    update (model) {
+        return this.save(model);
     }
 
     find (model) {
@@ -228,6 +242,7 @@ class Storage {
     }
 
     async destroy (model, collection) {
+        await this.flush();
         await this.store.removeItem(this.getItemName(model.id));
         await this.removeCollectionReference(model, collection);
         return model;

@@ -24,7 +24,6 @@ We can cheat a little by letting the existing Views also be web components
 (more accurately, "custom elements"), this allows us to declaratively render the
 UI, while we're progressively getting rid of the views.
 
-
 ![](https://raw.githubusercontent.com/conversejs/skeletor/master/images/skeletor2.jpg)
 
 ## Sekeletor adds the following changes to Backbone

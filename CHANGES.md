@@ -4,6 +4,10 @@
 
 - Create the `ElementView`, which is like a Backbone View but extends
   `HTMLElement` and is therefore also a custom element or web component.
+- Allow writes to the client-side store to be batched (via [mergebounce](https://github.com/conversejs/mergebounce)).
+  This is particularly useful for IndexedDB, which has a very slow writing speed.
+  To enabled batched writes, pass in `true` for the 3rd parameter of the
+  `Storage` constructor.
 
 ## 0.0.2 (2020-09-18)
 

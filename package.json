@@ -18,7 +18,8 @@
   ],
   "dependencies": {
     "lit-html": "^1.2.1",
-    "lodash-es": "^4.17.15"
+    "lodash-es": "^4.17.15",
+    "mergebounce": "0.0.2"
   },
   "devDependencies": {
     "@babel/core": "^7.10.2",
