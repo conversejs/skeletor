@@ -6,7 +6,10 @@ import resolve from '@rollup/plugin-node-resolve';
 const plugins = [
   resolve(),
   babel({
-    "plugins": ["lodash"],
+    "plugins": [
+        "lodash",
+        '@babel/plugin-proposal-optional-chaining'
+    ],
     "presets": [
       [
         "@babel/preset-env",

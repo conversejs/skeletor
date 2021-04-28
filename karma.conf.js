@@ -48,7 +48,19 @@ module.exports = function(config) {
       module: {
          rules: [{
            test: /\.js$/,
-           exclude: /(node_modules|test)/
+           use: {
+             loader: 'babel-loader',
+             options: {
+               presets: [
+                 ["@babel/preset-env", {
+                     "targets": {
+                         "browsers": [">1%", "not ie 11", "not op_mini all", "not dead"]
+                     }
+                 }]
+               ],
+               plugins: [ '@babel/plugin-proposal-optional-chaining' ]
+             }
+           }
          }]
       },
       output: {
@@ -88,7 +100,7 @@ module.exports = function(config) {
 
     // Continuous Integration mode
     // if true, Karma captures browsers, runs the tests and exits
-    singleRun: false,
+    singleRun: true,
 
     // Concurrency level
     // how many browser should be started simultaneous

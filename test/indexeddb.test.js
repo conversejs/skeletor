@@ -50,7 +50,11 @@ describe('Model using IndexedDB', function () {
 
         it('saves to localForage', async function () {
             let model = new TestModel();
-            model = await new Promise((resolve, reject) => model.save({'hello': 'world!'}, {'success': resolve}));
+            try {
+                model = await new Promise((resolve, reject) => model.save({'hello': 'world!'}, {'success': resolve}));
+            } catch (e) {
+                console.error(e);
+            }
             expect(model.id).to.be.a('string');
             expect(model.get('hello')).to.equal('world!');
         });

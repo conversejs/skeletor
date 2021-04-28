@@ -186,6 +186,9 @@ class Storage {
     }
 
     getCollectionReferenceData (model) {
+        if (!model.collection) {
+            return {};
+        }
         const ids = model.collection.map(m => this.getItemName(m.id));
         const new_id = this.getItemName(model.id);
         if (!ids.includes(new_id)) {
