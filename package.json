@@ -1,6 +1,6 @@
 {
   "name": "@converse/skeletor",
-  "description": "",
+  "description": "Modernized Backbone with web components",
   "url": "https://github.com/conversejs/skeletor",
   "browser": "dist/skeletor.js",
   "keywords": [
