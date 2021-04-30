@@ -16,6 +16,8 @@ node_modules: package.json package-lock.json
 build: node_modules
 	npm run build
 
+dist: build
+
 check: node_modules build eslint
 	npm run test
 

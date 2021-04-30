@@ -7,7 +7,6 @@ const plugins = [
   resolve(),
   babel({
     "plugins": [
-        "lodash",
         '@babel/plugin-proposal-optional-chaining'
     ],
     "presets": [
