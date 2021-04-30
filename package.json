@@ -17,7 +17,7 @@
     "JC Brand"
   ],
   "dependencies": {
-    "lit-html": "^1.2.1",
+    "lit-html": "^2.0.0-rc.2",
     "lodash-es": "^4.17.15",
     "mergebounce": "0.0.2"
   },
