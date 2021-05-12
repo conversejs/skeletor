@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.0.5 (Unreleased)
+
+- Don't expect a collection's `model` attribute to have a `prototype`. It might be an arrow function, in which case it doesn't.
+
 ## 0.0.4 (2021-05-12)
 
 - Upgrade to lit 2.0.0-rc.2
