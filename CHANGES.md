@@ -1,9 +1,14 @@
 # Changelog
 
-## 0.0.3 (2021-05-12)
+## 0.0.4 (2021-05-12)
+
+- Upgrade to lit 2.0.0-rc.2
+
+## 0.0.3 (2021-04-28)
 
 - Create the `ElementView`, which is like a Backbone View but extends
   `HTMLElement` and is therefore also a custom element or web component.
+/home/kalie/src/converse.prosody/src/converse.js/src/headless/core.js:     * @property {object} converse.env._           - The instance of [lodash-es](http://lodash.com) used by Converse.
 - Allow writes to the client-side store to be batched (via [mergebounce](https://github.com/conversejs/mergebounce)).
   This is particularly useful for IndexedDB, which has a very slow writing speed.
   To enabled batched writes, pass in `true` for the 3rd parameter of the
