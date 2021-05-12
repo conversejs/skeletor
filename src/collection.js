@@ -559,7 +559,7 @@ Object.assign(Collection.prototype, Events, {
 
   // Define how to uniquely identify models in the collection.
   modelId: function(attrs) {
-    return attrs[this.model.prototype.idAttribute || 'id'];
+    return attrs[this.model.prototype?.idAttribute || 'id'];
   },
 
   // Get an iterator of all models in this collection.
