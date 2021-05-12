@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.0.3 (Unreleased)
+## 0.0.3 (2021-05-12)
 
 - Create the `ElementView`, which is like a Backbone View but extends
   `HTMLElement` and is therefore also a custom element or web component.
