@@ -2,7 +2,9 @@
 
 ## 0.0.5 (Unreleased)
 
+- #13 Import the default export of localforage
 - Don't expect a collection's `model` attribute to have a `prototype`. It might be an arrow function, in which case it doesn't.
+- Update to mergebounce 0.1.0
 
 ## 0.0.4 (2021-05-12)
 

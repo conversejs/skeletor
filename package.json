@@ -19,7 +19,7 @@
   "dependencies": {
     "lit-html": "^2.0.0-rc.2",
     "lodash-es": "^4.17.21",
-    "mergebounce": "0.0.2"
+    "mergebounce": "0.1.0"
   },
   "devDependencies": {
     "@babel/core": "^7.10.2",
