@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.0.5 (Unreleased)
+## 0.0.5 (2021-07-08)
 
 - #13 Import the default export of localforage
 - Don't expect a collection's `model` attribute to have a `prototype`. It might be an arrow function, in which case it doesn't.
