@@ -1,17 +1,19 @@
 /**
  * IndexedDB, localStorage and sessionStorage adapter
  */
-import mergebounce from 'mergebounce';
-import localForage from "localforage/src/localforage";
 import * as memoryDriver from 'localforage-driver-memory';
 import cloneDeep from 'lodash-es/cloneDeep.js';
 import isString from 'lodash-es/isString.js';
+import localForage from "localforage/src/localforage";
+import mergebounce from 'mergebounce';
 import sessionStorageWrapper from "./drivers/sessionStorage.js";
-import { extendPrototype } from 'localforage-setitems';
+import { extendPrototype as extendPrototypeWithSetItems } from 'localforage-setitems';
+import { extendPrototype as extendPrototypeWithGetItems } from 'localforage-getitems';
 
 const IN_MEMORY = memoryDriver._driver
 localForage.defineDriver(memoryDriver);
-extendPrototype(localForage);
+extendPrototypeWithSetItems(localForage);
+extendPrototypeWithGetItems(localForage);
 
 function S4() {
     // Generate four random hex digits.
@@ -80,7 +82,7 @@ class Storage {
         await Promise.all(removed_keys.map(k => this.store.removeItem(k).catch(e => console.error(e))));
     }
 
-    sync (name) {
+    sync () {
         const that = this;
 
         async function localSync (method, model, options) {
@@ -237,9 +239,10 @@ class Storage {
     async findAll () {
         /* Return the array of all models currently in storage.
          */
-        const data = await this.store.getItem(this.name);
-        if (data && data.length) {
-            return Promise.all(data.map(item => this.store.getItem(item)));
+        const keys = await this.store.getItem(this.name);
+        if (keys?.length) {
+            const items = await this.store.getItems(keys);
+            return Object.values(items);
         }
         return [];
     }

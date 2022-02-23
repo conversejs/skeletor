@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.0.6 (Unreleased)
+
+- Use the `getAll` IndexedDB function, which should result in a significant speedup
+
 ## 0.0.5 (2021-07-08)
 
 - #13 Import the default export of localforage

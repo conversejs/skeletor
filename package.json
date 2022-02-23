@@ -40,6 +40,7 @@
     "karma-webpack": "^4.0.2",
     "localforage": "^1.7.4",
     "localforage-driver-memory": "^1.0.5",
+    "localforage-getitems": "conversejs/localForage-getItems#de039970de16a9d3b54cdaa816aed5adaefb80c9",
     "localforage-setitems": "^1.4.0",
     "mocha": "^7.2.0",
     "qunit": "^2.10.0",
