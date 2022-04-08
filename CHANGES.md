@@ -1,8 +1,9 @@
 # Changelog
 
-## 0.0.6 (Unreleased)
+## 0.0.6 (2022-04-08)
 
 - Use the `getAll` IndexedDB function, which should result in a significant speedup
+- Update various 3rd party dependencies.
 
 ## 0.0.5 (2021-07-08)
 
