@@ -18,6 +18,10 @@
   ],
   "dependencies": {
     "lit-html": "^2.0.0-rc.2",
+    "localforage": "^1.10.0",
+    "localforage-driver-memory": "^1.0.5",
+    "localforage-getitems": "conversejs/localForage-getItems#0f129c5c9bb0d23f8dbb64c9dfbb003c8cdf7285",
+    "localforage-setitems": "^1.4.0",
     "lodash-es": "^4.17.21",
     "mergebounce": "0.1.1"
   },
@@ -38,10 +42,6 @@
     "karma-mocha": "^2.0.1",
     "karma-qunit": "^4.1.1",
     "karma-webpack": "^4.0.2",
-    "localforage": "^1.7.4",
-    "localforage-driver-memory": "^1.0.5",
-    "localforage-getitems": "conversejs/localForage-getItems#de039970de16a9d3b54cdaa816aed5adaefb80c9",
-    "localforage-setitems": "^1.4.0",
     "mocha": "^7.2.0",
     "qunit": "^2.10.0",
     "rollup": "^1.32.1",

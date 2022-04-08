@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.0.7 (Unreleased)
+
+- Move code that needs to be bundled to `dependencies` from `devDependencies`
+- Update localForage-getItems to fix a build issue on Windows
+
 ## 0.0.6 (2022-04-08)
 
 - Use the `getAll` IndexedDB function, which should result in a significant speedup
