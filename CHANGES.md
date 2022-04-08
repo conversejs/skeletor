@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.0.7 (Unreleased)
+## 0.0.7 (2022-04-08)
 
 - Move code that needs to be bundled to `dependencies` from `devDependencies`
 - Update localForage-getItems to fix a build issue on Windows
