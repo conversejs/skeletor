@@ -221,45 +221,37 @@ function removeItem(key, callback) {
 // Unlike Gaia's implementation, the callback function is passed the value,
 // in case you want to operate on that value only after you're sure it
 // saved, or something like that.
-function setItem(key, value, callback) {
+async function setItem(key, value, callback) {
     key = normalizeKey(key);
+    await this.ready();
 
-    const promise = this.ready().then(function() {
-        // Convert undefined values to null.
-        // https://github.com/mozilla/localForage/pull/42
-        if (value === undefined) {
-            value = null;
-        }
+    // Convert undefined values to null.
+    // https://github.com/mozilla/localForage/pull/42
+    value = value ?? null;
 
-        // Save the original value to pass to the callback.
-        const originalValue = value;
+    // Save the original value to pass to the callback.
+    const originalValue = value;
 
-        return new Promise(function(resolve, reject) {
-            dbInfo.serializer.serialize(value, function(value, error) {
-                if (error) {
-                    reject(error);
-                } else {
-                    try {
-                        sessionStorage.setItem(dbInfo.keyPrefix + key, value);
-                        resolve(originalValue);
-                    } catch (e) {
-                        // sessionStorage capacity exceeded.
-                        // TODO: Make this a specific error/event.
-                        if (
-                            e.name === 'QuotaExceededError' ||
-                            e.name === 'NS_ERROR_DOM_QUOTA_REACHED'
-                        ) {
-                            reject(e);
-                        }
-                        reject(e);
-                    }
+    dbInfo.serializer.serialize(value, (value, error) => {
+        if (error) {
+            throw error;
+        } else {
+            try {
+                sessionStorage.setItem(dbInfo.keyPrefix + key, value);
+                executeCallback(Promise.resolve(originalValue), callback);
+            } catch (e) {
+                if (
+                    e.name === 'QuotaExceededError' ||
+                    e.name === 'NS_ERROR_DOM_QUOTA_REACHED'
+                ) {
+                    console.error("Your sesionStorage capacity is used up.");
+                    throw e;
                 }
-            });
-        });
+                throw e;
+            }
+        }
     });
 
-    executeCallback(promise, callback);
-    return promise;
 }
 
 function dropInstance(options, callback) {
