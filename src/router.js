@@ -16,13 +16,13 @@ import { inherits } from './helpers.js';
 
 // Routers map faux-URLs to actions, and fire events when routes are
 // matched. Creating a new one sets its `routes` hash, if not set statically.
-export const Router = function(options={}) {
+export function Router (options={}) {
   this.history = options.history || new History();
   this.preinitialize.apply(this, arguments);
   if (options.routes) this.routes = options.routes;
   this._bindRoutes();
   this.initialize.apply(this, arguments);
-};
+}
 
 Router.extend = inherits;
 

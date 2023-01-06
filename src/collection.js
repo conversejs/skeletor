@@ -37,7 +37,7 @@ const slice = Array.prototype.slice;
 // Create a new **Collection**, perhaps to contain a specific type of `model`.
 // If a `comparator` is specified, the Collection will maintain
 // its models in sort order, as they're added and removed.
-export const Collection = function(models, options) {
+export function Collection (models, options) {
   options || (options = {});
   this.preinitialize.apply(this, arguments);
   if (options.model) this.model = options.model;
@@ -45,7 +45,7 @@ export const Collection = function(models, options) {
   this._reset();
   this.initialize.apply(this, arguments);
   if (models) this.reset(models, extend({silent: true}, options));
-};
+}
 
 Collection.extend = inherits;
 

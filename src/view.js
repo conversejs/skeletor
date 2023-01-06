@@ -36,14 +36,14 @@ const indexOf = function(array, item) {
 
 // Creating a View creates its initial element outside of the DOM,
 // if an existing element is not provided...
-export const View = function(options) {
+export function View (options) {
   this.cid = uniqueId('view');
   this._domEvents = [];
   this.preinitialize.apply(this, arguments);
   extend(this, pick(options, viewOptions));
   this._ensureElement();
   this.initialize.apply(this, arguments);
-};
+}
 
 View.extend = inherits;
 

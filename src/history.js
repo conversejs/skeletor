@@ -15,7 +15,7 @@ import { inherits } from './helpers.js';
 // [onhashchange](https://developer.mozilla.org/en-US/docs/DOM/window.onhashchange)
 // and URL fragments. If the browser supports neither (old IE, natch),
 // falls back to polling.
-const History = function() {
+export default function History () {
   this.handlers = [];
   this.checkUrl = this.checkUrl.bind(this);
 
@@ -24,7 +24,7 @@ const History = function() {
     this.location = window.location;
     this.history = window.history;
   }
-};
+}
 
 History.extend = inherits;
 
@@ -297,5 +297,3 @@ Object.assign(History.prototype, Events, {
     }
   }
 });
-
-export default History;

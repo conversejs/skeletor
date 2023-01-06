@@ -36,7 +36,7 @@ import result from "lodash-es/result.js";
 import uniqueId from "lodash-es/uniqueId.js";
 
 
-export const Model = function(attributes, options) {
+export function Model (attributes, options) {
   let attrs = attributes || {};
   options || (options = {});
   this.preinitialize.apply(this, arguments);

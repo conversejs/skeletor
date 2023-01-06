@@ -322,7 +322,3 @@ Listening.prototype.cleanup = function() {
   delete this.listener._listeningTo[this.obj._listenId];
   if (!this.interop) delete this.obj._listeners[this.id];
 };
-
-// Aliases for backwards compatibility.
-Events.bind   = Events.on;
-Events.unbind = Events.off;

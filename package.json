@@ -23,7 +23,8 @@
     "localforage-getitems": "conversejs/localForage-getItems#0f129c5c9bb0d23f8dbb64c9dfbb003c8cdf7285",
     "localforage-setitems": "^1.4.0",
     "lodash-es": "^4.17.21",
-    "mergebounce": "0.1.1"
+    "mergebounce": "0.1.1",
+    "typescript": "^4.9.4"
   },
   "devDependencies": {
     "@babel/core": "^7.10.2",
@@ -43,6 +44,7 @@
     "karma-qunit": "^4.1.1",
     "karma-webpack": "^4.0.2",
     "mocha": "^7.2.0",
+    "node-typescript": "^0.1.3",
     "qunit": "^2.10.0",
     "rollup": "^1.32.1",
     "rollup-plugin-sourcemaps": "^0.6.2",
