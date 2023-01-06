@@ -9,22 +9,12 @@ import mergebounce from 'mergebounce';
 import sessionStorageWrapper from "./drivers/sessionStorage.js";
 import { extendPrototype as extendPrototypeWithSetItems } from 'localforage-setitems';
 import { extendPrototype as extendPrototypeWithGetItems } from 'localforage-getitems';
+import { guid } from './helpers.js';
 
 const IN_MEMORY = memoryDriver._driver
 localForage.defineDriver(memoryDriver);
 extendPrototypeWithSetItems(localForage);
 extendPrototypeWithGetItems(localForage);
-
-function S4() {
-    // Generate four random hex digits.
-    return (((1+Math.random())*0x10000)|0).toString(16).substring(1);
-}
-
-function guid() {
-    // Generate a pseudo-GUID by concatenating random hexadecimal.
-    return (S4()+S4()+"-"+S4()+"-"+S4()+"-"+S4()+"-"+S4()+S4()+S4());
-}
-
 
 class Storage {
 
