@@ -251,7 +251,6 @@ async function setItem(key, value, callback) {
             }
         }
     });
-
 }
 
 function dropInstance(options, callback) {

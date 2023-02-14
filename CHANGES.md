@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.0.8 (2023-02-14)
+
+- Use the released version of `@converse/localforage-getitems`
+- Update 3rd party dependencies
+
 ## 0.0.7 (2022-04-08)
 
 - Move code that needs to be bundled to `dependencies` from `devDependencies`
