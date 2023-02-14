@@ -8,7 +8,7 @@ import localForage from "localforage/src/localforage";
 import mergebounce from 'mergebounce';
 import sessionStorageWrapper from "./drivers/sessionStorage.js";
 import { extendPrototype as extendPrototypeWithSetItems } from 'localforage-setitems';
-import { extendPrototype as extendPrototypeWithGetItems } from 'localforage-getitems';
+import { extendPrototype as extendPrototypeWithGetItems } from '@converse/localforage-getitems';
 import { guid } from './helpers.js';
 
 const IN_MEMORY = memoryDriver._driver

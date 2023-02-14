@@ -20,7 +20,7 @@
     "lit-html": "^2.0.0-rc.2",
     "localforage": "^1.10.0",
     "localforage-driver-memory": "^1.0.5",
-    "localforage-getitems": "conversejs/localForage-getItems#0f129c5c9bb0d23f8dbb64c9dfbb003c8cdf7285",
+    "@converse/localforage-getitems": "1.4.3",
     "localforage-setitems": "^1.4.0",
     "lodash-es": "^4.17.21",
     "mergebounce": "0.1.1"
