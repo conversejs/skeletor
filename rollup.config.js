@@ -2,46 +2,42 @@ import { terser } from 'rollup-plugin-terser';
 import babel from '@rollup/plugin-babel';
 import resolve from '@rollup/plugin-node-resolve';
 
-
 const plugins = [
   resolve(),
   babel({
-    "plugins": [
-        '@babel/plugin-proposal-optional-chaining',
-        '@babel/plugin-proposal-nullish-coalescing-operator'
-    ],
-    "presets": [
+    'plugins': ['@babel/plugin-proposal-optional-chaining', '@babel/plugin-proposal-nullish-coalescing-operator'],
+    'presets': [
       [
-        "@babel/preset-env",
+        '@babel/preset-env',
         {
-          "targets": {
-              "browsers": [">1%", "not ie 11", "not op_mini all"]
-          }
-        }
-      ]
-    ]
-  })
+          'targets': {
+            'browsers': ['>1%', 'not ie 11', 'not op_mini all'],
+          },
+        },
+      ],
+    ],
+  }),
 ];
 
 export default [
   {
-    input: 'src/main.js',
+    input: 'src/index.js',
     output: {
       name: 'skeletor',
       sourcemap: true,
       file: 'dist/skeletor.js',
-      format: 'umd'
+      format: 'umd',
     },
-    plugins
+    plugins,
   },
   {
-    input: 'src/main.js',
+    input: 'src/index.js',
     output: {
       name: 'skeletor',
       sourcemap: true,
       file: 'dist/skeletor.min.js',
-      format: 'umd'
+      format: 'umd',
     },
-    plugins: [terser(), ...plugins]
-  }
+    plugins: [terser(), ...plugins],
+  },
 ];
