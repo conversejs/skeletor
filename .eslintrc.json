@@ -1,16 +1,21 @@
 {
-    "parser": "babel-eslint",
+    "parser": "@typescript-eslint/parser",
     "parserOptions": {
-        "ecmaVersion": 2017,
+        "ecmaVersion": 2020,
         "sourceType": "module",
         "allowImportExportEverywhere": true
     },
     "env": {
         "browser": true,
-        "jasmine": true
+        "jasmine": true,
+        "es6": true
     },
-    "plugins": [],
-    "extends": ["eslint:recommended"],
+    "plugins": ["@typescript-eslint"],
+    "extends": [
+        "eslint:recommended",
+        "plugin:@typescript-eslint/eslint-recommended",
+        "plugin:@typescript-eslint/recommended"
+    ],
     "globals": {
         "Uint8Array": true,
         "Promise": true,
@@ -179,6 +184,7 @@
         "no-underscore-dangle": "off",
         "no-unmodified-loop-condition": "error",
         "no-unneeded-ternary": "off",
+        "@typescript-eslint/no-unused-vars": "off",
         "no-unused-vars": "off",
         "no-unused-expressions": "off",
         "no-use-before-define": "off",

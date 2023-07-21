@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.0.0 (Unreleased)
+
+Breaking changes:
+- Removed the `clone()` method on `Model`.
+
 ## 1.0.0 (Unreleased)
 
 - Fix a race condition when setting a localForage driver
