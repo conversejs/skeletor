@@ -1,13 +1,12 @@
-import extend from "lodash-es/extend.js";
-import isElement from "lodash-es/isElement.js";
-import isFunction from "lodash-es/isFunction.js";
-import pick from "lodash-es/pick.js";
-import result from "lodash-es/result.js";
-import uniqueId from "lodash-es/uniqueId.js";
+import extend from 'lodash-es/extend.js';
+import isElement from 'lodash-es/isElement.js';
+import isFunction from 'lodash-es/isFunction.js';
+import pick from 'lodash-es/pick.js';
+import result from 'lodash-es/result.js';
+import uniqueId from 'lodash-es/uniqueId.js';
 import { Events } from './events.js';
 import { inherits, NotImplementedError } from './helpers.js';
 import { render } from 'lit-html';
-
 
 const paddedLt = /^\s*</;
 
@@ -20,10 +19,8 @@ const delegateEventSplitter = /^(\S+)\s*(.*)$/;
 // List of view options to be set as properties.
 const viewOptions = ['model', 'collection', 'events'];
 
-
 export class ElementView extends HTMLElement {
-
-  events = {}
+  events = {};
 
   constructor(options) {
     super();
@@ -34,12 +31,12 @@ export class ElementView extends HTMLElement {
     extend(this, pick(options, viewOptions));
   }
 
-  createRenderRoot () {
+  createRenderRoot() {
     // Render without the shadow DOM
     return this;
   }
 
-  connectedCallback () {
+  connectedCallback() {
     if (!this._initialized) {
       this.preinitialize.apply(this, arguments);
       this.initialize.apply(this, arguments);
@@ -48,19 +45,21 @@ export class ElementView extends HTMLElement {
     this.delegateEvents();
   }
 
-  disconnectedCallback () {
+  disconnectedCallback() {
     this.undelegateEvents();
     this.stopListening();
   }
 
   // preinitialize is an empty function by default. You can override it with a function
   // or object.  preinitialize will run before any instantiation logic is run in the View
-  preinitialize () {  // eslint-disable-line class-methods-use-this
+  // eslint-disable-next-line class-methods-use-this
+  preinitialize() {
+    // eslint-disable-line class-methods-use-this
   }
 
   // Initialize is an empty function by default. Override it with your own
   // initialization logic.
-  initialize() {}  // eslint-disable-line class-methods-use-this
+  initialize() {} // eslint-disable-line class-methods-use-this
 
   // **render** is the core function that your view should override, in order
   // to populate its element (`this.el`), with the appropriate HTML. The
@@ -109,6 +108,7 @@ export class ElementView extends HTMLElement {
   // result of calling bound `listener` with the parameters given to the
   // handler.
   delegate(eventName, selector, listener) {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     const root = this;
     if (!root) {
       return this;
@@ -123,23 +123,25 @@ export class ElementView extends HTMLElement {
       for (let i = 0, len = els.length; i < len; i++) {
         const item = els[i];
         item.addEventListener(eventName, listener, false);
-        this._domEvents.push({el: item, eventName: eventName, handler: listener});
+        this._domEvents.push({ el: item, eventName: eventName, handler: listener });
       }
       return listener;
     }
 
-    const handler = selector ? function (e) {
-      let node = e.target || e.srcElement;
-      for (; node && node != root; node = node.parentNode) {
-        if (node.matches(selector)) {
-          e.delegateTarget = node;
-          listener(e);
+    const handler = selector
+      ? function (e) {
+          let node = e.target || e.srcElement;
+          for (; node && node != root; node = node.parentNode) {
+            if (node.matches(selector)) {
+              e.delegateTarget = node;
+              listener(e);
+            }
+          }
         }
-      }
-    } : listener;
+      : listener;
 
     this.addEventListener(eventName, handler, false);
-    this._domEvents.push({el: this, eventName: eventName, handler: handler, listener: listener, selector: selector});
+    this._domEvents.push({ el: this, eventName: eventName, handler: handler, listener: listener, selector: selector });
     return this;
   }
 
@@ -169,9 +171,10 @@ export class ElementView extends HTMLElement {
       let i = handlers.length;
       while (i--) {
         const item = handlers[i];
-        const match = item.eventName === eventName &&
-            (listener ? item.listener === listener : true) &&
-            (selector ? item.selector === selector : true);
+        const match =
+          item.eventName === eventName &&
+          (listener ? item.listener === listener : true) &&
+          (selector ? item.selector === selector : true);
 
         if (!match) {
           continue;

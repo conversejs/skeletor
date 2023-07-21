@@ -1,4 +1,3 @@
-document.querySelector('body').insertAdjacentHTML("beforeEnd",
-    '<div id="qunit"></div>' +
-    '<div id="qunit-fixture"></div>'
-);
+document
+  .querySelector('body')
+  .insertAdjacentHTML('beforeEnd', '<div id="qunit"></div>' + '<div id="qunit-fixture"></div>');
