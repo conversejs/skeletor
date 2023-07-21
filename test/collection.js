@@ -2,7 +2,7 @@
   let a, b, c, d, e, col, otherCol;
 
   QUnit.module('Skeletor.Collection', {
-    beforeEach: function (assert) {
+    beforeEach(assert) {
       a = new Skeletor.Model({ id: 3, label: 'a' });
       b = new Skeletor.Model({ id: 2, label: 'b' });
       c = new Skeletor.Model({ id: 1, label: 'c' });
@@ -13,7 +13,7 @@
       sinon.stub(window, 'fetch').callsFake(() => {});
     },
 
-    afterEach: function () {
+    afterEach() {
       window.fetch.restore();
     },
   });
@@ -49,7 +49,7 @@
   QUnit.test('new and parse', function (assert) {
     assert.expect(3);
     const Collection = Skeletor.Collection.extend({
-      parse: function (data) {
+      parse(data) {
         return _.filter(data, function (datum) {
           return datum.a % 2 === 0;
         });
@@ -64,7 +64,8 @@
 
   QUnit.test('clone preserves model and comparator', function (assert) {
     assert.expect(3);
-    const Model = Skeletor.Model.extend();
+    class Model extends Skeletor.Model {}
+
     const comparator = function (model) {
       return model.id;
     };
@@ -80,29 +81,28 @@
   });
 
   QUnit.test('get', function (assert) {
-    assert.expect(6);
+    assert.expect(4);
     assert.equal(col.get(0), d);
-    assert.equal(col.get(d.clone()), d);
     assert.equal(col.get(2), b);
     assert.equal(col.get({ id: 1 }), c);
-    assert.equal(col.get(c.clone()), c);
     assert.equal(col.get(col.first().cid), col.first());
   });
 
   QUnit.test('get with non-default ids', function (assert) {
-    assert.expect(5);
-    const MongoModel = Skeletor.Model.extend({ idAttribute: '_id' });
+    assert.expect(4);
+    class MongoModel extends Skeletor.Model {
+      // eslint-disable-next-line class-methods-use-this
+      get idAttribute() {
+        return '_id';
+      }
+    }
+
     const model = new MongoModel({ _id: 100 });
     const collection = new Skeletor.Collection([model], { model: MongoModel });
     assert.equal(collection.get(100), model);
     assert.equal(collection.get(model.cid), model);
     assert.equal(collection.get(model), model);
     assert.equal(collection.get(101), undefined);
-
-    const collection2 = new Skeletor.Collection();
-    collection2.model = MongoModel;
-    collection2.add(model.attributes);
-    assert.equal(collection2.get(model.clone()), collection2.first());
   });
 
   QUnit.test('has', function (assert) {
@@ -209,7 +209,7 @@
   QUnit.test('add; at should have preference over comparator', function (assert) {
     assert.expect(1);
     const Col = Skeletor.Collection.extend({
-      comparator: function (m1, m2) {
+      comparator(m1, m2) {
         return m1.id > m2.id ? -1 : 1;
       },
     });
@@ -288,12 +288,14 @@
 
   QUnit.test('add model with parse', function (assert) {
     assert.expect(1);
-    const Model = Skeletor.Model.extend({
-      parse: function (obj) {
+
+    class Model extends Skeletor.Model {
+      // eslint-disable-next-line class-methods-use-this
+      parse(obj) {
         obj.value += 1;
         return obj;
-      },
-    });
+      }
+    }
 
     const Col = Skeletor.Collection.extend({ model: Model });
     const collection = new Col();
@@ -379,11 +381,13 @@
 
   QUnit.test('add and remove return values', function (assert) {
     assert.expect(13);
-    const Even = Skeletor.Model.extend({
-      validate: function (attrs) {
+
+    class Even extends Skeletor.Model {
+      // eslint-disable-next-line class-methods-use-this
+      validate(attrs) {
         if (attrs.id % 2 !== 0) return 'odd';
-      },
-    });
+      }
+    }
     const collection = new Skeletor.Collection();
     collection.model = Even;
 
@@ -558,7 +562,7 @@
     const obj = {};
     const options = {
       context: obj,
-      error: function () {
+      error() {
         assert.equal(this, obj);
       },
     };
@@ -600,11 +604,12 @@
 
   QUnit.test('create with validate:true enforces validation', function (assert) {
     assert.expect(3);
-    const ValidatingModel = Skeletor.Model.extend({
-      validate: function (attrs) {
+    class ValidatingModel extends Skeletor.Model {
+      // eslint-disable-next-line class-methods-use-this
+      validate(attrs) {
         return 'fail';
-      },
-    });
+      }
+    }
     const ValidatingCollection = Skeletor.Collection.extend({
       model: ValidatingModel,
     });
@@ -618,12 +623,12 @@
 
   QUnit.test('create will pass extra options to success callback', function (assert) {
     assert.expect(1);
-    const Model = Skeletor.Model.extend({
-      sync: function (method, model, options) {
+    class Model extends Skeletor.Model {
+      sync(method, model, options) {
         _.extend(options, { specialSync: true });
         return Skeletor.Model.prototype.sync.call(this, method, model, options);
-      },
-    });
+      }
+    }
 
     const Collection = Skeletor.Collection.extend({
       model: Model,
@@ -650,11 +655,12 @@
   });
 
   QUnit.test('a failing create returns model with errors', function (assert) {
-    const ValidatingModel = Skeletor.Model.extend({
-      validate: function (attrs) {
+    class ValidatingModel extends Skeletor.Model {
+      // eslint-disable-next-line class-methods-use-this
+      validate(attrs) {
         return 'fail';
-      },
-    });
+      }
+    }
     const ValidatingCollection = Skeletor.Collection.extend({
       model: ValidatingModel,
     });
@@ -667,7 +673,7 @@
   QUnit.test('initialize', function (assert) {
     assert.expect(1);
     const Collection = Skeletor.Collection.extend({
-      initialize: function () {
+      initialize() {
         this.one = 1;
       },
     });
@@ -678,7 +684,7 @@
   QUnit.test('preinitialize', function (assert) {
     assert.expect(1);
     const Collection = Skeletor.Collection.extend({
-      preinitialize: function () {
+      preinitialize() {
         this.one = 1;
       },
     });
@@ -689,11 +695,16 @@
   QUnit.test('preinitialize occurs before the collection is set up', function (assert) {
     assert.expect(2);
     const Collection = Skeletor.Collection.extend({
-      preinitialize: function () {
+      preinitialize() {
         assert.notEqual(this.model, FooModel);
       },
     });
-    const FooModel = Skeletor.Model.extend({ id: 'foo' });
+    class FooModel extends Skeletor.Model {
+      constructor() {
+        super();
+        this.id = 'foo';
+      }
+    }
     const coll = new Collection(
       {},
       {
@@ -833,11 +844,11 @@
 
   QUnit.test('reset passes caller options', function (assert) {
     assert.expect(3);
-    const Model = Skeletor.Model.extend({
-      initialize: function (attrs, options) {
+    class Model extends Skeletor.Model {
+      initialize(attrs, options) {
         this.modelParameter = options.modelParameter;
-      },
-    });
+      }
+    }
     const collection = new (Skeletor.Collection.extend({ model: Model }))();
     collection.reset(
       [
@@ -886,13 +897,13 @@
     assert.expect(2);
     const collection = new Skeletor.Collection();
     collection.url = '/test';
-    const Model = Skeletor.Model.extend({
-      set: function (attrs) {
+    class Model extends Skeletor.Model {
+      set(attrs) {
         assert.equal(attrs.prop, 'value');
         assert.equal(this.collection, collection);
         return this;
-      },
-    });
+      }
+    }
     collection.model = Model;
     collection.create({ prop: 'value' });
   });
@@ -907,11 +918,12 @@
 
   QUnit.test('#861, adding models to a collection which do not pass validation, with validate:true', function (assert) {
     assert.expect(2);
-    const Model = Skeletor.Model.extend({
-      validate: function (attrs) {
+    class Model extends Skeletor.Model {
+      // eslint-disable-next-line class-methods-use-this
+      validate(attrs) {
         if (attrs.id === 3) return "id can't be 3";
-      },
-    });
+      }
+    }
 
     const Collection = Skeletor.Collection.extend({
       model: Model,
@@ -928,16 +940,25 @@
 
   QUnit.test('Invalid models are discarded with validate:true.', function (assert) {
     assert.expect(5);
-    const collection = new Skeletor.Collection();
+
+    class CollectionModel extends Skeletor.Model {
+      // eslint-disable-next-line class-methods-use-this
+      validate(attrs) {
+        if (!attrs.valid) return 'invalid';
+      }
+    }
+
+    const Collection = Skeletor.Collection.extend({
+      model: CollectionModel,
+    });
+
+    const collection = new Collection();
+
     collection.on('test', function () {
       assert.ok(true);
     });
-    collection.model = Skeletor.Model.extend({
-      validate: function (attrs) {
-        if (!attrs.valid) return 'invalid';
-      },
-    });
-    const model = new collection.model({ id: 1, valid: true });
+
+    const model = new CollectionModel({ id: 1, valid: true });
     collection.add([model, { id: 2 }], { validate: true });
     model.trigger('test');
     assert.ok(collection.get(model.cid));
@@ -966,7 +987,7 @@
 
   QUnit.test('#1112 - passing options.model sets collection.model', function (assert) {
     assert.expect(2);
-    const Model = Skeletor.Model.extend({});
+    class Model extends Skeletor.Model {}
     const collection = new Skeletor.Collection([{ id: 1 }], { model: Model });
     assert.ok(collection.model === Model);
     assert.ok(collection.at(0) instanceof Model);
@@ -986,7 +1007,7 @@
   QUnit.test('falsy comparator', function (assert) {
     assert.expect(4);
     const Col = Skeletor.Collection.extend({
-      comparator: function (model) {
+      comparator(model) {
         return model.id;
       },
     });
@@ -1006,7 +1027,7 @@
     const collection = new Skeletor.Collection();
     const opts = {
       opts: true,
-      success: function (coll, resp, options) {
+      success(coll, resp, options) {
         assert.ok(options.opts);
       },
     };
@@ -1050,7 +1071,7 @@
     const obj = {};
     const options = {
       context: obj,
-      success: function () {
+      success() {
         assert.equal(this, obj);
       },
     };
@@ -1134,11 +1155,17 @@
   QUnit.test('fetch parses models by default', function (assert) {
     assert.expect(1);
     const model = {};
+
+    class CollectionModel extends Skeletor.Model {
+      // eslint-disable-next-line class-methods-use-this
+      parse(resp) {
+        assert.strictEqual(resp, model);
+      }
+    }
+
     const Collection = Skeletor.Collection.extend({
       url: 'test',
-      model: Skeletor.Model.extend({
-        parse: (resp) => assert.strictEqual(resp, model),
-      }),
+      model: CollectionModel,
     });
     new Collection().fetch();
     window.fetch.lastCall.args[1].success([model]);
@@ -1161,14 +1188,18 @@
     const model = {
       namespace: [{ id: 1 }, { id: 2 }],
     };
+
+    class CollectionModel extends Skeletor.Model {
+      // eslint-disable-next-line class-methods-use-this
+      parse(m) {
+        m.name = 'test';
+        return m;
+      }
+    }
+
     const Collection = Skeletor.Collection.extend({
-      model: Skeletor.Model.extend({
-        parse: function (m) {
-          m.name = 'test';
-          return m;
-        },
-      }),
-      parse: function (m) {
+      model: CollectionModel,
+      parse(m) {
         return m.namespace;
       },
     });
@@ -1183,14 +1214,18 @@
     const model = {
       namespace: [{ id: 1 }, { id: 2 }],
     };
+
+    class CModel extends Skeletor.Model {
+      // eslint-disable-next-line class-methods-use-this
+      parse(m) {
+        m.name = 'test';
+        return m;
+      }
+    }
+
     const Collection = Skeletor.Collection.extend({
-      model: Skeletor.Model.extend({
-        parse: function (m) {
-          m.name = 'test';
-          return m;
-        },
-      }),
-      parse: function (m) {
+      model: CModel,
+      parse(m) {
         return m.namespace;
       },
     });
@@ -1281,11 +1316,15 @@
     assert.expect(3);
     const m1 = { _id: 1 };
     const m2 = { _id: 2 };
-    const Col = Skeletor.Collection.extend({
-      model: Skeletor.Model.extend({
-        idAttribute: '_id',
-      }),
-    });
+
+    class CModel extends Skeletor.Model {
+      // eslint-disable-next-line class-methods-use-this
+      get idAttribute() {
+        return '_id';
+      }
+    }
+
+    const Col = Skeletor.Collection.extend({ model: CModel });
     const collection = new Col();
     collection.set([m1, m2]);
     assert.equal(collection.length, 2);
@@ -1296,11 +1335,14 @@
   });
 
   QUnit.test('set + merge with default values defined', function (assert) {
-    const Model = Skeletor.Model.extend({
-      defaults: {
-        key: 'value',
-      },
-    });
+    class Model extends Skeletor.Model {
+      // eslint-disable-next-line class-methods-use-this
+      defaults() {
+        return {
+          key: 'value',
+        };
+      }
+    }
     const m = new Model({ id: 1 });
     const collection = new Skeletor.Collection([m], { model: Model });
     assert.equal(collection.first().get('key'), 'value');
@@ -1314,13 +1356,13 @@
   });
 
   QUnit.test('merge without mutation', function (assert) {
-    const Model = Skeletor.Model.extend({
-      initialize: function (attrs, options) {
+    class Model extends Skeletor.Model {
+      initialize(attrs, options) {
         if (attrs.child) {
           this.set('child', new Model(attrs.child, options), options);
         }
-      },
-    });
+      }
+    }
     const Collection = Skeletor.Collection.extend({ model: Model });
     const data = [{ id: 1, child: { id: 2 } }];
     const collection = new Collection(data);
@@ -1332,10 +1374,10 @@
   });
 
   QUnit.test('`set` and model level `parse`', function (assert) {
-    const Model = Skeletor.Model.extend({});
+    class Model extends Skeletor.Model {}
     const Collection = Skeletor.Collection.extend({
       model: Model,
-      parse: function (res) {
+      parse(res) {
         return _.map(res.models, 'model');
       },
     });
@@ -1347,13 +1389,17 @@
 
   QUnit.test('`set` data is only parsed once', function (assert) {
     const collection = new Skeletor.Collection();
-    collection.model = Skeletor.Model.extend({
-      parse: function (data) {
+
+    class CModel extends Skeletor.Model {
+      // eslint-disable-next-line class-methods-use-this
+      parse(data) {
         assert.equal(data.parsed, undefined);
         data.parsed = true;
         return data;
-      },
-    });
+      }
+    }
+
+    collection.model = CModel;
     collection.set({}, { parse: true });
   });
 
@@ -1380,7 +1426,7 @@
     assert.expect(0);
     const Collection = Skeletor.Collection.extend({
       comparator: 'id',
-      sort: function () {
+      sort() {
         assert.ok(false);
       },
     });
@@ -1396,8 +1442,15 @@
   });
 
   QUnit.test('`set` with non-normal id', function (assert) {
+    class CModel extends Skeletor.Model {
+      // eslint-disable-next-line class-methods-use-this
+      get idAttribute() {
+        return '_id';
+      }
+    }
+
     const Collection = Skeletor.Collection.extend({
-      model: Skeletor.Model.extend({ idAttribute: '_id' }),
+      model: CModel,
     });
     const collection = new Collection({ _id: 1 });
     collection.set([{ _id: 1, a: 1 }], { add: false });
@@ -1408,7 +1461,7 @@
     assert.expect(0);
     const Collection = Skeletor.Collection.extend({
       comparator: 'id',
-      sort: function () {
+      sort() {
         assert.ok(false);
       },
     });
@@ -1417,7 +1470,7 @@
 
   QUnit.test('#1915 - `parse` data in the right order in `set`', function (assert) {
     const collection = new (Skeletor.Collection.extend({
-      parse: function (data) {
+      parse(data) {
         assert.strictEqual(data.status, 'ok');
         return data.data;
       },
@@ -1437,13 +1490,13 @@
     assert.expect(1);
     const collection = new (Skeletor.Collection.extend({
       url: '/',
-      parse: function (data, options) {
+      parse(data, options) {
         assert.strictEqual(options.xhr.someHeader, 'headerValue');
         return data;
       },
     }))();
     collection.fetch({
-      success: function () {
+      success() {
         done();
       },
     });
@@ -1453,7 +1506,7 @@
     assert.expect(1);
     const SpecialSyncCollection = Skeletor.Collection.extend({
       url: '/test',
-      sync: function (method, collection, options) {
+      sync(method, collection, options) {
         _.extend(options, { specialSync: true });
         return Skeletor.Collection.prototype.sync.call(this, method, collection, options);
       },
@@ -1488,7 +1541,7 @@
   QUnit.test('`add` only `sort`s when necessary with comparator function', function (assert) {
     assert.expect(3);
     const collection = new (Skeletor.Collection.extend({
-      comparator: function (m1, m2) {
+      comparator(m1, m2) {
         return m1.get('a') > m2.get('a') ? 1 : m1.get('a') < m2.get('a') ? -1 : 0;
       },
     }))([{ id: 1 }, { id: 2 }, { id: 3 }]);
@@ -1522,7 +1575,7 @@
     const opts = { a: 1, b: 2 };
     _.forEach([undefined, null, false], function (falsey) {
       const Collection = Skeletor.Collection.extend({
-        initialize: function (models, options) {
+        initialize(models, options) {
           assert.strictEqual(models, falsey);
           assert.strictEqual(options, opts);
         },
@@ -1549,7 +1602,7 @@
     collection.create(
       {},
       {
-        success: function (model, resp, options) {
+        success(model, resp, options) {
           assert.strictEqual(resp, 'response');
         },
       },
@@ -1558,27 +1611,32 @@
   });
 
   QUnit.test('#2612 - nested `parse` works with `Collection#set`', function (assert) {
-    const Job = Skeletor.Model.extend({
-      constructor: function () {
-        this.items = new Items();
-        Skeletor.Model.apply(this, arguments);
-      },
-      parse: function (attrs) {
+    class Job extends Skeletor.Model {
+      get items() {
+        if (!this._items) {
+          this._items = new Items();
+        }
+        return this._items;
+      }
+
+      parse(attrs) {
         this.items.set(attrs.items, { parse: true });
         return _.omit(attrs, 'items');
-      },
-    });
+      }
+    }
 
-    const Item = Skeletor.Model.extend({
-      constructor: function () {
-        this.subItems = new Skeletor.Collection();
-        Skeletor.Model.apply(this, arguments);
-      },
-      parse: function (attrs) {
+    class Item extends Skeletor.Model {
+      get subItems() {
+        if (!this._subItems) {
+          this._subItems = new Items();
+        }
+        return this._subItems;
+      }
+      parse(attrs) {
         this.subItems.set(attrs.subItems, { parse: true });
         return _.omit(attrs, 'subItems');
-      },
-    });
+      }
+    }
 
     const Items = Skeletor.Collection.extend({
       model: Item,
@@ -1650,7 +1708,7 @@
     const calls = { add: 0, remove: 0 };
 
     const Collection = Skeletor.Collection.extend({
-      _addReference: function (model) {
+      _addReference(model) {
         Skeletor.Collection.prototype._addReference.apply(this, arguments);
         calls.add++;
         assert.equal(model, this._byId[model.id]);
@@ -1658,7 +1716,7 @@
         assert.equal(model._events.all.length, 1);
       },
 
-      _removeReference: function (model) {
+      _removeReference(model) {
         Skeletor.Collection.prototype._removeReference.apply(this, arguments);
         calls.remove++;
         assert.equal(this._byId[model.id], undefined);
@@ -1706,27 +1764,37 @@
   });
 
   QUnit.test('modelId', function (assert) {
-    const Stooge = Skeletor.Model.extend();
+    class Stooge extends Skeletor.Model {}
     const StoogeCollection = Skeletor.Collection.extend({ model: Stooge });
 
     // Default to using `Collection::model::idAttribute`.
     assert.equal(StoogeCollection.prototype.modelId({ id: 1 }), 1);
-    Stooge.prototype.idAttribute = '_id';
-    assert.equal(StoogeCollection.prototype.modelId({ _id: 1 }), 1);
+
+    class Foo extends Skeletor.Model {
+      // eslint-disable-next-line class-methods-use-this
+      get idAttribute() {
+        return '_id';
+      }
+    }
+    const FooCollection = Skeletor.Collection.extend({ model: Foo });
+    assert.equal(FooCollection.prototype.modelId({ _id: 1 }), 1);
   });
 
   QUnit.test('Polymorphic models work with "simple" constructors', function (assert) {
-    const A = Skeletor.Model.extend();
-    const B = Skeletor.Model.extend();
+    class A extends Skeletor.Model {}
+    class B extends Skeletor.Model {}
+
     const C = Skeletor.Collection.extend({
-      model: function (attrs) {
+      createModel(attrs) {
         return attrs.type === 'a' ? new A(attrs) : new B(attrs);
       },
     });
+
     const collection = new C([
       { id: 1, type: 'a' },
       { id: 2, type: 'b' },
     ]);
+
     assert.equal(collection.length, 2);
     assert.ok(collection.at(0) instanceof A);
     assert.equal(collection.at(0).id, 1);
@@ -1734,53 +1802,11 @@
     assert.equal(collection.at(1).id, 2);
   });
 
-  QUnit.test('Polymorphic models work with "advanced" constructors', function (assert) {
-    const A = Skeletor.Model.extend({ idAttribute: '_id' });
-    const B = Skeletor.Model.extend({ idAttribute: '_id' });
-    let C = Skeletor.Collection.extend({
-      model: Skeletor.Model.extend({
-        constructor: function (attrs) {
-          return attrs.type === 'a' ? new A(attrs) : new B(attrs);
-        },
-
-        idAttribute: '_id',
-      }),
-    });
-    let collection = new C([
-      { _id: 1, type: 'a' },
-      { _id: 2, type: 'b' },
-    ]);
-    assert.equal(collection.length, 2);
-    assert.ok(collection.at(0) instanceof A);
-    assert.equal(collection.at(0), collection.get(1));
-    assert.ok(collection.at(1) instanceof B);
-    assert.equal(collection.at(1), collection.get(2));
-
-    C = Skeletor.Collection.extend({
-      model: function (attrs) {
-        return attrs.type === 'a' ? new A(attrs) : new B(attrs);
-      },
-
-      modelId: function (attrs) {
-        return attrs.type + '-' + attrs.id;
-      },
-    });
-    collection = new C([
-      { id: 1, type: 'a' },
-      { id: 1, type: 'b' },
-    ]);
-    assert.equal(collection.length, 2);
-    assert.ok(collection.at(0) instanceof A);
-    assert.equal(collection.at(0), collection.get('a-1'));
-    assert.ok(collection.at(1) instanceof B);
-    assert.equal(collection.at(1), collection.get('b-1'));
-  });
-
   QUnit.test('Collection with polymorphic models receives default id from modelId', function (assert) {
     assert.expect(6);
     // When the polymorphic models use 'id' for the idAttribute, all is fine.
     const C1 = Skeletor.Collection.extend({
-      model: function (attrs) {
+      createModel(attrs) {
         return new Skeletor.Model(attrs);
       },
     });
@@ -1790,11 +1816,14 @@
 
     // If the polymorphic models define their own idAttribute,
     // the modelId method should be overridden, for the reason below.
-    const M = Skeletor.Model.extend({
-      idAttribute: '_id',
-    });
+    class M extends Skeletor.Model {
+      // eslint-disable-next-line class-methods-use-this
+      get idAttribute() {
+        return '_id';
+      }
+    }
     const C2 = Skeletor.Collection.extend({
-      model: function (attrs) {
+      createModel(attrs) {
         return new M(attrs);
       },
     });
@@ -1989,7 +2018,7 @@
 
   QUnit.test('#3871 - falsy parse result creates empty collection', function (assert) {
     const collection = new (Skeletor.Collection.extend({
-      parse: function (data, options) {},
+      parse(data, options) {},
     }))();
     collection.set('', { parse: true });
     assert.equal(collection.length, 0);

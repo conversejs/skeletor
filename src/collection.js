@@ -553,7 +553,7 @@ Object.assign(Collection.prototype, Events, {
   },
 
   // Define how to uniquely identify models in the collection.
-  modelId: function (attrs) {
+  modelId(attrs) {
     return attrs[this.model.prototype?.idAttribute || 'id'];
   },
 
@@ -580,6 +580,10 @@ Object.assign(Collection.prototype, Events, {
     this._byId = {};
   },
 
+  createModel(attrs, options) {
+    return new this.model(attrs, options);
+  },
+
   // Prepare a hash of attributes (or other model) to be added to this
   // collection.
   _prepareModel: function (attrs, options) {
@@ -589,7 +593,7 @@ Object.assign(Collection.prototype, Events, {
     }
     options = options ? clone(options) : {};
     options.collection = this;
-    const model = new this.model(attrs, options);
+    const model = this.createModel(attrs, options);
     if (!model.validationError) return model;
     this.trigger('invalid', this, model.validationError, options);
     return false;

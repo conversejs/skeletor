@@ -13,7 +13,6 @@
 // is automatically generated and assigned for you.
 
 import { getResolveablePromise, getSyncMethod, urlError, wrapError } from './helpers.js';
-import { Events } from './events.js';
 import clone from 'lodash-es/clone.js';
 import defaults from 'lodash-es/defaults.js';
 import defer from 'lodash-es/defer.js';
@@ -28,7 +27,7 @@ import omit from 'lodash-es/omit.js';
 import pick from 'lodash-es/pick.js';
 import result from 'lodash-es/result.js';
 import uniqueId from 'lodash-es/uniqueId.js';
-import EventEmitter from 'eventemitter.js';
+import EventEmitter from './eventemitter.js';
 
 class Model extends EventEmitter {
   /**
@@ -52,29 +51,43 @@ class Model extends EventEmitter {
     this.preinitialize.apply(this, arguments);
     this.cid = uniqueId(this.cidPrefix);
     this.attributes = {};
-    if (options.collection) this.collection = options.collection;
-    if (options.parse) attrs = this.parse(attrs, options) || {};
-    const default_attrs = result(this, 'defaults');
-    attrs = defaults(extend({}, default_attrs, attrs), default_attrs);
-    this.set(attrs, options);
-    this.changed = {};
-    this.initialize.apply(this, arguments);
-
-    // A hash of attributes whose current and previous value differ.
-    this.changed = null;
 
     // The value returned during the last failed validation.
     this.validationError = null;
 
-    // The default name for the JSON `id` attribute is `"id"`. MongoDB and
-    // CouchDB users may want to set this to `"_id"`.
-    this.idAttribute = 'id';
+    this.validate = this.validate ?? null;
 
-    // The prefix is used to create the client id which is used to identify models locally.
-    // You may want to override this if you're experiencing name clashes with model ids.
-    this.cidPrefix = 'c';
+    if (options.collection) this.collection = options.collection;
+    if (options.parse) attrs = this.parse(attrs, options) || {};
 
-    this.validate = null;
+    const default_attrs = result(this, 'defaults');
+    attrs = defaults(extend({}, default_attrs, attrs), default_attrs);
+
+    this.set(attrs, options);
+
+    this.initialize.apply(this, arguments);
+
+    // A hash of attributes whose current and previous value differ.
+    this.changed = {};
+  }
+
+  /**
+   * The default name for the JSON `id` attribute is `"id"`. MongoDB and
+   * CouchDB users may want to set this to `"_id"` (by overriding this getter
+   * in a subclass).
+   */
+  // eslint-disable-next-line class-methods-use-this
+  get idAttribute() {
+    return 'id';
+  }
+
+  /**
+   * The prefix is used to create the client id which is used to identify models locally.
+   * You may want to override this if you're experiencing name clashes with model ids.
+   */
+  // eslint-disable-next-line class-methods-use-this
+  get cidPrefix() {
+    return 'c';
   }
 
   /**
@@ -111,6 +124,7 @@ class Model extends EventEmitter {
 
   /**
    * Get the value of an attribute.
+   * @param {string} attr
    */
   get(attr) {
     return this.attributes[attr];
@@ -156,6 +170,7 @@ class Model extends EventEmitter {
 
   /**
    * Get the HTML-escaped value of an attribute.
+   * @param {string} attr
    */
   escape(attr) {
     return escape(this.get(attr));
@@ -164,6 +179,7 @@ class Model extends EventEmitter {
   /**
    * Returns `true` if the attribute contains a value that is not null
    * or undefined.
+   * @param {string} attr
    */
   has(attr) {
     return this.get(attr) != null;
@@ -272,6 +288,7 @@ class Model extends EventEmitter {
   /**
    * Determine if the model has changed since the last `"change"` event.
    * If you specify an attribute name, determine if that attribute has changed.
+   * @param {string} [attr]
    */
   hasChanged(attr) {
     if (attr == null) return !isEmpty(this.changed);
@@ -287,7 +304,10 @@ class Model extends EventEmitter {
    * determining if there *would be* a change.
    */
   changedAttributes(diff) {
-    if (!diff) return this.hasChanged() ? clone(this.changed) : false;
+    if (!diff) {
+      return this.hasChanged() ? clone(this.changed) : false;
+    }
+
     const old = this._changing ? this._previousAttributes : this.attributes;
     const changed = {};
     let hasChanged;
@@ -303,6 +323,7 @@ class Model extends EventEmitter {
   /**
    * Get the previous value of an attribute, recorded at the time the last
    * `"change"` event was fired.
+   * @param {string} [attr]
    */
   previous(attr) {
     if (attr == null || !this._previousAttributes) return null;
@@ -491,8 +512,5 @@ class Model extends EventEmitter {
     return false;
   }
 }
-
-// Attach all inheritable methods to the Model prototype.
-Object.assign(Model.prototype, Events);
 
 export { Model };

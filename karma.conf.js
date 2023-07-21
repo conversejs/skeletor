@@ -1,8 +1,7 @@
 /* global module */
 const path = require('path');
 
-
-module.exports = function(config) {
+module.exports = function (config) {
   config.set({
     // base path that will be used to resolve all patterns (eg. files, exclude)
     basePath: '',
@@ -14,22 +13,22 @@ module.exports = function(config) {
 
     // list of files / patterns to load in the browser
     files: [
-        'node_modules/lodash/lodash.js',
-        'node_modules/sinon/pkg/sinon.js',
-        'test/vendor/json2.js',
-        'dist/skeletor.js',
-        'test/indexeddb.test.js',
-        'test/localStorage.test.js',
-        'test/sessionStorage.test.js',
+      'node_modules/lodash/lodash.js',
+      'node_modules/sinon/pkg/sinon.js',
+      'test/vendor/json2.js',
+      'dist/skeletor.js',
+      'test/indexeddb.test.js',
+      'test/localStorage.test.js',
+      'test/sessionStorage.test.js',
 
-        'test/setup/dom-setup.js',
-        'test/collection.js',
-        'test/events.js',
-        'test/model.js',
-        'test/noconflict.js',
-        'test/router.js',
-        'test/sync.js',
-        'test/view.js',
+      'test/setup/dom-setup.js',
+      'test/collection.js',
+      'test/events.js',
+      'test/model.js',
+      'test/noconflict.js',
+      'test/router.js',
+      'test/sync.js',
+      'test/view.js',
     ],
 
     // list of files to exclude
@@ -40,37 +39,42 @@ module.exports = function(config) {
     preprocessors: {
       'test/indexeddb.test.js': ['webpack'],
       'test/localStorage.test.js': ['webpack'],
-      'test/sessionStorage.test.js': ['webpack']
+      'test/sessionStorage.test.js': ['webpack'],
     },
     webpack: {
       mode: 'development',
       devtool: 'inline-source-map',
       module: {
-         rules: [{
-           test: /\.js$/,
-           use: {
-             loader: 'babel-loader',
-             options: {
-               presets: [
-                 ["@babel/preset-env", {
-                     "targets": {
-                         "browsers": [">1%", "not ie 11", "not op_mini all", "not dead"]
-                     }
-                 }]
-               ],
-               plugins: [
+        rules: [
+          {
+            test: /\.js$/,
+            use: {
+              loader: 'babel-loader',
+              options: {
+                presets: [
+                  [
+                    '@babel/preset-env',
+                    {
+                      'targets': {
+                        'browsers': ['>1%', 'not ie 11', 'not op_mini all', 'not dead'],
+                      },
+                    },
+                  ],
+                ],
+                plugins: [
                   '@babel/plugin-proposal-optional-chaining',
-                  '@babel/plugin-proposal-nullish-coalescing-operator'
-               ]
-             }
-           }
-         }]
+                  '@babel/plugin-proposal-nullish-coalescing-operator',
+                ],
+              },
+            },
+          },
+        ],
       },
       output: {
         path: path.resolve('test'),
         filename: '[name].out.js',
-        chunkFilename: '[id].[chunkHash].js'
-      }
+        chunkFilename: '[id].[chunkHash].js',
+      },
     },
 
     // test results reporter to use
@@ -80,8 +84,8 @@ module.exports = function(config) {
     client: {
       mocha: {
         reporter: 'html',
-        ui: 'bdd'
-      }
+        ui: 'bdd',
+      },
     },
 
     // web server port
@@ -103,10 +107,10 @@ module.exports = function(config) {
 
     // Continuous Integration mode
     // if true, Karma captures browsers, runs the tests and exits
-    singleRun: true,
+    singleRun: false,
 
     // Concurrency level
     // how many browser should be started simultaneous
-    concurrency: Infinity
-  })
-}
+    concurrency: Infinity,
+  });
+};
