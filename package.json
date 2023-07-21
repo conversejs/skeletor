@@ -45,6 +45,7 @@
     "karma-qunit": "^4.1.1",
     "karma-webpack": "^4.0.2",
     "mocha": "^10.2.0",
+    "prettier": "^3.0.0",
     "qunit": "^2.10.0",
     "rollup": "^1.32.1",
     "rollup-plugin-sourcemaps": "^0.6.2",
@@ -58,7 +59,8 @@
     "test": "karma start && karma start karma.mocha.conf && npm run lint",
     "dev": "karma start --single-run=false",
     "build": "rollup -c",
-    "lint": "eslint src/*.js test/*.js"
+    "lint": "eslint src/*.js test/*.js",
+    "prettier": "prettier --write src/**/*.js test/**/*.js"
   },
   "module": "src/main.js",
   "version": "0.0.8",

@@ -12,13 +12,13 @@ import result from 'lodash-es/result.js';
 export class NotImplementedError extends Error {}
 
 function S4() {
-    // Generate four random hex digits.
-    return (((1+Math.random())*0x10000)|0).toString(16).substring(1);
+  // Generate four random hex digits.
+  return (((1 + Math.random()) * 0x10000) | 0).toString(16).substring(1);
 }
 
 export function guid() {
-    // Generate a pseudo-GUID by concatenating random hexadecimal.
-    return (S4()+S4()+"-"+S4()+"-"+S4()+"-"+S4()+"-"+S4()+S4()+S4());
+  // Generate a pseudo-GUID by concatenating random hexadecimal.
+  return S4() + S4() + '-' + S4() + '-' + S4() + '-' + S4() + '-' + S4() + S4() + S4();
 }
 
 // Helpers
@@ -29,92 +29,112 @@ export function guid() {
 // class properties to be extended.
 //
 export function inherits(protoProps, staticProps) {
-    const parent = this;
-    let child;
+  // eslint-disable-next-line @typescript-eslint/no-this-alias
+  const parent = this;
+  let child;
 
-    // The constructor function for the new subclass is either defined by you
-    // (the "constructor" property in your `extend` definition), or defaulted
-    // by us to simply call the parent constructor.
-    if (protoProps && has(protoProps, 'constructor')) {
-        child = protoProps.constructor;
-    } else {
-        child = function(){ return parent.apply(this, arguments); };
-    }
-
-    // Add static properties to the constructor function, if supplied.
-    extend(child, parent, staticProps);
-
-    // Set the prototype chain to inherit from `parent`, without calling
-    // `parent`'s constructor function and add the prototype properties.
-    child.prototype = create(parent.prototype, protoProps);
-    child.prototype.constructor = child;
-
-    // Set a convenience property in case the parent's prototype is needed
-    // later.
-    child.__super__ = parent.prototype;
-
-    return child;
-}
-
-
-export function getResolveablePromise () {
-    const wrapper = {
-        isResolved: false,
-        isPending: true,
-        isRejected: false
+  // The constructor function for the new subclass is either defined by you
+  // (the "constructor" property in your `extend` definition), or defaulted
+  // by us to simply call the parent constructor.
+  if (protoProps && has(protoProps, 'constructor')) {
+    child = protoProps.constructor;
+  } else {
+    child = function () {
+      return parent.apply(this, arguments);
     };
-    const promise = new Promise((resolve, reject) => {
-        wrapper.resolve = resolve;
-        wrapper.reject = reject;
-    })
-    Object.assign(promise, wrapper);
-    promise.then(
-        function (v) {
-            promise.isResolved = true;
-            promise.isPending = false;
-            promise.isRejected = false;
-            return v;
-        },
-        function (e) {
-            promise.isResolved = false;
-            promise.isPending = false;
-            promise.isRejected = true;
-            throw (e);
-        }
-    );
-    return promise;
+  }
+
+  // Add static properties to the constructor function, if supplied.
+  extend(child, parent, staticProps);
+
+  // Set the prototype chain to inherit from `parent`, without calling
+  // `parent`'s constructor function and add the prototype properties.
+  child.prototype = create(parent.prototype, protoProps);
+  child.prototype.constructor = child;
+
+  // Set a convenience property in case the parent's prototype is needed
+  // later.
+  child.__super__ = parent.prototype;
+
+  return child;
 }
 
+export function getResolveablePromise() {
+  /**
+   * @typedef {Object} PromiseWrapper
+   * @property {boolean} isResolved
+   * @property {boolean} isPending
+   * @property {boolean} isRejected
+   * @property {Function} resolve
+   * @property {Function} reject
+   */
+
+  /** @type {PromiseWrapper} */
+  const wrapper = {
+    isResolved: false,
+    isPending: true,
+    isRejected: false,
+    resolve: null,
+    reject: null,
+  };
+
+  /**
+   * @typedef {Promise & PromiseWrapper} ResolveablePromise
+   */
+
+  const promise = /** @type {ResolveablePromise} */ (
+    new Promise((resolve, reject) => {
+      wrapper.resolve = resolve;
+      wrapper.reject = reject;
+    })
+  );
+  Object.assign(promise, wrapper);
+  promise.then(
+    function (v) {
+      promise.isResolved = true;
+      promise.isPending = false;
+      promise.isRejected = false;
+      return v;
+    },
+    function (e) {
+      promise.isResolved = false;
+      promise.isPending = false;
+      promise.isRejected = true;
+      throw e;
+    },
+  );
+  return promise;
+}
 
 // Throw an error when a URL is needed, and none is supplied.
 export function urlError() {
-    throw new Error('A "url" property or function must be specified');
+  throw new Error('A "url" property or function must be specified');
 }
 
 // Wrap an optional error callback with a fallback error event.
 export function wrapError(model, options) {
-    const error = options.error;
-    options.error = function(resp) {
-        if (error) error.call(options.context, model, resp, options);
-        model.trigger('error', model, resp, options);
-    };
+  const error = options.error;
+  options.error = function (resp) {
+    if (error) error.call(options.context, model, resp, options);
+    model.trigger('error', model, resp, options);
+  };
 }
 
 // Map from CRUD to HTTP for our default `sync` implementation.
 const methodMap = {
-    create: 'POST',
-    update: 'PUT',
-    patch: 'PATCH',
-    delete: 'DELETE',
-    read: 'GET'
+  create: 'POST',
+  update: 'PUT',
+  patch: 'PATCH',
+  delete: 'DELETE',
+  read: 'GET',
 };
 
 /**
  * @param {import('./model.js').Model} model
  */
 export function getSyncMethod(model) {
-    const store = result(model, 'browserStorage') || result(model.collection, 'browserStorage');
-    return store ? store.sync() : sync;
+  const store = result(model, 'browserStorage') || result(model.collection, 'browserStorage');
+  return store ? store.sync() : sync;
 }
 
 /**
