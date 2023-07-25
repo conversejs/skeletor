@@ -56,13 +56,11 @@ UI, while we're progressively getting rid of the views.
   as an instance of HTMLElement and can be used to register a custom element or
   web-component.
 
-![](https://raw.githubusercontent.com/conversejs/skeletor/master/images/skeletor.jpg)
-
 ### Backwards incompatible changes
 
 * Collection.prototype.forEach no longer returns the items being iterated over.
   If you need that, use `map` instead.
-* The `chain` method on Models has been removed.
+* The `chain`, `clone` and `escape` methods on Models have been removed.
 * The `inject`, `foldl` and `foldr` methods on Collections has been removed. You can use `reduce` instead.
 * Removed the `sample`, `take`, `tail` and `initial` method on Collections.
 * Removed the `without`, `reject` and `select` methods on Collections, use `filter`.
