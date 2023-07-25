@@ -2,22 +2,11 @@
 //     (c) 2010-2019 Jeremy Ashkenas and DocumentCloud
 //     Backbone may be freely distributed under the MIT license.
 
-// Model
-// -----
-// **Models** are the basic data object in the framework --
-// frequently representing a row in a table in a database on your server.
-// A discrete chunk of data and a bunch of useful, related methods for
-// performing computations and transformations on that data.
-
-// Create a new model with the specified attributes. A client id (`cid`)
-// is automatically generated and assigned for you.
-
 import { getResolveablePromise, getSyncMethod, urlError, wrapError } from './helpers.js';
 import clone from 'lodash-es/clone.js';
 import defaults from 'lodash-es/defaults.js';
 import defer from 'lodash-es/defer.js';
 import escape from 'lodash-es/escape.js';
-import extend from 'lodash-es/extend.js';
 import has from 'lodash-es/has.js';
 import invert from 'lodash-es/invert.js';
 import isEmpty from 'lodash-es/isEmpty.js';
@@ -29,6 +18,12 @@ import result from 'lodash-es/result.js';
 import uniqueId from 'lodash-es/uniqueId.js';
 import EventEmitter from './eventemitter.js';
 
+/**
+ * **Models** are the basic data object in the framework --
+ * frequently representing a row in a table in a database on your server.
+ * A discrete chunk of data and a bunch of useful, related methods for
+ * performing computations and transformations on that data.
+ */
 class Model extends EventEmitter {
   /**
    * @typedef {Object} ModelOptions
@@ -61,7 +56,7 @@ class Model extends EventEmitter {
     if (options.parse) attrs = this.parse(attrs, options) || {};
 
     const default_attrs = result(this, 'defaults');
-    attrs = defaults(extend({}, default_attrs, attrs), default_attrs);
+    attrs = defaults(Object.assign({}, default_attrs, attrs), default_attrs);
 
     this.set(attrs, options);
 
@@ -273,7 +268,7 @@ class Model extends EventEmitter {
    * if the attribute doesn't exist.
    */
   unset(attr, options) {
-    return this.set(attr, undefined, extend({}, options, { unset: true }));
+    return this.set(attr, undefined, Object.assign({}, options, { unset: true }));
   }
 
   /**
@@ -282,7 +277,7 @@ class Model extends EventEmitter {
   clear(options) {
     const attrs = {};
     for (const key in this.attributes) attrs[key] = undefined;
-    return this.set(attrs, extend({}, options, { unset: true }));
+    return this.set(attrs, Object.assign({}, options, { unset: true }));
   }
 
   /**
@@ -343,7 +338,7 @@ class Model extends EventEmitter {
    * local attributes. Any changed attributes will trigger a "change" event.
    */
   fetch(options) {
-    options = extend({ parse: true }, options);
+    options = Object.assign({ parse: true }, options);
 
     const success = options.success;
 
@@ -376,7 +371,7 @@ class Model extends EventEmitter {
       (attrs = {})[key] = val;
     }
 
-    options = extend({ validate: true, parse: true }, options);
+    options = Object.assign({ validate: true, parse: true }, options);
     const wait = options.wait;
     const return_promise = options.promise;
     const promise = return_promise && getResolveablePromise();
@@ -400,7 +395,7 @@ class Model extends EventEmitter {
       // Ensure attributes are restored during synchronous saves.
       this.attributes = attributes;
       let serverAttrs = options.parse ? this.parse(resp, options) : resp;
-      if (wait) serverAttrs = extend({}, attrs, serverAttrs);
+      if (wait) serverAttrs = Object.assign({}, attrs, serverAttrs);
       if (serverAttrs && !this.set(serverAttrs, options)) return false;
       if (success) success.call(options.context, this, resp, options);
       this.trigger('sync', this, resp, options);
@@ -415,7 +410,7 @@ class Model extends EventEmitter {
     wrapError(this, options);
 
     // Set temporary attributes if `{wait: true}` to properly find new ids.
-    if (attrs && wait) this.attributes = extend({}, attributes, attrs);
+    if (attrs && wait) this.attributes = Object.assign({}, attributes, attrs);
 
     const method = this.isNew() ? 'create' : options.patch ? 'patch' : 'update';
     if (method === 'patch' && !options.attrs) options.attrs = attrs;
@@ -496,7 +491,7 @@ class Model extends EventEmitter {
    * Check if the model is currently in a valid state.
    */
   isValid(options) {
-    return this._validate({}, extend({}, options, { validate: true }));
+    return this._validate({}, Object.assign({}, options, { validate: true }));
   }
 
   /**
@@ -505,10 +500,10 @@ class Model extends EventEmitter {
    */
   _validate(attrs, options) {
     if (!options.validate || !this.validate) return true;
-    attrs = extend({}, this.attributes, attrs);
+    attrs = Object.assign({}, this.attributes, attrs);
     const error = (this.validationError = this.validate(attrs, options) || null);
     if (!error) return true;
-    this.trigger('invalid', this, error, extend(options, { validationError: error }));
+    this.trigger('invalid', this, error, Object.assign(options, { validationError: error }));
     return false;
   }
 }
