@@ -178,19 +178,6 @@
     assert.equal(doc.get('author'), 'Bill Shakespeare');
   });
 
-  QUnit.test('escape', function (assert) {
-    assert.expect(5);
-    assert.equal(doc.escape('title'), 'The Tempest');
-    doc.set({ audience: 'Bill & Bob' });
-    assert.equal(doc.escape('audience'), 'Bill &amp; Bob');
-    doc.set({ audience: 'Tim > Joan' });
-    assert.equal(doc.escape('audience'), 'Tim &gt; Joan');
-    doc.set({ audience: 10101 });
-    assert.equal(doc.escape('audience'), '10101');
-    doc.unset('audience');
-    assert.equal(doc.escape('audience'), '');
-  });
-
   QUnit.test('has', function (assert) {
     assert.expect(10);
     var model = new Skeletor.Model();

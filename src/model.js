@@ -6,7 +6,6 @@ import { getResolveablePromise, getSyncMethod, urlError, wrapError } from './hel
 import clone from 'lodash-es/clone.js';
 import defaults from 'lodash-es/defaults.js';
 import defer from 'lodash-es/defer.js';
-import escape from 'lodash-es/escape.js';
 import has from 'lodash-es/has.js';
 import invert from 'lodash-es/invert.js';
 import isEmpty from 'lodash-es/isEmpty.js';
@@ -161,14 +160,6 @@ class Model extends EventEmitter {
 
   isEmpty() {
     return isEmpty(this.attributes);
-  }
-
-  /**
-   * Get the HTML-escaped value of an attribute.
-   * @param {string} attr
-   */
-  escape(attr) {
-    return escape(this.get(attr));
   }
 
   /**
