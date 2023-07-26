@@ -31,6 +31,20 @@ import uniqueId from 'lodash-es/uniqueId.js';
 import EventEmitter from 'eventemitter.js';
 
 class Model extends EventEmitter {
+  /**
+   * @typedef {Object} ModelOptions
+   * @property {import('./collection.js').Collection} [collection]
+   * @property {boolean} [parse]
+   * @property {boolean} [unset]
+   * @property {boolean} [silent]
+   */
+
+  /**
+   * Create a new model with the specified attributes. A client id (`cid`)
+   * is automatically generated and assigned for you.
+   * @param {Record<string, any>} attributes
+   * @param {ModelOptions} options
+   */
   constructor(attributes, options) {
     super();
     let attrs = attributes || {};
