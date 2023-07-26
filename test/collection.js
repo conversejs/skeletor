@@ -1426,8 +1426,8 @@
     collection.set(res, { parse: true });
   });
 
-  QUnit.test('#1939 - `parse` is passed `options`', function(assert) {
-    window.fetch.restore()
+  QUnit.test('#1939 - `parse` is passed `options`', function (assert) {
+    window.fetch.restore();
     sinon.stub(window, 'fetch').callsFake((url, params) => {
       _.defer(params.success, []);
       return { someHeader: 'headerValue' };
@@ -1465,7 +1465,7 @@
       assert.ok(options.specialSync, 'Options were passed correctly to callback');
     };
 
-    collection.fetch({success: onSuccess});
+    collection.fetch({ success: onSuccess });
     window.fetch.lastCall.args[1].success();
   });
 
@@ -1546,11 +1546,14 @@
     assert.expect(1);
     const collection = new Skeletor.Collection();
     collection.url = 'test';
-    collection.create({}, {
-      success: function(model, resp, options) {
-        assert.strictEqual(resp, 'response');
-      }
-    });
+    collection.create(
+      {},
+      {
+        success: function (model, resp, options) {
+          assert.strictEqual(resp, 'response');
+        },
+      },
+    );
     window.fetch.lastCall.args[1].success('response');
   });
 
