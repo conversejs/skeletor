@@ -109,59 +109,58 @@ const methodMap = {
     read: 'GET'
 };
 
+/**
+ * @param {import('./model.js').Model} model
+ */
 export function getSyncMethod(model) {
     const store = result(model, 'browserStorage') || result(model.collection, 'browserStorage');
     return store ? store.sync() : sync;
 }
 
-// sync
-// ----
+/**
+ * @typedef {Object} SyncOptions
+ * @property {string} [url]
+ * @property {any} [data]
+ * @property {any} [attrs]
+ * @property {Function} [success]
+ * @property {Function} [error]
+ * @property {any} [xhr]
+ */
 
-// Override this function to change the manner in which Backbone persists
-// models to the server. You will be passed the type of request, and the
-// model in question. By default, makes a RESTful Ajax request
-// to the model's `url()`. Some possible customizations could be:
-//
-// * Use `setTimeout` to batch rapid-fire updates into a single request.
-// * Send up the models as XML instead of JSON.
-// * Persist models via WebSockets instead of Ajax.
-//
-export function sync(method, model, options={}) {
-    const type = methodMap[method];
+/**
+ * Override this function to change the manner in which Backbone persists
+ * models to the server. You will be passed the type of request, and the
+ * model in question. By default makes a `fetch()` API call
+ * to the model's `url()`.
+ *
+ * Some possible customizations could be:
+ *
+ * - Use `setTimeout` to batch rapid-fire updates into a single request.
+ * - Persist models via WebSockets instead of Ajax.
+ * - Persist models to browser storage
+ *
+ * @param {'create'|'update'|'patch'} method
+ * @param {import('./model.js').Model} model
+ * @param {SyncOptions} [options]
+ */
+export function sync(method, model, options = {}) {
+  let data = options.data;
 
-    // Default JSON-request options.
-    const params = {type: type, dataType: 'json'};
+  // Ensure that we have the appropriate request data.
+  if (data == null && model && (method === 'create' || method === 'update' || method === 'patch')) {
+    data = options.attrs || model.toJSON();
+  }
 
-    // Ensure that we have a URL.
-    if (!options.url) {
-        params.url = result(model, 'url') || urlError();
-    }
+  const type = methodMap[method];
+  const params = {
+    method: type,
+    body: data ? JSON.stringify(data) : '',
+    success: options.success,
+    error: options.error,
+  };
 
-    // Ensure that we have the appropriate request data.
-    if (options.data == null && model && (method === 'create' || method === 'update' || method === 'patch')) {
-        params.contentType = 'application/json';
-        params.data = JSON.stringify(options.attrs || model.toJSON(options));
-    }
-
-    // Don't process data on a non-GET request.
-    if (params.type !== 'GET') {
-        params.processData = false;
-    }
-
-    // Pass along `textStatus` and `errorThrown` from jQuery.
-    const error = options.error;
-    options.error = function(xhr, textStatus, errorThrown) {
-        options.textStatus = textStatus;
-        options.errorThrown = errorThrown;
-        if (error) error.call(options.context, xhr, textStatus, errorThrown);
-    };
-
-    // Make the request, allowing the user to override any Ajax options.
-    const xhr = options.xhr = ajax(extend(params, options));
-    model.trigger('request', model, xhr, options);
-    return xhr;
-}
-
-export function ajax() {
-    return fetch.apply(this, arguments);
+  const url = options.url || result(model, 'url') || urlError();
+  const xhr = (options.xhr = fetch(url, params));
+  model.trigger('request', model, xhr, { ...params, xhr });
+  return xhr;
 }

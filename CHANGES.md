@@ -3,6 +3,7 @@
 ## 1.0.0 (Unreleased)
 
 - Fix a race condition when setting a localForage driver
+- Refactor the sync method to properly call the `fetch` API
 
 ## 0.0.8 (2023-02-14)
 

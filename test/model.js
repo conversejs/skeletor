@@ -583,7 +583,7 @@
     assert.expect(3);
     const promise = doc.save({title: 'Henry V'}, {'promise': true, 'wait': true});
     assert.equal(promise.isResolved, false);
-    const ajaxSettings = window.fetch.lastCall.args[0];
+    const ajaxSettings = window.fetch.lastCall.args[1];
     ajaxSettings.success();
     await promise;
     const syncArgs = doc.sync.lastCall.args;
@@ -673,8 +673,8 @@
     assert.equal(_.size(syncArgs[2].attrs), 2);
     assert.equal(syncArgs[2].attrs.d, 4);
     assert.equal(syncArgs[2].attrs.a, undefined);
-    const ajaxSettings = window.fetch.lastCall.args[0];
-    assert.equal(ajaxSettings.data, '{"b":2,"d":4}');
+    const ajaxSettings = window.fetch.lastCall.args[1];
+    assert.equal(ajaxSettings.body, '{"b":2,"d":4}');
     doc.sync.restore();
   });
 
@@ -682,11 +682,11 @@
     sinon.spy(doc, 'sync');
     doc.clear().save({b: 2, d: 4}, {patch: true, attrs: {B: 1, D: 3}});
     const syncArgs = doc.sync.lastCall.args;
-    const ajaxSettings = window.fetch.lastCall.args[0];
+    const ajaxSettings = window.fetch.lastCall.args[1];
     assert.equal(syncArgs[2].attrs.D, 3);
     assert.equal(syncArgs[2].attrs.d, undefined);
-    assert.equal(ajaxSettings.data, '{"B":1,"D":3}');
-    assert.deepEqual(doc.attributes, {b: 2, d: 4});
+    assert.equal(ajaxSettings.body, '{"B":1,"D":3}');
+    assert.deepEqual(doc.attributes, { b: 2, d: 4 });
     doc.sync.restore();
   });
 
@@ -719,9 +719,9 @@
       urlRoot: '/collection'
     });
     const model = new Model();
-    model.save({id: 42}, {wait: true});
-    const ajaxSettings = window.fetch.lastCall.args[0];
-    assert.equal(ajaxSettings.url, '/collection/42');
+    model.save({ id: 42 }, { wait: true });
+    const url = window.fetch.lastCall.args[0];
+    assert.equal(url, '/collection/42');
   });
 
   QUnit.test('save will pass extra options to success callback', function(assert) {
@@ -738,8 +738,8 @@
     const onSuccess = function(m, response, options) {
       assert.ok(options.specialSync, 'Options were passed correctly to callback');
     };
-    model.save(null, {success: onSuccess});
-    const ajaxSettings = window.fetch.lastCall.args[0];
+    model.save(null, { success: onSuccess });
+    const ajaxSettings = window.fetch.lastCall.args[1];
     ajaxSettings.success();
   });
 
@@ -767,8 +767,8 @@
     const onSuccess = function(m, response, options) {
       assert.ok(options.specialSync, 'Options were passed correctly to callback');
     };
-    model.fetch({success: onSuccess});
-    const ajaxSettings = window.fetch.lastCall.args[0];
+    model.fetch({ success: onSuccess });
+    const ajaxSettings = window.fetch.lastCall.args[1];
     ajaxSettings.success();
   });
 
@@ -798,8 +798,8 @@
     const onSuccess = function(m, response, options) {
       assert.ok(options.specialSync, 'Options were passed correctly to callback');
     };
-    model.destroy({success: onSuccess});
-    const ajaxSettings = window.fetch.lastCall.args[0];
+    model.destroy({ success: onSuccess });
+    const ajaxSettings = window.fetch.lastCall.args[1];
     ajaxSettings.success();
   });
 
@@ -1069,13 +1069,14 @@
 
   QUnit.test('`save` with `wait` sends correct attributes', function(assert) {
     assert.expect(5);
-    var changed = 0;
-    var model = new Skeletor.Model({x: 1, y: 2});
+    let changed = 0;
+    const model = new Skeletor.Model({ x: 1, y: 2 });
     model.url = '/test';
-    model.on('change:x', function() { changed++; });
-    model.save({x: 3}, {wait: true});
-    const ajaxSettings = window.fetch.lastCall.args[0];
-    assert.deepEqual(JSON.parse(ajaxSettings.data), {x: 3, y: 2});
+    model.on('change:x', () => changed++);
+    model.save({ x: 3 }, { wait: true });
+    const ajaxSettings = window.fetch.lastCall.args[1];
+
+    assert.deepEqual(JSON.parse(ajaxSettings.body), { x: 3, y: 2 });
     assert.equal(model.get('x'), 1);
     assert.equal(changed, 0);
     ajaxSettings.success({});

@@ -1,5 +1,5 @@
 /* global global */
-import { ajax, sync } from './helpers.js';
+import { sync } from './helpers.js';
 import { Collection } from './collection.js';
 import { Events } from './events.js';
 import History from './history.js';
@@ -14,9 +14,8 @@ const skeletor = {
   Model,
   Router,
   View,
-  ajax,
-  sync
-}
+  sync,
+};
 
 Object.assign(skeletor, Events);
 

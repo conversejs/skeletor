@@ -35,7 +35,6 @@ import pick from "lodash-es/pick.js";
 import result from "lodash-es/result.js";
 import uniqueId from "lodash-es/uniqueId.js";
 
-
 export const Model = function(attributes, options) {
   let attrs = attributes || {};
   options || (options = {});
@@ -83,10 +82,15 @@ Object.assign(Model.prototype, Events, {
     return clone(this.attributes);
   },
 
-  // Proxy `Backbone.sync` by default -- but override this if you need
-  // custom syncing semantics for *this* particular model.
-  sync: function(method, model, options) {
-    return getSyncMethod(this)(method, model, options);
+  /**
+   * Override this if you need custom syncing semantics for *this* particular model.
+   * @param {'create'|'update'|'patch'|'delete'|'read'} method
+   * @param {Model} model
+   * @param {Object} options
+   */
+  // eslint-disable-next-line class-methods-use-this
+  sync(method, model, options) {
+    return getSyncMethod(model)(method, model, options);
   },
 
   // Get the value of an attribute.

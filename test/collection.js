@@ -623,8 +623,8 @@
     const success = (model, response, options) => assert.ok(
       options.specialSync, 'Options were passed correctly to callback');
 
-    collection.create({}, {success: success});
-    window.fetch.lastCall.args[0].success();
+    collection.create({}, { success: success });
+    window.fetch.lastCall.args[1].success();
   });
 
   QUnit.test('create with wait:true should not call collection.parse', function(assert) {
@@ -634,8 +634,8 @@
       parse: () => assert.ok(false)
     });
     const collection = new Collection();
-    collection.create({}, {wait: true});
-    window.fetch.lastCall.args[0].success();
+    collection.create({}, { wait: true });
+    window.fetch.lastCall.args[1].success();
   });
 
   QUnit.test('a failing create returns model with errors', function(assert) {
@@ -998,7 +998,7 @@
       assert.ok(obj === collection, "collection has correct 'sync' event after fetching");
     });
     collection.fetch();
-    window.fetch.lastCall.args[0].success();
+    window.fetch.lastCall.args[1].success();
     collection.off();
 
     collection.on('request', function(obj, xhr, options) {
@@ -1008,7 +1008,7 @@
       assert.ok(obj === collection.get(1), "collection has correct 'sync' event after one of its models save");
     });
     collection.create({id: 1});
-    window.fetch.lastCall.args[0].success();
+    window.fetch.lastCall.args[1].success();
     collection.off();
   });
 
@@ -1024,9 +1024,9 @@
       }
     };
     collection.fetch(options);
-    window.fetch.lastCall.args[0].success();
-    collection.create({id: 1}, options);
-    window.fetch.lastCall.args[0].success();
+    window.fetch.lastCall.args[1].success();
+    collection.create({ id: 1 }, options);
+    window.fetch.lastCall.args[1].success();
   });
 
   QUnit.test('#1447 - create with wait adds model.', function(assert) {
@@ -1099,7 +1099,7 @@
       })
     });
     new Collection().fetch();
-    window.fetch.lastCall.args[0].success([model]);
+    window.fetch.lastCall.args[1].success([model]);
   });
 
   QUnit.test("`sort` shouldn't always fire on `add`", function(assert) {
@@ -1384,7 +1384,7 @@
 
   QUnit.test('#1939 - `parse` is passed `options`', function(assert) {
     window.fetch.restore()
-    sinon.stub(window, 'fetch').callsFake((params) => {
+    sinon.stub(window, 'fetch').callsFake((url, params) => {
       _.defer(params.success, []);
       return {someHeader: 'headerValue'};
     });
@@ -1420,7 +1420,7 @@
     };
 
     collection.fetch({success: onSuccess});
-    window.fetch.lastCall.args[0].success();
+    window.fetch.lastCall.args[1].success();
   });
 
   QUnit.test('`add` only `sort`s when necessary', function(assert) {
@@ -1501,7 +1501,7 @@
         assert.strictEqual(resp, 'response');
       }
     });
-    window.fetch.lastCall.args[0].success('response');
+    window.fetch.lastCall.args[1].success('response');
   });
 
   QUnit.test('#2612 - nested `parse` works with `Collection#set`', function(assert) {

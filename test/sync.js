@@ -1,133 +1,121 @@
-(function(QUnit) {
-
+(function (QUnit) {
   const Library = Skeletor.Collection.extend({
-    url: () => '/library'
+    url: () => '/library',
   });
   let library;
 
   const attrs = {
     title: 'The Tempest',
     author: 'Bill Shakespeare',
-    length: 123
+    length: 123,
   };
 
   QUnit.module('Skeletor.sync', {
-
-    beforeEach: function(assert) {
+    beforeEach: function (assert) {
       sinon.stub(window, 'fetch').callsFake(() => {});
       library = new Library();
-      library.create(attrs, {wait: false});
+      library.create(attrs, { wait: false });
     },
 
-    afterEach: function(assert) {
-      window.fetch.restore()
-    }
-
+    afterEach: function (assert) {
+      window.fetch.restore();
+    },
   });
 
-  QUnit.test('read', function(assert) {
-    assert.expect(4);
-    library.fetch();
-    const ajaxSettings = window.fetch.lastCall.args[0];
-    assert.equal(ajaxSettings.url, '/library');
-    assert.equal(ajaxSettings.type, 'GET');
-    assert.equal(ajaxSettings.dataType, 'json');
-    assert.ok(_.isEmpty(ajaxSettings.data));
-  });
-
-  QUnit.test('passing data', function(assert) {
+  QUnit.test('read', function (assert) {
     assert.expect(3);
-    library.fetch({data: {a: 'a', one: 1}});
-    const ajaxSettings = window.fetch.lastCall.args[0];
-    assert.equal(ajaxSettings.url, '/library');
-    assert.equal(ajaxSettings.data.a, 'a');
-    assert.equal(ajaxSettings.data.one, 1);
+    library.fetch();
+    const url = window.fetch.lastCall.args[0];
+    const ajaxSettings = window.fetch.lastCall.args[1];
+    assert.equal(url, '/library');
+    assert.equal(ajaxSettings.method, 'GET');
+    assert.ok(_.isEmpty(ajaxSettings.body));
   });
 
-  QUnit.test('create', function(assert) {
-    assert.expect(6);
-    const ajaxSettings = window.fetch.lastCall.args[0];
-    assert.equal(ajaxSettings.url, '/library');
-    assert.equal(ajaxSettings.type, 'POST');
-    assert.equal(ajaxSettings.dataType, 'json');
-    const data = JSON.parse(ajaxSettings.data);
+  QUnit.test('passing data', function (assert) {
+    library.fetch({ data: { a: 'a', one: 1 } });
+    const url = window.fetch.lastCall.args[0];
+    const ajaxSettings = window.fetch.lastCall.args[1];
+    assert.equal(url, '/library');
+    console.log(ajaxSettings);
+    const body = JSON.parse(ajaxSettings.body);
+    assert.equal(body.a, 'a');
+    assert.equal(body.one, 1);
+  });
+
+  QUnit.test('create', function (assert) {
+    assert.expect(5);
+    const url = window.fetch.lastCall.args[0];
+    const ajaxSettings = window.fetch.lastCall.args[1];
+    assert.equal(url, '/library');
+    assert.equal(ajaxSettings.method, 'POST');
+    const data = JSON.parse(ajaxSettings.body);
     assert.equal(data.title, 'The Tempest');
     assert.equal(data.author, 'Bill Shakespeare');
     assert.equal(data.length, 123);
   });
 
-  QUnit.test('update', function(assert) {
-    assert.expect(7);
-    library.first().save({id: '1-the-tempest', author: 'William Shakespeare'});
-    const ajaxSettings = window.fetch.lastCall.args[0];
-    assert.equal(ajaxSettings.url, '/library/1-the-tempest');
-    assert.equal(ajaxSettings.type, 'PUT');
-    assert.equal(ajaxSettings.dataType, 'json');
-    const data = JSON.parse(ajaxSettings.data);
+  QUnit.test('update', function (assert) {
+    assert.expect(6);
+    library.first().save({ id: '1-the-tempest', author: 'William Shakespeare' });
+    const url = window.fetch.lastCall.args[0];
+    const ajaxSettings = window.fetch.lastCall.args[1];
+    assert.equal(url, '/library/1-the-tempest');
+    assert.equal(ajaxSettings.method, 'PUT');
+    const data = JSON.parse(ajaxSettings.body);
     assert.equal(data.id, '1-the-tempest');
     assert.equal(data.title, 'The Tempest');
     assert.equal(data.author, 'William Shakespeare');
     assert.equal(data.length, 123);
   });
 
-  QUnit.test('read model', function(assert) {
+  QUnit.test('read model', function (assert) {
     assert.expect(3);
-    library.first().save({id: '2-the-tempest', author: 'Tim Shakespeare'});
+    library.first().save({ id: '2-the-tempest', author: 'Tim Shakespeare' });
     library.first().fetch();
-    const ajaxSettings = window.fetch.lastCall.args[0];
-    assert.equal(ajaxSettings.url, '/library/2-the-tempest');
-    assert.equal(ajaxSettings.type, 'GET');
-    assert.ok(_.isEmpty(ajaxSettings.data));
+    const url = window.fetch.lastCall.args[0];
+    const ajaxSettings = window.fetch.lastCall.args[1];
+    assert.equal(url, '/library/2-the-tempest');
+    assert.equal(ajaxSettings.method, 'GET');
+    assert.ok(_.isEmpty(ajaxSettings.body));
   });
 
-  QUnit.test('destroy', function(assert) {
+  QUnit.test('destroy', function (assert) {
     assert.expect(3);
-    library.first().save({id: '2-the-tempest', author: 'Tim Shakespeare'});
-    library.first().destroy({wait: true});
-    const ajaxSettings = window.fetch.lastCall.args[0];
-    assert.equal(ajaxSettings.url, '/library/2-the-tempest');
-    assert.equal(ajaxSettings.type, 'DELETE');
-    assert.equal(ajaxSettings.data, null);
+    library.first().save({ id: '2-the-tempest', author: 'Tim Shakespeare' });
+    library.first().destroy({ wait: true });
+    const url = window.fetch.lastCall.args[0];
+    const ajaxSettings = window.fetch.lastCall.args[1];
+    assert.equal(url, '/library/2-the-tempest');
+    assert.equal(ajaxSettings.method, 'DELETE');
+    assert.equal(ajaxSettings.body, '');
   });
 
-  QUnit.test('urlError', function(assert) {
+  QUnit.test('urlError', function (assert) {
     assert.expect(2);
     const model = new Skeletor.Model();
-    assert.raises(function() {
+    assert.raises(function () {
       model.fetch();
     });
-    model.fetch({url: '/one/two'});
-    const ajaxSettings = window.fetch.lastCall.args[0];
-    assert.equal(ajaxSettings.url, '/one/two');
+    model.fetch({ url: '/one/two' });
+    const url = window.fetch.lastCall.args[0];
+    assert.equal(url, '/one/two');
   });
 
-  QUnit.test('#1052 - `options` is optional.', function(assert) {
+  QUnit.test('#1052 - `options` is optional.', function (assert) {
     assert.expect(0);
     const model = new Skeletor.Model();
     model.url = '/test';
     Skeletor.sync('create', model);
   });
 
-  QUnit.test('Call provided error callback on error.', function(assert) {
+  QUnit.test('Call provided error callback on error.', function (assert) {
     assert.expect(1);
     const model = new Skeletor.Model();
     model.url = '/test';
     Skeletor.sync('read', model, {
-      error: () => assert.ok(true)
+      error: () => assert.ok(true),
     });
-    window.fetch.lastCall.args[0].error();
+    window.fetch.lastCall.args[1].error();
   });
-
-  QUnit.test('#2928 - Pass along `textStatus` and `errorThrown`.', function(assert) {
-    assert.expect(2);
-    const model = new Skeletor.Model();
-    model.url = '/test';
-    model.on('error', function(m, xhr, options) {
-      assert.strictEqual(options.textStatus, 'textStatus');
-      assert.strictEqual(options.errorThrown, 'errorThrown');
-    });
-    model.fetch();
-    window.fetch.lastCall.args[0].error({}, 'textStatus', 'errorThrown');
-  });
-
 })(QUnit);
