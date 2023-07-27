@@ -1,3 +1,4 @@
+/* eslint-disable class-methods-use-this */
 import * as localForage from 'localforage';
 import { Collection } from '../src/collection';
 import { Model } from '../src/model.js';
@@ -5,10 +6,14 @@ import { expect } from 'chai';
 import Storage from '../src/storage.js';
 
 describe('Collection using IndexedDB', function () {
-  const TestCollection = Collection.extend({
-    'browserStorage': new Storage('Collection', 'indexed'),
-    'model': Model,
-  });
+  class TestCollection extends Collection {
+    get browserStorage() {
+      return new Storage('Collection', 'indexed');
+    }
+    get model() {
+      return Model;
+    }
+  }
 
   it('saves to localForage', async function () {
     const collection = new TestCollection();

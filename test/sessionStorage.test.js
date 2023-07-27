@@ -1,4 +1,5 @@
-import { clone, uniq } from 'lodash';
+/* eslint-disable class-methods-use-this */
+import { clone } from 'lodash';
 import { Model } from '../src/model.js';
 import { Collection } from '../src/collection';
 import { expect } from 'chai';
@@ -12,36 +13,37 @@ const attributes = {
 };
 
 class SavedModel extends Model {
-  constructor() {
-    super();
+  constructor(attributes, options) {
+    super(attributes, options);
     this.browserStorage = new Storage('SavedModel', 'session');
-    this.urlRoot = '/test/';
   }
 
-  // eslint-disable-next-line class-methods-use-this
   defaults() {
     return attributes;
   }
 }
 
 class AjaxModel extends Model {
-  // eslint-disable-next-line class-methods-use-this
   defaults() {
     return attributes;
   }
 }
 
-const SavedCollection = Collection.extend({
-  model: AjaxModel,
-  browserStorage: new Storage('SavedCollection', 'session'),
-});
+class SavedCollection extends Collection {
+  get model() {
+    return AjaxModel;
+  }
+  get browserStorage() {
+    return new Storage('SavedCollection', 'session');
+  }
+}
 
 describe('Storage Model using sessionStorage', function () {
   beforeEach(() => sessionStorage.clear());
 
   it('is saved with the given name', async function () {
     const mySavedModel = new SavedModel({ 'id': 10 });
-    await new Promise((resolve, reject) => mySavedModel.save(null, { 'success': resolve }));
+    await new Promise((success) => mySavedModel.save(null, { success }));
     const item = root.sessionStorage.getItem('localforage/SavedModel-10');
     const parsed = JSON.parse(item);
     expect(parsed.id).to.equal(10);
@@ -159,10 +161,13 @@ describe('Storage Model using sessionStorage', function () {
     beforeEach(() => sessionStorage.clear());
 
     class DifferentIdAttribute extends Model {
-      constructor() {
-        super();
+      get idAttribute() {
+        return 'number';
+      }
+
+      constructor(attributes, options) {
+        super(attributes, options);
         this.browserStorage = new Storage('DifferentId', 'session');
-        this.idAttribute = 'number';
       }
 
       // eslint-disable-next-line class-methods-use-this

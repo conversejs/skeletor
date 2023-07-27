@@ -1,7 +1,10 @@
+/* eslint-disable class-methods-use-this */
 (function (QUnit) {
-  const Library = Skeletor.Collection.extend({
-    url: () => '/library',
-  });
+  class Library extends Skeletor.Collection {
+    get url() {
+      return '/library';
+    }
+  }
   let library;
 
   const attrs = {
