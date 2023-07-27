@@ -1,3 +1,4 @@
+/* eslint-disable class-methods-use-this */
 import { clone, each, extend, range, times } from 'lodash';
 import { Collection } from '../src/collection';
 import { getSyncMethod, sync } from '../src/helpers.js';
@@ -27,10 +28,14 @@ describe('Storage using localStorage', function () {
       }
     }
 
-    const TestCollection = Collection.extend({
-      model: TestModel,
-      browserStorage: new Storage('collectionStore', 'local'),
-    });
+    class TestCollection extends Collection {
+      get model() {
+        return TestModel;
+      }
+      get browserStorage() {
+        return new Storage('collectionStore', 'local');
+      }
+    }
 
     it('should use `localSync`', function () {
       const collection = new TestCollection();
@@ -159,21 +164,23 @@ describe('Storage using localStorage', function () {
       describe('with a different `idAttribute`', function () {
         it('should use the custom `idAttribute`', async function () {
           class TestModel extends Model {
-            constructor() {
-              super();
-              this.idAttribute = '_id';
+            get idAttribute() {
+              return '_id';
             }
 
-            // eslint-disable-next-line class-methods-use-this
             defaults() {
               return attributes;
             }
           }
 
-          const TestCollection = Collection.extend({
-            model: TestModel,
-            browserStorage: new Storage('collection2Store', 'local'),
-          });
+          class TestCollection extends Collection {
+            get model() {
+              return TestModel;
+            }
+            get browserStorage() {
+              return new Storage('collection2Store', 'local');
+            }
+          }
 
           const collection = new TestCollection();
           const model = await new Promise((resolve) => collection.create({}, { 'success': resolve }));
@@ -267,7 +274,7 @@ describe('Without browserStorage', function () {
 
   describe('on a Collection', function () {
     it('should use `ajaxSync`', function () {
-      const TestCollection = Collection.extend();
+      class TestCollection extends Collection {}
       const collection = new TestCollection();
       const method = getSyncMethod(collection);
       assert.equal(method, sync);

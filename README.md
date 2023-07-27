@@ -13,7 +13,7 @@ and instead start writing declarative, component-based code that automatically
 updates only the changed parts of the DOM, similarly to basically all modern
 JavaScript frameworks.
 
-The original Backbone Views aren't components can't be rendered in a nested and
+The original Backbone Views aren't components and can't be rendered in a nested and
 declarative way. Instead, it's up to you to manually make sure that these views
 are rendered in the correct place in the DOM. This approach becomes unwieldy,
 difficult and fragile as your site becomes larger and more complex.
@@ -41,6 +41,13 @@ We can cheat a little by letting the existing Views also be web components
 (more accurately, "custom elements"), this allows us to declaratively render the
 UI, while we're progressively getting rid of the views.
 
+## Big changes in version 2
+
+We've made big, backwards incompatible changes in version 2.
+
+- Removed the old `View` type
+- TypeScript type declarations (generated from typed JSDoc comments)
+- All other types (`Model`, `Collection`, `ElementView`) are now ES6 classes.
 
 ## Sekeletor adds the following changes to Backbone
 
@@ -61,9 +68,12 @@ UI, while we're progressively getting rid of the views.
 * Collection.prototype.forEach no longer returns the items being iterated over.
   If you need that, use `map` instead.
 * The `chain`, `clone` and `escape` methods on Models have been removed.
+* The `clone` method has also been removed from Collections
 * The `inject`, `foldl` and `foldr` methods on Collections has been removed. You can use `reduce` instead.
 * Removed the `sample`, `take`, `tail` and `initial` method on Collections.
 * Removed the `without`, `reject` and `select` methods on Collections, use `filter`.
+* Removed the `.extend()` method on `Model` and `Collection`.
+* Models and Collections should be defined via `class .. extends` syntax.
 
 #### Changes due to using Lodash instead of Underscore
 

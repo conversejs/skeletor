@@ -10,7 +10,7 @@
     "checkJs": true,
 
     "rootDir": "./src",
-    "outDir": "./dist/types/",
+    "outDir": "./types/",
     "baseUrl": "./src/",
 
     "esModuleInterop": true,

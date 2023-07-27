@@ -62,6 +62,7 @@
     "test": "karma start && karma start karma.mocha.conf && npm run lint",
     "dev": "karma start --single-run=false",
     "build": "rollup -c",
+    "types": "tsc",
     "lint": "eslint src/*.js test/*.js",
     "prettier": "prettier --write src/**/*.js test/**/*.js"
   },

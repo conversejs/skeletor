@@ -130,7 +130,7 @@ const methodMap = {
 };
 
 /**
- * @param {import('./model.js').Model} model
+ * @param {import('./model.js').Model|import('./collection.js').Collection} model
  */
 export function getSyncMethod(model) {
   const store = result(model, 'browserStorage') || result(model.collection, 'browserStorage');

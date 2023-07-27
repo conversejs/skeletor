@@ -1,10 +1,12 @@
+/* eslint-disable class-methods-use-this */
+
 (function (QUnit) {
   class ProxyModel extends Skeletor.Model {}
-  const Klass = Skeletor.Collection.extend({
+  class Klass extends Skeletor.Collection {
     url() {
       return '/collection';
-    },
-  });
+    }
+  }
   let doc, collection;
 
   QUnit.module('Skeletor.Model', {
@@ -58,7 +60,6 @@
   QUnit.test('initialize with parsed attributes', function (assert) {
     assert.expect(1);
     class Model extends Skeletor.Model {
-      // eslint-disable-next-line class-methods-use-this
       parse(attrs) {
         attrs.value += 1;
         return attrs;
@@ -98,7 +99,6 @@
   QUnit.test('parse can return null', function (assert) {
     assert.expect(1);
     class Model extends Skeletor.Model {
-      // eslint-disable-next-line class-methods-use-this
       parse(attrs) {
         attrs.value += 1;
         return null;
@@ -275,7 +275,6 @@
       error = 0;
 
     class Model extends Skeletor.Model {
-      // eslint-disable-next-line class-methods-use-this
       validate(attrs) {
         if (attrs.x > 1) {
           error++;
@@ -368,7 +367,6 @@
   QUnit.test('using a non-default id attribute.', function (assert) {
     assert.expect(5);
     class MongoModel extends Skeletor.Model {
-      // eslint-disable-next-line class-methods-use-this
       get idAttribute() {
         return '_id';
       }
@@ -386,7 +384,6 @@
   QUnit.test('setting an alternative cid prefix', function (assert) {
     assert.expect(4);
     class Model extends Skeletor.Model {
-      // eslint-disable-next-line class-methods-use-this
       get cidPrefix() {
         return 'm';
       }
@@ -398,10 +395,12 @@
     model = new Skeletor.Model();
     assert.equal(model.cid.charAt(0), 'c');
 
-    var Collection = Skeletor.Collection.extend({
-      model: Model,
-    });
-    var col = new Collection([{ id: 'c5' }, { id: 'c6' }, { id: 'c7' }]);
+    class Collection extends Skeletor.Collection {
+      get model() {
+        return Model;
+      }
+    }
+    const col = new Collection([{ id: 'c5' }, { id: 'c6' }, { id: 'c7' }]);
 
     assert.equal(col.get('c6').cid.charAt(0), 'm');
     col.set([{ id: 'c6', value: 'test' }], {
@@ -454,7 +453,6 @@
   QUnit.test('defaults', function (assert) {
     assert.expect(9);
     class Defaulted extends Skeletor.Model {
-      // eslint-disable-next-line class-methods-use-this
       defaults() {
         return {
           one: 1,
@@ -470,7 +468,6 @@
     assert.equal(model.get('two'), 3);
 
     class Defaulted2 extends Skeletor.Model {
-      // eslint-disable-next-line class-methods-use-this
       defaults() {
         return {
           one: 3,
@@ -484,7 +481,6 @@
     assert.equal(model.get('two'), 4);
 
     class Defaulted3 extends Skeletor.Model {
-      // eslint-disable-next-line class-methods-use-this
       defaults() {
         return {
           hasOwnProperty: true,
@@ -914,7 +910,6 @@
   QUnit.test('defaults always extend attrs (#459)', function (assert) {
     assert.expect(2);
     class Defaulted extends Skeletor.Model {
-      // eslint-disable-next-line class-methods-use-this
       defaults() {
         return { one: 1 };
       }
@@ -1142,7 +1137,6 @@
 
   QUnit.test('save turns on parse flag', function (assert) {
     class Model extends Skeletor.Model {
-      // eslint-disable-next-line class-methods-use-this
       sync(method, m, options) {
         assert.ok(options.parse);
       }
@@ -1383,11 +1377,9 @@
         super(attributes, options);
         this.url = '/test/';
       }
-      // eslint-disable-next-line class-methods-use-this
       sync(method, m, options) {
         options.success();
       }
-      // eslint-disable-next-line class-methods-use-this
       validate() {
         return 'invalid';
       }
@@ -1400,13 +1392,11 @@
 
   QUnit.test('#1545 - `undefined` can be passed to a model constructor without coersion', function (assert) {
     class Model extends Skeletor.Model {
-      // eslint-disable-next-line class-methods-use-this
       defaults() {
         return {
           one: 1,
         };
       }
-      // eslint-disable-next-line class-methods-use-this
       initialize(attrs, opts) {
         assert.equal(attrs, undefined);
       }
@@ -1419,7 +1409,6 @@
     const done = assert.async();
     assert.expect(0);
     class Model extends Skeletor.Model {
-      // eslint-disable-next-line class-methods-use-this
       sync(method, m, options) {
         setTimeout(function () {
           options.success();
@@ -1534,7 +1523,6 @@
     '#1961 - Creating a model with {validate:true} will call validate and use the error callback',
     function (assert) {
       class Model extends Skeletor.Model {
-        // eslint-disable-next-line class-methods-use-this
         validate(attrs) {
           if (attrs.id === 1) return "This shouldn't happen";
         }
