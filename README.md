@@ -1,7 +1,7 @@
 # Skeletor
 
 [![XMPP Chat](https://conference.conversejs.org/muc_badge/discuss@conference.conversejs.org)](https://inverse.chat/#converse/room?jid=discuss@conference.conversejs.org)
-[![Travis](https://api.travis-ci.org/conversejs/skeletor.png?branch=master)](https://travis-ci.org/conversejs/skeletor)
+[![CI Tests](https://github.com/conversejs/skeletor/actions/workflows/karma-tests.yml/badge.svg)](https://github.com/conversejs/skeletor/actions/workflows/karma-tests.yml)
 
 Skeletor is a [Backbone](http://backbonejs.org) fork that adds various improvements and features.
 
