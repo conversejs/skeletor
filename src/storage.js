@@ -42,11 +42,11 @@ class Storage {
 
     async initStore (type, batchedWrites) {
         if (type === 'session') {
-            localForage.setDriver(sessionStorageWrapper._driver);
+            await localForage.setDriver(sessionStorageWrapper._driver);
         } else if (type === 'local') {
             await localForage.config({'driver': localForage.LOCALSTORAGE});
         } else if (type === 'in_memory') {
-            localForage.config({'driver': IN_MEMORY});
+            await localForage.config({'driver': IN_MEMORY});
         } else if (type !== 'indexed') {
             throw new Error("Skeletor.storage: No storage type was specified");
         }

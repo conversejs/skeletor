@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.0 (Unreleased)
+
+- Fix a race condition when setting a localForage driver
+
 ## 0.0.8 (2023-02-14)
 
 - Use the released version of `@converse/localforage-getitems`
