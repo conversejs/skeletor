@@ -23,6 +23,12 @@ which is very similar to the original Backbone `View` but which is also a web
 component that gets instantiated automatically as soon as its rendered in the
 DOM.
 
+## Installation
+
+```
+npm install @converse/skeletor
+```
+
 ## Why bother?
 
 The goal of this fork is to allow the Converse team to gradually update the [Converse](https://conversejs.org)
@@ -35,7 +41,6 @@ We can cheat a little by letting the existing Views also be web components
 (more accurately, "custom elements"), this allows us to declaratively render the
 UI, while we're progressively getting rid of the views.
 
-![](https://raw.githubusercontent.com/conversejs/skeletor/master/images/skeletor2.jpg)
 
 ## Sekeletor adds the following changes to Backbone
 
@@ -70,7 +75,6 @@ UI, while we're progressively getting rid of the views.
 4. Use `includes` instead of `contains`
 5. The `partition` and `invokeMap` methods have been removed.
 
-![](https://raw.githubusercontent.com/conversejs/skeletor/master/images/skeletor3.jpg)
 ### ElementView example
 
 The ElementView looks very similar to a normal Backbone View.
@@ -123,3 +127,5 @@ the browser, your ElementView will automatically be instantiated and
     <my-custom-button></my-custom-button>
   </div>
 ```
+
+![](https://raw.githubusercontent.com/conversejs/skeletor/master/images/skeletor2.jpg)
