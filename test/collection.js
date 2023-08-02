@@ -2002,10 +2002,12 @@
   });
 
   QUnit.test('add supports negative indexes', function (assert) {
-    assert.expect(1);
+    assert.expect(3);
     const collection = new Skeletor.Collection([{ id: 1 }]);
     collection.add([{ id: 2 }, { id: 3 }], { at: -1 });
+    assert.equal(collection.pluck('id').join(','), '1,2,3');
     collection.add([{ id: 2.5 }], { at: -2 });
+    assert.equal(collection.pluck('id').join(','), '1,2,2.5,3');
     collection.add([{ id: 0.5 }], { at: -6 });
     assert.equal(collection.pluck('id').join(','), '0.5,1,2,2.5,3');
   });
