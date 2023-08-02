@@ -1,7 +1,3 @@
-//     Backbone.js 1.4.0
-//     (c) 2010-2019 Jeremy Ashkenas and DocumentCloud
-//     Backbone may be freely distributed under the MIT license.
-
 import { getResolveablePromise, getSyncMethod, wrapError } from './helpers.js';
 import { Model } from './model.js';
 import clone from 'lodash-es/clone.js';
@@ -27,17 +23,6 @@ const slice = Array.prototype.slice;
 // Default options for `Collection#set`.
 const setOptions = { add: true, remove: true, merge: true };
 const addOptions = { add: true, remove: false };
-
-// Splices `insert` into `array` at index `at`.
-function splice(array, insert, at) {
-  at = Math.min(Math.max(at, 0), array.length);
-  const tail = Array(array.length - at);
-  const length = insert.length;
-  let i;
-  for (i = 0; i < tail.length; i++) tail[i] = array[i + at];
-  for (i = 0; i < length; i++) array[i + at] = insert[i];
-  for (i = 0; i < tail.length; i++) array[i + length + at] = tail[i];
-}
 
 /**
  * If models tend to represent a single row of data, a Collection is
@@ -211,14 +196,17 @@ class Collection extends EventEmitter {
     // See if sorting is needed, update `length` and splice in new models.
     let orderChanged = false;
     const replace = !sortable && add && remove;
+
     if (set.length && replace) {
       orderChanged = this.length !== set.length || some(this.models, (m, index) => m !== set[index]);
       this.models.length = 0;
-      splice(this.models, set, 0);
+      this.models.splice(0, 0, ...set);
       this.length = this.models.length;
     } else if (toAdd.length) {
       if (sortable) sort = true;
-      splice(this.models, toAdd, at == null ? this.length : at);
+      let idx = at == null ? this.length : at;
+      idx = Math.min(Math.max(idx, 0), this.models.length);
+      this.models.splice(idx, 0, ...toAdd);
       this.length = this.models.length;
     }
 
