@@ -160,12 +160,8 @@ class EventEmitter {
    * @param {string} name
    * @return {EventEmitter}
    */
-  trigger(name) {
+  trigger(name, ...args) {
     if (!this._events) return this;
-
-    const length = Math.max(0, arguments.length - 1);
-    const args = Array(length);
-    for (let i = 0; i < length; i++) args[i] = arguments[i + 1];
 
     eventsApi(triggerApi, this._events, name, undefined, args);
     return this;

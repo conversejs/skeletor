@@ -1,7 +1,3 @@
-//     Backbone.js 1.4.0
-//     (c) 2010-2019 Jeremy Ashkenas and DocumentCloud
-//     Backbone may be freely distributed under the MIT license.
-
 import { getResolveablePromise, getSyncMethod, urlError, wrapError } from './helpers.js';
 import clone from 'lodash-es/clone.js';
 import defaults from 'lodash-es/defaults.js';
@@ -18,6 +14,17 @@ import uniqueId from 'lodash-es/uniqueId.js';
 import EventEmitter from './eventemitter.js';
 
 /**
+ * @typedef {Record.<string, any>} Options
+ * @typedef {Record.<string, any>} Attributes
+ *
+ * @typedef {Object} ModelOptions
+ * @property {import('./collection.js').Collection} [collection]
+ * @property {boolean} [parse]
+ * @property {boolean} [unset]
+ * @property {boolean} [silent]
+ */
+
+/**
  * **Models** are the basic data object in the framework --
  * frequently representing a row in a table in a database on your server.
  * A discrete chunk of data and a bunch of useful, related methods for
@@ -25,17 +32,9 @@ import EventEmitter from './eventemitter.js';
  */
 class Model extends EventEmitter {
   /**
-   * @typedef {Object} ModelOptions
-   * @property {import('./collection.js').Collection} [collection]
-   * @property {boolean} [parse]
-   * @property {boolean} [unset]
-   * @property {boolean} [silent]
-   */
-
-  /**
    * Create a new model with the specified attributes. A client id (`cid`)
    * is automatically generated and assigned for you.
-   * @param {Record<string, any>} attributes
+   * @param {Attributes} attributes
    * @param {ModelOptions} options
    */
   constructor(attributes, options) {
@@ -109,7 +108,7 @@ class Model extends EventEmitter {
    * Override this if you need custom syncing semantics for *this* particular model.
    * @param {'create'|'update'|'patch'|'delete'|'read'} method
    * @param {Model} model
-   * @param {Object} options
+   * @param {Options} options
    */
   // eslint-disable-next-line class-methods-use-this
   sync(method, model, options) {
@@ -173,6 +172,7 @@ class Model extends EventEmitter {
 
   /**
    * Special-cased proxy to lodash's `matches` method.
+   * @param {Attributes} attrs
    */
   matches(attrs) {
     return !!iteratee(attrs, this)(this.attributes);
@@ -182,6 +182,9 @@ class Model extends EventEmitter {
    * Set a hash of model attributes on the object, firing `"change"`. This is
    * the core primitive operation of a model, updating the data and notifying
    * anyone who needs to know about the change in state. The heart of the beast.
+   * @param {string|Object} key
+   * @param {string|Object} val
+   * @param {Options} [options]
    */
   set(key, val, options) {
     if (key == null) return this;
@@ -244,7 +247,7 @@ class Model extends EventEmitter {
     if (changing) return this;
     if (!silent) {
       while (this._pending) {
-        options = this._pending;
+        options = /** @type {Options} */ (this._pending);
         this._pending = false;
         this.trigger('change', this, options);
       }
@@ -257,6 +260,8 @@ class Model extends EventEmitter {
   /**
    * Remove an attribute from the model, firing `"change"`. `unset` is a noop
    * if the attribute doesn't exist.
+   * @param {string} attr
+   * @param {Options} options
    */
   unset(attr, options) {
     return this.set(attr, undefined, Object.assign({}, options, { unset: true }));
@@ -264,6 +269,7 @@ class Model extends EventEmitter {
 
   /**
    * Clear all attributes on the model, firing `"change"`.
+   * @param {Options} options
    */
   clear(options) {
     const attrs = {};
@@ -288,6 +294,7 @@ class Model extends EventEmitter {
    * persisted to the server. Unset attributes will be set to undefined.
    * You can also pass an attributes object to diff against the model,
    * determining if there *would be* a change.
+   * @param {Object} diff
    */
   changedAttributes(diff) {
     if (!diff) {
@@ -327,6 +334,7 @@ class Model extends EventEmitter {
   /**
    * Fetch the model from the server, merging the response with the model's
    * local attributes. Any changed attributes will trigger a "change" event.
+   * @param {Options} options
    */
   fetch(options) {
     options = Object.assign({ parse: true }, options);
@@ -349,15 +357,15 @@ class Model extends EventEmitter {
    * If the server returns an attributes hash that differs, the model's
    * state will be `set` again.
    * @param {string} key
-   * @param {any} key
-   * @param {Object.<string, any>} [options]
+   * @param {string|Options} val
+   * @param {Options} [options]
    */
   save(key, val, options) {
     // Handle both `"key", value` and `{key: value}` -style arguments.
     let attrs;
     if (key == null || typeof key === 'object') {
       attrs = key;
-      options = val;
+      options = /** @type {Options} */ (val);
     } else {
       (attrs = {})[key] = val;
     }
@@ -372,7 +380,7 @@ class Model extends EventEmitter {
     // the model will be valid when the attributes, if any, are set.
     if (attrs && !wait) {
       if (!this.set(attrs, options)) return false;
-    } else if (!this._validate(attrs, options)) {
+    } else if (!this._validate(/** @type {Object} */ (attrs), options)) {
       return false;
     }
 
@@ -421,7 +429,7 @@ class Model extends EventEmitter {
    * Destroy this model on the server if it was already persisted.
    * Optimistically removes the model from its collection, if it has one.
    * If `wait: true` is passed, waits for the server to respond before removal.
-   * @param {Object.<string, any>} [options]
+   * @param {Options} [options]
    */
   destroy(options) {
     options = options ? clone(options) : {};
@@ -465,6 +473,8 @@ class Model extends EventEmitter {
   /**
    * **parse** converts a response into the hash of attributes to be `set` on
    * the model. The default implementation is just to pass the response along.
+   * @param {Options} resp
+   * @param {Options} [options]
    */
   // eslint-disable-next-line class-methods-use-this
   parse(resp, options) {
@@ -480,6 +490,7 @@ class Model extends EventEmitter {
 
   /**
    * Check if the model is currently in a valid state.
+   * @param {Options} [options]
    */
   isValid(options) {
     return this._validate({}, Object.assign({}, options, { validate: true }));
@@ -488,6 +499,8 @@ class Model extends EventEmitter {
   /**
    * Run validation against the next complete set of model attributes,
    * returning `true` if all is well. Otherwise, fire an `"invalid"` event.
+   * @param {Attributes} attrs
+   * @param {Options} [options]
    */
   _validate(attrs, options) {
     if (!options.validate || !this.validate) return true;
