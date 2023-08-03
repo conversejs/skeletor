@@ -40,6 +40,8 @@ class Collection extends EventEmitter {
    */
   constructor(models, options) {
     super();
+    this.browserStorage = null;
+
     options || (options = {});
     this.preinitialize.apply(this, arguments);
     if (options.model) this._model = options.model;
@@ -50,16 +52,19 @@ class Collection extends EventEmitter {
   }
 
   /**
-   The default model for a collection is just a **Backbone.Model**.
+   The default model for a collection is just a **Model**.
   * This should be overridden in most cases.
   */
-  // eslint-disable-next-line class-methods-use-this
   get model() {
     return this._model ?? Model;
   }
 
   set model(model) {
     this._model = model;
+  }
+
+  get length() {
+    return this.models.length;
   }
 
   /**
@@ -86,13 +91,12 @@ class Collection extends EventEmitter {
     });
   }
 
-  /** Proxy `Backbone.sync` by default. */
   sync(method, model, options) {
     return getSyncMethod(this)(method, model, options);
   }
 
   /**
-   * Add a model, or list of models to the set. `models` may be Backbone
+   * Add a model, or list of models to the set. `models` may be
    * Models or raw JavaScript objects to be converted to Models, or any
    * combination of the two.
    */
@@ -201,13 +205,11 @@ class Collection extends EventEmitter {
       orderChanged = this.length !== set.length || some(this.models, (m, index) => m !== set[index]);
       this.models.length = 0;
       this.models.splice(0, 0, ...set);
-      this.length = this.models.length;
     } else if (toAdd.length) {
       if (sortable) sort = true;
       let idx = at == null ? this.length : at;
       idx = Math.min(Math.max(idx, 0), this.models.length);
       this.models.splice(idx, 0, ...toAdd);
-      this.length = this.models.length;
     }
 
     // Silently sort the collection if appropriate.
@@ -587,7 +589,6 @@ class Collection extends EventEmitter {
   // Private method to reset all internal state. Called when the collection
   // is first initialized or reset.
   _reset() {
-    this.length = 0;
     this.models = [];
     this._byId = {};
   }
@@ -620,7 +621,6 @@ class Collection extends EventEmitter {
 
       const index = this.indexOf(model);
       this.models.splice(index, 1);
-      this.length--;
 
       // Remove references before triggering 'remove' event to prevent an
       // infinite loop. #3693
