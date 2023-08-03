@@ -130,10 +130,16 @@ const methodMap = {
 };
 
 /**
- * @param {import('./model.js').Model|import('./collection.js').Collection} model
+ * @typedef {import('./model.js').Model} Model
+ * @typedef {import('./collection.js').Collection} Collection
+ */
+
+
+/**
+ * @param {Model | Collection} model
  */
 export function getSyncMethod(model) {
-  const store = result(model, 'browserStorage') || result(model.collection, 'browserStorage');
+  const store = result(model, 'browserStorage') || result(/** @type {Model} */(model).collection, 'browserStorage');
   return store ? store.sync() : sync;
 }
 
