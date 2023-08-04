@@ -12,7 +12,15 @@ let _listening;
 
 class EventEmitter {
   /**
+   * @typedef {import('./model.js').Model} Model
+   * @typedef {import('./collection.js').Collection} Collection
+   * @typedef {Record.<string, any>} Options
+   *
    * @callback EventCallback
+   * @param {any} event
+   * @param {Model} model
+   * @param {Collection} collection
+   * @param {Options} [options]
    */
 
   /**

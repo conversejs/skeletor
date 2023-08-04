@@ -14,11 +14,14 @@ import uniqueId from 'lodash-es/uniqueId.js';
 import EventEmitter from './eventemitter.js';
 
 /**
- * @typedef {Record.<string, any>} Options
+ * @typedef {import('./collection.js').Collection} Collection
  * @typedef {Record.<string, any>} Attributes
  *
- * @typedef {Object} ModelOptions
- * @property {import('./collection.js').Collection} [collection]
+ * @typedef {Record.<string, any>} Options
+ * @property {boolean} [validate]
+ *
+ * @typedef {Record.<string, any>} ModelOptions
+ * @property {Collection} [collection]
  * @property {boolean} [parse]
  * @property {boolean} [unset]
  * @property {boolean} [silent]
