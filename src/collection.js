@@ -2,19 +2,10 @@ import { getResolveablePromise, getSyncMethod, wrapError } from './helpers.js';
 import { Model } from './model.js';
 import clone from 'lodash-es/clone.js';
 import countBy from 'lodash-es/countBy.js';
-import difference from 'lodash-es/difference.js';
-import every from 'lodash-es/every.js';
-import extend from 'lodash-es/extend.js';
-import findIndex from 'lodash-es/findIndex.js';
-import findLastIndex from 'lodash-es/findLastIndex.js';
 import groupBy from 'lodash-es/groupBy.js';
-import indexOf from 'lodash-es/indexOf.js';
-import isEmpty from 'lodash-es/isEmpty.js';
 import isFunction from 'lodash-es/isFunction.js';
 import isString from 'lodash-es/isString.js';
 import keyBy from 'lodash-es/keyBy.js';
-import lastIndexOf from 'lodash-es/lastIndexOf.js';
-import some from 'lodash-es/some.js';
 import sortBy from 'lodash-es/sortBy.js';
 import EventEmitter from './eventemitter.js';
 
@@ -23,6 +14,15 @@ const slice = Array.prototype.slice;
 // Default options for `Collection#set`.
 const setOptions = { add: true, remove: true, merge: true };
 const addOptions = { add: true, remove: false };
+
+/**
+ * @typedef {Record.<string, any>} Options
+ * @typedef {Record.<string, any>} Attributes
+ *
+ * @typedef {Record.<string, any>} CollectionOptions
+ * @property {Model} [model]
+ * @property {Function} [comparator]
+ */
 
 /**
  * If models tend to represent a single row of data, a Collection is
@@ -37,6 +37,8 @@ class Collection extends EventEmitter {
    * Create a new **Collection**, perhaps to contain a specific type of `model`.
    * If a `comparator` is specified, the Collection will maintain
    * its models in sort order, as they're added and removed.
+   * @param {Model[]} models
+   * @param {CollectionOptions} options
    */
   constructor(models, options) {
     super();
@@ -48,17 +50,21 @@ class Collection extends EventEmitter {
     if (options.comparator !== undefined) this.comparator = options.comparator;
     this._reset();
     this.initialize.apply(this, arguments);
-    if (models) this.reset(models, extend({ silent: true }, options));
+    if (models) this.reset(models, Object.assign({ silent: true }, options));
   }
 
   /**
-   The default model for a collection is just a **Model**.
-  * This should be overridden in most cases.
-  */
+   * The default model for a collection is just a **Model**.
+   * This should be overridden in most cases.
+   * @return {typeof Model}
+   */
   get model() {
     return this._model ?? Model;
   }
 
+  /**
+   * @param {Model} model
+   */
   set model(model) {
     this._model = model;
   }
@@ -71,19 +77,18 @@ class Collection extends EventEmitter {
    * preinitialize is an empty function by default. You can override it with a function
    * or object.  preinitialize will run before any instantiation logic is run in the Collection.
    */
-  // eslint-disable-next-line class-methods-use-this
   preinitialize() {}
 
   /**
    * Initialize is an empty function by default. Override it with your own
    * initialization logic.
    */
-  // eslint-disable-next-line class-methods-use-this
   initialize() {}
 
   /**
    * The JSON representation of a Collection is an array of the
    * models' attributes.
+   *@param {Options} options
    */
   toJSON(options) {
     return this.map(function (model) {
@@ -91,6 +96,11 @@ class Collection extends EventEmitter {
     });
   }
 
+  /**
+   *@param {string} method
+   *@param {Model|Collection} model
+   *@param {Options} options
+   */
   sync(method, model, options) {
     return getSyncMethod(this)(method, model, options);
   }
@@ -99,17 +109,23 @@ class Collection extends EventEmitter {
    * Add a model, or list of models to the set. `models` may be
    * Models or raw JavaScript objects to be converted to Models, or any
    * combination of the two.
+   *@param {Model[]|Model|Attributes|Attributes[]} models
+   *@param {Options} options
    */
   add(models, options) {
-    return this.set(models, extend({ merge: false }, options, addOptions));
+    return this.set(models, Object.assign({ merge: false }, options, addOptions));
   }
 
-  /** Remove a model, or a list of models from the set. */
+  /**
+   * Remove a model, or a list of models from the set.
+   * @param {Model|Model[]} models
+   * @param {Options} options
+   */
   remove(models, options) {
-    options = extend({}, options);
+    options = Object.assign({}, options);
     const singular = !Array.isArray(models);
-    models = singular ? [models] : models.slice();
-    const removed = this._removeModels(models, options);
+    const modelsArray = singular ? [models] : /** @type {Model[]} */ (models).slice();
+    const removed = this._removeModels(modelsArray, options);
     if (!options.silent && removed.length) {
       options.changes = { added: [], merged: [], removed: removed };
       this.trigger('update', this, options);
@@ -122,17 +138,19 @@ class Collection extends EventEmitter {
    * removing models that are no longer present, and merging models that
    * already exist in the collection, as necessary. Similar to **Model#set**,
    * the core operation for updating the data contained by the collection.
+   *@param {Model[]|Model|Attributes|Attributes[]} models
+   * @param {Options} options
    */
   set(models, options) {
     if (models == null) return;
 
-    options = extend({}, setOptions, options);
+    options = Object.assign({}, setOptions, options);
     if (options.parse && !this._isModel(models)) {
       models = this.parse(models, options) || [];
     }
 
     const singular = !Array.isArray(models);
-    models = singular ? [models] : models.slice();
+    models = singular ? [/** @type {Model} */ (models)] : /** @type {Model[]} */ (models).slice();
 
     let at = options.at;
     if (at != null) at = +at;
@@ -202,7 +220,7 @@ class Collection extends EventEmitter {
     const replace = !sortable && add && remove;
 
     if (set.length && replace) {
-      orderChanged = this.length !== set.length || some(this.models, (m, index) => m !== set[index]);
+      orderChanged = this.length !== set.length || this.models.some((m, idx) => m !== set[idx]);
       this.models.length = 0;
       this.models.splice(0, 0, ...set);
     } else if (toAdd.length) {
@@ -248,10 +266,10 @@ class Collection extends EventEmitter {
                 console.error(e);
                 resolve();
               },
-            }),
+            })
           );
         });
-      }),
+      })
     );
     await this.browserStorage.clear();
     this.reset();
@@ -262,6 +280,8 @@ class Collection extends EventEmitter {
    * you can reset the entire set with a new list of models, without firing
    * any granular `add` or `remove` events. Fires `reset` when finished.
    * Useful for bulk operations and optimizations.
+   * @param {Model|Model[]} [models]
+   * @param {Options} [options]
    */
   reset(models, options) {
     options = options ? clone(options) : {};
@@ -270,51 +290,76 @@ class Collection extends EventEmitter {
     }
     options.previousModels = this.models;
     this._reset();
-    models = this.add(models, extend({ silent: true }, options));
+    models = this.add(models, Object.assign({ silent: true }, options));
     if (!options.silent) this.trigger('reset', this, options);
     return models;
   }
 
-  // Add a model to the end of the collection.
+  /**
+   * Add a model to the end of the collection.
+   * @param {Model} model
+   * @param {Options} [options]
+   */
   push(model, options) {
-    return this.add(model, extend({ at: this.length }, options));
+    return this.add(model, Object.assign({ at: this.length }, options));
   }
 
-  // Remove a model from the end of the collection.
+  /**
+   * Remove a model from the end of the collection.
+   * @param {Options} [options]
+   */
   pop(options) {
     const model = this.at(this.length - 1);
     return this.remove(model, options);
   }
 
-  // Add a model to the beginning of the collection.
+  /**
+   * Add a model to the beginning of the collection.
+   * @param {Model} model
+   * @param {Options} [options]
+   */
   unshift(model, options) {
-    return this.add(model, extend({ at: 0 }, options));
+    return this.add(model, Object.assign({ at: 0 }, options));
   }
 
-  // Remove a model from the beginning of the collection.
+  /**
+   * Remove a model from the beginning of the collection.
+   * @param {Options} [options]
+   */
   shift(options) {
     const model = this.at(0);
     return this.remove(model, options);
   }
 
-  // Slice out a sub-array of models from the collection.
+  /** Slice out a sub-array of models from the collection. */
   slice() {
     return slice.apply(this.models, arguments);
   }
 
+  /**
+   * @param {Function|Object} callback
+   * @param {any} thisArg
+   */
   filter(callback, thisArg) {
     return this.models.filter(isFunction(callback) ? callback : (m) => m.matches(callback), thisArg);
   }
 
+  /**
+   * @param {Function} pred
+   */
   every(pred) {
-    return every(
-      this.models.map((m) => m.attributes),
-      pred,
-    );
+    if (isFunction(pred)) {
+      return this.models.map((m) => m.attributes).every(pred);
+    } else {
+      return this.models.every((m) => m.matches(pred));
+    }
   }
 
+  /**
+   * @param {Model[]} values
+   */
   difference(values) {
-    return difference(this.models, values);
+    return this.models.filter((m) => !values.includes(m));
   }
 
   max() {
@@ -329,22 +374,26 @@ class Collection extends EventEmitter {
     return this.models.slice(n);
   }
 
+  /**
+   * @param {Function|Object} pred
+   */
   some(pred) {
-    return some(
-      this.models.map((m) => m.attributes),
-      pred,
-    );
+    if (isFunction(pred)) {
+      return this.models.map((m) => m.attributes).some(pred);
+    } else {
+      return this.models.some((m) => m.matches(pred));
+    }
   }
 
   sortBy(iteratee) {
     return sortBy(
       this.models,
-      isFunction(iteratee) ? iteratee : (m) => (isString(iteratee) ? m.get(iteratee) : m.matches(iteratee)),
+      isFunction(iteratee) ? iteratee : (m) => (isString(iteratee) ? m.get(iteratee) : m.matches(iteratee))
     );
   }
 
   isEmpty() {
-    return isEmpty(this.models);
+    return !this.models.length;
   }
 
   keyBy(iteratee) {
@@ -375,24 +424,36 @@ class Collection extends EventEmitter {
     return groupBy(this.models, isFunction(pred) ? pred : (m) => (isString(pred) ? m.get(pred) : m.matches(pred)));
   }
 
+  /**
+   * @param {number} fromIndex
+   */
   indexOf(fromIndex) {
-    return indexOf(this.models, fromIndex);
+    return this.models.indexOf(fromIndex);
   }
 
+  /**
+   * @param {Function|string|RegExp} pred
+   * @param {number} fromIndex
+   */
   findLastIndex(pred, fromIndex) {
-    return findLastIndex(
-      this.models,
+    return this.models.findLastIndex(
       isFunction(pred) ? pred : (m) => (isString(pred) ? m.get(pred) : m.matches(pred)),
-      fromIndex,
+      fromIndex
     );
   }
 
+  /**
+   * @param {number} fromIndex
+   */
   lastIndexOf(fromIndex) {
-    return lastIndexOf(this.models, fromIndex);
+    return this.models.lastIndexOf(fromIndex);
   }
 
+  /**
+   * @param {Function|string|RegExp} pred
+   */
   findIndex(pred) {
-    return findIndex(this.models, isFunction(pred) ? pred : (m) => (isString(pred) ? m.get(pred) : m.matches(pred)));
+    return this.models.findIndex(isFunction(pred) ? pred : (m) => (isString(pred) ? m.get(pred) : m.matches(pred)));
   }
 
   last() {
@@ -427,6 +488,7 @@ class Collection extends EventEmitter {
   /**
    * Get a model from the set by id, cid, model object with id or cid
    * properties, or an attributes object that is transformed through modelId.
+   * @param {string|number|Object|Model} obj
    */
   get(obj) {
     if (obj == null) return undefined;
@@ -437,29 +499,46 @@ class Collection extends EventEmitter {
     );
   }
 
-  // Returns `true` if the model is in the collection.
+  /**
+   * Returns `true` if the model is in the collection.
+   * @param {string|number|Object|Model} obj
+   */
   has(obj) {
     return this.get(obj) != null;
   }
 
-  // Get the model at the given index.
+  /**
+   * Get the model at the given index.
+   * @param {number} index
+   */
   at(index) {
     if (index < 0) index += this.length;
     return this.models[index];
   }
 
-  // Return models with matching attributes. Useful for simple cases of
-  // `filter`.
+  /**
+   * Return models with matching attributes. Useful for simple cases of
+   * `filter`.
+   * @param {Attributes} attrs
+   * @param {boolean} first
+   */
   where(attrs, first) {
     return this[first ? 'find' : 'filter'](attrs);
   }
 
-  // Return the first model with matching attributes. Useful for simple cases
-  // of `find`.
+  /**
+   * Return the first model with matching attributes. Useful for simple cases
+   * of `find`.
+   * @param {Attributes} attrs
+   */
   findWhere(attrs) {
     return this.where(attrs, true);
   }
 
+  /**
+   * @param {Attributes} predicate
+   * @param {number} [fromIndex]
+   */
   find(predicate, fromIndex) {
     const pred = isFunction(predicate) ? predicate : (m) => m.matches(predicate);
     return this.models.find(pred, fromIndex);
@@ -469,6 +548,7 @@ class Collection extends EventEmitter {
    * Force the collection to re-sort itself. You don't need to call this under
    * normal circumstances, as the set will maintain sort order as each item
    * is added.
+   * @param {Options} options
    */
   sort(options) {
     let comparator = this.comparator;
@@ -488,7 +568,10 @@ class Collection extends EventEmitter {
     return this;
   }
 
-  // Pluck an attribute from each model in the collection.
+  /**
+   * Pluck an attribute from each model in the collection.
+   * @param {string} attr
+   */
   pluck(attr) {
     return this.map(attr + '');
   }
@@ -497,9 +580,10 @@ class Collection extends EventEmitter {
    * Fetch the default set of models for this collection, resetting the
    * collection when they arrive. If `reset: true` is passed, the response
    * data will be passed through the `reset` method instead of `set`.
+   * @param {Options} options
    */
   fetch(options) {
-    options = extend({ parse: true }, options);
+    options = Object.assign({ parse: true }, options);
     const success = options.success;
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const collection = this;
@@ -519,6 +603,8 @@ class Collection extends EventEmitter {
    * Create a new instance of a model in this collection. Add the model to the
    * collection immediately, unless `wait: true` is passed, in which case we
    * wait for the server to agree.
+   * @param {Model|Attributes} model
+   * @param {Options} [options]
    */
   create(model, options) {
     options = options ? clone(options) : {};
@@ -560,59 +646,79 @@ class Collection extends EventEmitter {
   /**
    * **parse** converts a response into a list of models to be added to the
    * collection. The default implementation is just to pass it through.
+   * @param {Object} resp
+   * @param {Options} [options]
    */
-  // eslint-disable-next-line class-methods-use-this
   parse(resp, options) {
     return resp;
   }
 
-  // Define how to uniquely identify models in the collection.
+  /**
+   * Define how to uniquely identify models in the collection.
+   * @param {Attributes} attrs
+   */
   modelId(attrs) {
     return attrs[this.model.prototype?.idAttribute || 'id'];
   }
 
-  // Get an iterator of all models in this collection.
+  /** Get an iterator of all models in this collection. */
   values() {
     return new CollectionIterator(this, ITERATOR_VALUES);
   }
 
-  // Get an iterator of all model IDs in this collection.
+  /** Get an iterator of all model IDs in this collection. */
   keys() {
     return new CollectionIterator(this, ITERATOR_KEYS);
   }
 
-  // Get an iterator of all [ID, model] tuples in this collection.
+  /** Get an iterator of all [ID, model] tuples in this collection. */
   entries() {
     return new CollectionIterator(this, ITERATOR_KEYSVALUES);
   }
 
-  // Private method to reset all internal state. Called when the collection
-  // is first initialized or reset.
+  /**
+   * Private method to reset all internal state. Called when the collection
+   * is first initialized or reset.
+   */
   _reset() {
     this.models = [];
     this._byId = {};
   }
 
+  /**
+   * @param {Attributes} attrs
+   * @param {Options} [options]
+   */
   createModel(attrs, options) {
-    return new this.model(attrs, options);
+    const Klass = this.model;
+    return new Klass(attrs, options);
   }
 
-  // Prepare a hash of attributes (or other model) to be added to this
-  // collection.
+  /**
+   * Prepare a hash of attributes (or other model) to be added to this
+   * collection.
+   * @param {Attributes|Model} attrs
+   * @param {Options} [options]
+   * @return {Model}
+   */
   _prepareModel(attrs, options) {
     if (this._isModel(attrs)) {
       if (!attrs.collection) attrs.collection = this;
-      return attrs;
+      return /** @type {Model} */(attrs);
     }
     options = options ? clone(options) : {};
     options.collection = this;
     const model = this.createModel(attrs, options);
     if (!model.validationError) return model;
     this.trigger('invalid', this, model.validationError, options);
-    return false;
+    return null;
   }
 
-  // Internal method called by both remove and set.
+  /**
+   * Internal method called by both remove and set.
+   * @param {Model[]} models
+   * @param {Options} [options]
+   */
   _removeModels(models, options) {
     const removed = [];
     for (let i = 0; i < models.length; i++) {
@@ -642,13 +748,17 @@ class Collection extends EventEmitter {
   /**
    * Method for checking whether an object should be considered a model for
    * the purposes of adding to the collection.
+   * @param {any} model
    */
-  // eslint-disable-next-line class-methods-use-this
   _isModel(model) {
     return model instanceof Model;
   }
 
-  // Internal method to create a model's ties to a collection.
+  /**
+   * Internal method to create a model's ties to a collection.
+   * @param {Model} model
+   * @param {Options} [options]
+   */
   _addReference(model, options) {
     this._byId[model.cid] = model;
     const id = this.modelId(model.attributes);
@@ -656,7 +766,12 @@ class Collection extends EventEmitter {
     model.on('all', this._onModelEvent, this);
   }
 
-  // Internal method to sever a model's ties to a collection.
+  /**
+   * Internal method to sever a model's ties to a collection.
+   * @private
+   * @param {Model} model
+   * @param {Options} [options]
+   */
   _removeReference(model, options) {
     delete this._byId[model.cid];
     const id = this.modelId(model.attributes);
@@ -670,6 +785,11 @@ class Collection extends EventEmitter {
    * Sets need to update their indexes when models change ids. All other
    * events simply proxy through. "add" and "remove" events that originate
    * in other collections are ignored.
+   * @private
+   * @param {any} event
+   * @param {Model} model
+   * @param {Collection} collection
+   * @param {Options} [options]
    */
   _onModelEvent(event, model, collection, options) {
     if (model) {

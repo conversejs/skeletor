@@ -384,7 +384,7 @@
 
     list = collection.add([{ id: 3 }, { id: 6 }], { validate: true });
     assert.equal(collection.length, 3);
-    assert.equal(list[0], false);
+    assert.equal(list[0], null);
     assert.equal(list[1].get('id'), 6);
 
     let result = collection.add({ id: 6 });
