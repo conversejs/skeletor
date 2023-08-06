@@ -479,7 +479,6 @@ class Model extends EventEmitter {
    * @param {Options} resp
    * @param {Options} [options]
    */
-  // eslint-disable-next-line class-methods-use-this
   parse(resp, options) {
     return resp;
   }
