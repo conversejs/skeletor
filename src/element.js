@@ -1,17 +1,9 @@
 import extend from 'lodash-es/extend.js';
-import isElement from 'lodash-es/isElement.js';
 import isFunction from 'lodash-es/isFunction.js';
 import pick from 'lodash-es/pick.js';
-import result from 'lodash-es/result.js';
 import uniqueId from 'lodash-es/uniqueId.js';
 import { Events } from './events.js';
-import { inherits, NotImplementedError } from './helpers.js';
 import { render } from 'lit-html';
-
-const paddedLt = /^\s*</;
-
-// Caches a local reference to `Element.prototype` for faster access.
-const ElementProto = (typeof Element !== 'undefined' && Element.prototype) || {};
 
 // Cached regex to split keys for `delegate`.
 const delegateEventSplitter = /^(\S+)\s*(.*)$/;
