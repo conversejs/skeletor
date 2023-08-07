@@ -1,9 +1,8 @@
-import extend from 'lodash-es/extend.js';
 import isFunction from 'lodash-es/isFunction.js';
 import pick from 'lodash-es/pick.js';
 import uniqueId from 'lodash-es/uniqueId.js';
-import { Events } from './events.js';
 import { render } from 'lit-html';
+import EventEmitter from './eventemitter.js';
 
 // Cached regex to split keys for `delegate`.
 const delegateEventSplitter = /^(\S+)\s*(.*)$/;
@@ -11,16 +10,25 @@ const delegateEventSplitter = /^(\S+)\s*(.*)$/;
 // List of view options to be set as properties.
 const viewOptions = ['model', 'collection', 'events'];
 
-export class ElementView extends HTMLElement {
-  events = {};
+class ElementView extends HTMLElement {
+  get events() {
+    return {};
+  }
 
+  /**
+   * @param {Record<string, any>} options
+   */
   constructor(options) {
     super();
+
+    // Will be assigned to from Events
+    this.stopListening = null;
+
     // Creating a View creates its initial element outside of the DOM,
     // if an existing element is not provided...
     this.cid = uniqueId('view');
     this._domEvents = [];
-    extend(this, pick(options, viewOptions));
+    Object.assign(this, pick(options, viewOptions));
   }
 
   createRenderRoot() {
@@ -39,7 +47,7 @@ export class ElementView extends HTMLElement {
 
   disconnectedCallback() {
     this.undelegateEvents();
-    this.stopListening();
+    this.stopListening?.();
   }
 
   // preinitialize is an empty function by default. You can override it with a function
@@ -53,14 +61,21 @@ export class ElementView extends HTMLElement {
   // initialization logic.
   initialize() {} // eslint-disable-line class-methods-use-this
 
+  beforeRender () {}
+  afterRender () {}
+
   // **render** is the core function that your view should override, in order
   // to populate its element (`this.el`), with the appropriate HTML. The
   // convention is for **render** to always return `this`.
   render() {
-    isFunction(this.beforeRender) && this.beforeRender();
-    isFunction(this.toHTML) && render(this.toHTML(), this);
-    isFunction(this.afterRender) && this.afterRender();
+    this.beforeRender();
+    render(this.toHTML(), this);
+    this.afterRender();
     return this;
+  }
+
+  toHTML () {
+    return '';
   }
 
   // Set callbacks, where `this.events` is a hash of
@@ -179,5 +194,6 @@ export class ElementView extends HTMLElement {
   }
 }
 
-// Set up all inheritable **View** properties and methods.
-Object.assign(ElementView.prototype, Events);
+Object.assign(ElementView.prototype, EventEmitter.prototype);
+
+export default ElementView;
