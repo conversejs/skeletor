@@ -42,8 +42,6 @@ class Collection extends EventEmitter {
    */
   constructor(models, options) {
     super();
-    this.browserStorage = null;
-
     options || (options = {});
     this.preinitialize.apply(this, arguments);
     if (options.model) this._model = options.model;
@@ -51,6 +49,10 @@ class Collection extends EventEmitter {
     this._reset();
     this.initialize.apply(this, arguments);
     if (models) this.reset(models, Object.assign({ silent: true }, options));
+  }
+
+  get browserStorage() {
+    return null;
   }
 
   /**
