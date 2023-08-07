@@ -46,6 +46,7 @@ UI, while we're progressively getting rid of the views.
 We've made big, backwards incompatible changes in version 2.
 
 - Removed the old `View` type
+- Removed the `Router` and `History` classes.
 - TypeScript type declarations (generated from typed JSDoc comments)
 - All other types (`Model`, `Collection`, `ElementView`) are now ES6 classes.
 

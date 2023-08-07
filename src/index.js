@@ -1,19 +1,15 @@
 /* global global */
-import { sync } from './helpers.js';
+import ElementView from './element.js';
 import { Collection } from './collection.js';
 import { Events } from './events.js';
-import History from './history.js';
 import { Model } from './model.js';
-import { Router } from './router.js';
-import ElementView from './element.js';
+import { sync } from './helpers.js';
 
 const skeletor = {
   Collection,
   ElementView,
   Events,
-  History,
   Model,
-  Router,
   sync,
 };
 
