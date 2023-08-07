@@ -1,14 +1,9 @@
-import isFunction from 'lodash-es/isFunction.js';
-import pick from 'lodash-es/pick.js';
 import uniqueId from 'lodash-es/uniqueId.js';
 import { render } from 'lit-html';
 import EventEmitter from './eventemitter.js';
 
 // Cached regex to split keys for `delegate`.
 const delegateEventSplitter = /^(\S+)\s*(.*)$/;
-
-// List of view options to be set as properties.
-const viewOptions = ['model', 'collection', 'events'];
 
 class ElementView extends HTMLElement {
   get events() {
@@ -28,7 +23,10 @@ class ElementView extends HTMLElement {
     // if an existing element is not provided...
     this.cid = uniqueId('view');
     this._domEvents = [];
-    Object.assign(this, pick(options, viewOptions));
+
+    const { model, collection, events } = options;
+
+    Object.assign(this, { model, collection, events });
   }
 
   createRenderRoot() {
@@ -50,23 +48,27 @@ class ElementView extends HTMLElement {
     this.stopListening?.();
   }
 
-  // preinitialize is an empty function by default. You can override it with a function
-  // or object.  preinitialize will run before any instantiation logic is run in the View
-  // eslint-disable-next-line class-methods-use-this
-  preinitialize() {
-    // eslint-disable-line class-methods-use-this
-  }
+  /**
+   * preinitialize is an empty function by default. You can override it with a function
+   * or object.  preinitialize will run before any instantiation logic is run in the View
+   * eslint-disable-next-line class-methods-use-this
+   */
+  preinitialize() {}
 
-  // Initialize is an empty function by default. Override it with your own
-  // initialization logic.
-  initialize() {} // eslint-disable-line class-methods-use-this
+  /**
+   * Initialize is an empty function by default. Override it with your own
+   * initialization logic.
+   */
+  initialize() {}
 
-  beforeRender () {}
-  afterRender () {}
+  beforeRender() {}
+  afterRender() {}
 
-  // **render** is the core function that your view should override, in order
-  // to populate its element (`this.el`), with the appropriate HTML. The
-  // convention is for **render** to always return `this`.
+  /**
+   * **render** is the core function that your view should override, in order
+   * to populate its element (`this.el`), with the appropriate HTML. The
+   * convention is for **render** to always return `this`.
+   */
   render() {
     this.beforeRender();
     render(this.toHTML(), this);
@@ -74,23 +76,25 @@ class ElementView extends HTMLElement {
     return this;
   }
 
-  toHTML () {
+  toHTML() {
     return '';
   }
 
-  // Set callbacks, where `this.events` is a hash of
-  //
-  // *{"event selector": "callback"}*
-  //
-  //     {
-  //       'mousedown .title':  'edit',
-  //       'click .button':     'save',
-  //       'click .open':       function(e) { ... }
-  //     }
-  //
-  // pairs. Callbacks will be bound to the view, with `this` set properly.
-  // Uses event delegation for efficiency.
-  // Omitting the selector binds the event to `this.el`.
+  /**
+   * Set callbacks, where `this.events` is a hash of
+   *
+   * *{"event selector": "callback"}*
+   *
+   *     {
+   *       'mousedown .title':  'edit',
+   *       'click .button':     'save',
+   *       'click .open':       function(e) { ... }
+   *     }
+   *
+   * pairs. Callbacks will be bound to the view, with `this` set properly.
+   * Uses event delegation for efficiency.
+   * Omitting the selector binds the event to `this.el`.
+   */
   delegateEvents() {
     if (!this.events) {
       return this;
@@ -98,7 +102,7 @@ class ElementView extends HTMLElement {
     this.undelegateEvents();
     for (const key in this.events) {
       let method = this.events[key];
-      if (!isFunction(method)) method = this[method];
+      if (typeof method !== 'function') method = this[method];
       if (!method) continue;
       const match = key.match(delegateEventSplitter);
       this.delegate(match[1], match[2], method.bind(this));
@@ -106,14 +110,19 @@ class ElementView extends HTMLElement {
     return this;
   }
 
-  // Make a event delegation handler for the given `eventName` and `selector`
-  // and attach it to `this.el`.
-  // If selector is empty, the listener will be bound to `this.el`. If not, a
-  // new handler that will recursively traverse up the event target's DOM
-  // hierarchy looking for a node that matches the selector. If one is found,
-  // the event's `delegateTarget` property is set to it and the return the
-  // result of calling bound `listener` with the parameters given to the
-  // handler.
+  /**
+   * Make a event delegation handler for the given `eventName` and `selector`
+   * and attach it to `this.el`.
+   * If selector is empty, the listener will be bound to `this.el`. If not, a
+   * new handler that will recursively traverse up the event target's DOM
+   * hierarchy looking for a node that matches the selector. If one is found,
+   * the event's `delegateTarget` property is set to it and the return the
+   * result of calling bound `listener` with the parameters given to the
+   * handler.
+   * @param {string} eventName
+   * @param {string} selector
+   * @param {(ev: Event) => any} listener
+   */
   delegate(eventName, selector, listener) {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const root = this;
@@ -152,9 +161,11 @@ class ElementView extends HTMLElement {
     return this;
   }
 
-  // Clears all callbacks previously bound to the view by `delegateEvents`.
-  // You usually don't need to use this, but may wish to if you have multiple
-  // Backbone views attached to the same DOM element.
+  /**
+   * Clears all callbacks previously bound to the view by `delegateEvents`.
+   * You usually don't need to use this, but may wish to if you have multiple
+   * Backbone views attached to the same DOM element.
+   */
   undelegateEvents() {
     if (this) {
       for (let i = 0, len = this._domEvents.length; i < len; i++) {
@@ -166,8 +177,13 @@ class ElementView extends HTMLElement {
     return this;
   }
 
-  // A finer-grained `undelegateEvents` for removing a single delegated event.
-  // `selector` and `listener` are both optional.
+  /**
+   * A finer-grained `undelegateEvents` for removing a single delegated event.
+   * `selector` and `listener` are both optional.
+   * @param {string} eventName
+   * @param {string} selector
+   * @param {(ev: Event) => any} listener
+   */
   undelegate(eventName, selector, listener) {
     if (typeof selector === 'function') {
       listener = selector;
