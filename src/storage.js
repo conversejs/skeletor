@@ -111,7 +111,7 @@ class Storage {
               // the attributes dance again.
               model.attributes = new_attributes;
             }
-            promise = that.update(model, options);
+            promise = that.update(model);
             if (options.wait) {
               model.attributes = original_attributes;
             }
