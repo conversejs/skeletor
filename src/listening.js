@@ -1,4 +1,4 @@
-import { eventsApi,  offApi } from './utils/events.js';
+import { eventsApi, onApi, offApi } from './utils/events.js';
 
 /**
  * A listening class that tracks and cleans up memory bindings
@@ -19,6 +19,28 @@ class Listening {
     this.interop = true;
     this.count = 0;
     this._events = undefined;
+  }
+
+  /**
+   * @param {string} name
+   * @param {Function} callback
+   * @param {any} context
+   */
+  start(name, callback, context) {
+    this._events = eventsApi(onApi, this._events || {}, name, callback, {
+      context: this.obj,
+      ctx: context,
+      listening: this,
+    });
+
+    const listeners = this.obj._listeners || (this.obj._listeners = {});
+    listeners[this.id] = this;
+
+    // Allow the listening to use a counter, instead of tracking
+    // callbacks for library interop
+    this.interop = false;
+
+    return this;
   }
 
   /**

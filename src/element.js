@@ -6,15 +6,34 @@ import EventEmitter from './eventemitter.js';
 const delegateEventSplitter = /^(\S+)\s*(.*)$/;
 
 class ElementView extends HTMLElement {
+
+  /**
+   * @typedef {import('./model.js').Model} Model
+   * @typedef {import('./collection.js').Collection} Collection
+   * @typedef {Record.<string, any>} Options
+   *
+   * @callback EventCallback
+   * @param {any} event
+   * @param {Model} model
+   * @param {Collection} collection
+   * @param {Options} [options]
+   */
+
+  set events (events) {
+    this._declarativeEvents = events;
+  }
+
   get events() {
-    return {};
+    return this._declarativeEvents;
   }
 
   /**
-   * @param {Record<string, any>} options
+   * @param {Options} options
    */
-  constructor(options) {
+  constructor(options={}) {
     super();
+
+    this.emitter = new EventEmitter();
 
     // Will be assigned to from Events
     this.stopListening = null;
@@ -22,11 +41,12 @@ class ElementView extends HTMLElement {
     // Creating a View creates its initial element outside of the DOM,
     // if an existing element is not provided...
     this.cid = uniqueId('view');
+    this._declarativeEvents = {};
     this._domEvents = [];
 
     const { model, collection, events } = options;
 
-    Object.assign(this, { model, collection, events });
+    Object.assign(this, { model: model, collection, events });
   }
 
   createRenderRoot() {
@@ -208,8 +228,26 @@ class ElementView extends HTMLElement {
     }
     return this;
   }
-}
 
-Object.assign(ElementView.prototype, EventEmitter.prototype);
+  /**
+   * @param {any} obj
+   * @param {string} name
+   * @param {EventCallback} [callback]
+   * @return {EventEmitter}
+   */
+  listenTo(obj, name, callback) {
+    return this.emitter.listenTo.call(this, obj, name, callback);
+  }
+
+  /**
+   * @param {any} [obj]
+   * @param {string} [name]
+   * @param {EventCallback} [callback]
+   * @return {EventEmitter}
+   */
+  stopListening(obj, name, callback) {
+    return this.emitter.stopListening.call(this, obj, name, callback);
+  }
+}
 
 export default ElementView;

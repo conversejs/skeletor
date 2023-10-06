@@ -78,7 +78,7 @@ class EventEmitter {
 
     if (error) throw error;
     // If the target obj is not Backbone.Events, track events manually.
-    if (listening.interop) listening.on(name, callback);
+    if (listening.interop) listening.start(name, callback, this);
 
     return this;
   }
@@ -124,7 +124,7 @@ class EventEmitter {
       if (!listening) break;
 
       listening.obj.off(name, callback, this);
-      if (listening.interop) listening.off(name, callback);
+      if (listening.interop) listening.stop(name, callback);
     }
     if (isEmpty(listeningTo)) this._listeningTo = undefined;
 

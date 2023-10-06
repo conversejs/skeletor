@@ -100,7 +100,7 @@ export function offApi(events, name, callback, options) {
         remaining.push(handler);
       } else {
         const listening = handler.listening;
-        if (listening) listening.off(name, callback);
+        if (listening) listening.stop(name, callback);
       }
     }
 
