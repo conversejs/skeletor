@@ -19,6 +19,8 @@ const addOptions = { add: true, remove: false };
  * @typedef {Record.<string, any>} Options
  * @typedef {Record.<string, any>} Attributes
  *
+ * @typedef {import('./storage.js').default} Storage
+ *
  * @typedef {Record.<string, any>} CollectionOptions
  * @property {Model} [model]
  * @property {Function} [comparator]
@@ -51,14 +53,24 @@ class Collection extends EventEmitter {
     if (models) this.reset(models, Object.assign({ silent: true }, options));
   }
 
+  /**
+   * @param {Storage} storage
+   */
+  set browserStorage(storage) {
+    this._browserStorage = storage;
+  }
+
+  /**
+   * @returns {Storage} storage
+   */
   get browserStorage() {
-    return null;
+    return this._browserStorage;
   }
 
   /**
    * The default model for a collection is just a **Model**.
    * This should be overridden in most cases.
-   * @return {typeof Model}
+   * @returns {typeof Model}
    */
   get model() {
     return this._model ?? Model;
