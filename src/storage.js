@@ -8,7 +8,7 @@ import localForage from 'localforage/src/localforage';
 import mergebounce from 'mergebounce';
 import sessionStorageWrapper from './drivers/sessionStorage.js';
 import { extendPrototype as extendPrototypeWithSetItems } from 'localforage-setitems';
-import { extendPrototype as extendPrototypeWithGetItems } from '@converse/localforage-getitems';
+import { extendPrototype as extendPrototypeWithGetItems } from '@converse/localforage-getitems/dist/localforage-getitems.es6';
 import { guid } from './helpers.js';
 
 const IN_MEMORY = memoryDriver._driver;
@@ -111,7 +111,7 @@ class Storage {
               // the attributes dance again.
               model.attributes = new_attributes;
             }
-            promise = that.update(model, options);
+            promise = that.update(model);
             if (options.wait) {
               model.attributes = original_attributes;
             }

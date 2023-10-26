@@ -9,8 +9,13 @@
     "allowJs": true,
     "checkJs": true,
 
+    // Generate d.ts files
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "declarationMap": true,
+
     "rootDir": "./src",
-    "outDir": "./types/",
+    "outDir": "./src/types/",
     "baseUrl": "./src/",
 
     "esModuleInterop": true,

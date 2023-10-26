@@ -51,6 +51,8 @@ class Collection extends EventEmitter(Object) {
     this._reset();
     this.initialize.apply(this, arguments);
     if (models) this.reset(models, Object.assign({ silent: true }, options));
+
+    this[Symbol.iterator] = this.values;
   }
 
   /**
@@ -280,10 +282,10 @@ class Collection extends EventEmitter(Object) {
                 console.error(e);
                 resolve();
               },
-            })
+            }),
           );
         });
-      })
+      }),
     );
     await this.browserStorage.clear();
     this.reset();
@@ -402,7 +404,7 @@ class Collection extends EventEmitter(Object) {
   sortBy(iteratee) {
     return sortBy(
       this.models,
-      isFunction(iteratee) ? iteratee : (m) => (isString(iteratee) ? m.get(iteratee) : m.matches(iteratee))
+      isFunction(iteratee) ? iteratee : (m) => (isString(iteratee) ? m.get(iteratee) : m.matches(iteratee)),
     );
   }
 
@@ -452,7 +454,7 @@ class Collection extends EventEmitter(Object) {
   findLastIndex(pred, fromIndex) {
     return this.models.findLastIndex(
       isFunction(pred) ? pred : (m) => (isString(pred) ? m.get(pred) : m.matches(pred)),
-      fromIndex
+      fromIndex,
     );
   }
 
@@ -718,7 +720,7 @@ class Collection extends EventEmitter(Object) {
   _prepareModel(attrs, options) {
     if (this._isModel(attrs)) {
       if (!attrs.collection) attrs.collection = this;
-      return /** @type {Model} */(attrs);
+      return /** @type {Model} */ (attrs);
     }
     options = options ? clone(options) : {};
     options.collection = this;
@@ -822,26 +824,6 @@ class Collection extends EventEmitter(Object) {
   }
 }
 
-// Defining an @@iterator method implements JavaScript's Iterable protocol.
-// In modern ES2015 browsers, this value is found at Symbol.iterator.
-const $$iterator = typeof Symbol === 'function' && Symbol.iterator;
-if ($$iterator) {
-  Collection.prototype[$$iterator] = Collection.prototype.values;
-}
-
-// CollectionIterator
-// ------------------
-
-// A CollectionIterator implements JavaScript's Iterator protocol, allowing the
-// use of `for of` loops in modern browsers and interoperation between
-// Collection and other JavaScript functions and third-party libraries
-// which can operate on Iterables.
-const CollectionIterator = function (collection, kind) {
-  this._collection = collection;
-  this._kind = kind;
-  this._index = 0;
-};
-
 // This "enum" defines the three possible kinds of values which can be emitted
 // by a CollectionIterator that correspond to the values(), keys() and entries()
 // methods on Collection, respectively.
@@ -849,42 +831,55 @@ const ITERATOR_VALUES = 1;
 const ITERATOR_KEYS = 2;
 const ITERATOR_KEYSVALUES = 3;
 
-// All Iterators should themselves be Iterable.
-if ($$iterator) {
-  CollectionIterator.prototype[$$iterator] = function () {
-    return this;
-  };
-}
-
-CollectionIterator.prototype.next = function () {
-  if (this._collection) {
-    // Only continue iterating if the iterated collection is long enough.
-    if (this._index < this._collection.length) {
-      const model = this._collection.at(this._index);
-      this._index++;
-
-      // Construct a value depending on what kind of values should be iterated.
-      let value;
-      if (this._kind === ITERATOR_VALUES) {
-        value = model;
-      } else {
-        const id = this._collection.modelId(model.attributes);
-        if (this._kind === ITERATOR_KEYS) {
-          value = id;
-        } else {
-          // ITERATOR_KEYSVALUES
-          value = [id, model];
-        }
-      }
-      return { value: value, done: false };
-    }
-
-    // Once exhausted, remove the reference to the collection so future
-    // calls to the next method always return done.
-    this._collection = undefined;
+class CollectionIterator {
+  /**
+   * A CollectionIterator implements JavaScript's Iterator protocol, allowing the
+   * use of `for of` loops in modern browsers and interoperation between
+   * Collection and other JavaScript functions and third-party libraries
+   * which can operate on Iterables.
+   * @param {Collection} collection
+   * @param {Number} kind
+   */
+  constructor(collection, kind) {
+    this._collection = collection;
+    this._kind = kind;
+    this._index = 0;
   }
 
-  return { value: undefined, done: true };
-};
+  next() {
+    if (this._collection) {
+      // Only continue iterating if the iterated collection is long enough.
+      if (this._index < this._collection.length) {
+        const model = this._collection.at(this._index);
+        this._index++;
+
+        // Construct a value depending on what kind of values should be iterated.
+        let value;
+        if (this._kind === ITERATOR_VALUES) {
+          value = model;
+        } else {
+          const id = this._collection.modelId(model.attributes);
+          if (this._kind === ITERATOR_KEYS) {
+            value = id;
+          } else {
+            // ITERATOR_KEYSVALUES
+            value = [id, model];
+          }
+        }
+        return { value: value, done: false };
+      }
+
+      // Once exhausted, remove the reference to the collection so future
+      // calls to the next method always return done.
+      this._collection = undefined;
+    }
+
+    return { value: undefined, done: true };
+  }
+
+  [Symbol.iterator]() {
+    return this;
+  }
+}
 
 export { Collection };

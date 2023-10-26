@@ -11,6 +11,11 @@ import { eventsApi, onApi, offApi, onceMap, tryCatchOn, triggerApi } from './uti
 // A private global variable to share between listeners and listenees.
 let _listening;
 
+/**
+ * @function
+ * @template {new(...args: any[]) => {}} ClassConstructor
+ * @param {ClassConstructor} Base
+ */
 export function EventEmitter(Base) {
   return class EventEmitter extends Base {
     /**
