@@ -1894,12 +1894,7 @@
   });
 
   QUnit.test('Collection implements Iterable, values is default iterator function', function (assert) {
-    const $$iterator = typeof Symbol === 'function' && Symbol.iterator;
-    // This test only applies to environments which define Symbol.iterator.
-    if (!$$iterator) {
-      assert.expect(0);
-      return;
-    }
+    const $$iterator = Symbol.iterator;
     assert.expect(2);
     const collection = new Skeletor.Collection([]);
     assert.strictEqual(collection[$$iterator], collection.values);

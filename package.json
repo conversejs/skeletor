@@ -3,6 +3,7 @@
   "description": "Modernized Backbone with web components",
   "url": "https://github.com/conversejs/skeletor",
   "main": "src/index.js",
+  "types": "src/types/index.d.ts",
   "browser": "dist/skeletor.js",
   "keywords": [
     "model",
