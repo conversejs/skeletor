@@ -35,3 +35,11 @@ skeletor.noConflict = function () {
 
 root.Skeletor = skeletor;
 export default skeletor;
+
+export {
+  Collection,
+  ElementView,
+  EventEmitter,
+  Model,
+  sync,
+}
