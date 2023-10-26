@@ -39,8 +39,8 @@ class Collection extends EventEmitter(Object) {
    * Create a new **Collection**, perhaps to contain a specific type of `model`.
    * If a `comparator` is specified, the Collection will maintain
    * its models in sort order, as they're added and removed.
-   * @param {Model[]} models
-   * @param {CollectionOptions} options
+   * @param {Model[]} [models]
+   * @param {CollectionOptions} [options]
    */
   constructor(models, options) {
     super();

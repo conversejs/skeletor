@@ -9,8 +9,8 @@ declare const Collection_base: {
          * Create a new **Collection**, perhaps to contain a specific type of `model`.
          * If a `comparator` is specified, the Collection will maintain
          * its models in sort order, as they're added and removed.
-         * @param {Model[]} models
-         * @param {CollectionOptions} options
+         * @param {Model[]} [models]
+         * @param {CollectionOptions} [options]
          */
         _listeners: {};
         listenTo(obj: any, name: string, callback?: (event: any, model: Model, collection: Collection, options: Record<string, any>) => any): any;
@@ -46,10 +46,10 @@ export class Collection extends Collection_base {
      * Create a new **Collection**, perhaps to contain a specific type of `model`.
      * If a `comparator` is specified, the Collection will maintain
      * its models in sort order, as they're added and removed.
-     * @param {Model[]} models
-     * @param {CollectionOptions} options
+     * @param {Model[]} [models]
+     * @param {CollectionOptions} [options]
      */
-    constructor(models: Model[], options: CollectionOptions, ...args: any[]);
+    constructor(models?: Model[], options?: CollectionOptions, ...args: any[]);
     _model: any;
     comparator: any;
     /**
