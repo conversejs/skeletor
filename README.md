@@ -3,15 +3,18 @@
 [![XMPP Chat](https://conference.conversejs.org/muc_badge/discuss@conference.conversejs.org)](https://inverse.chat/#converse/room?jid=discuss@conference.conversejs.org)
 [![CI Tests](https://github.com/conversejs/skeletor/actions/workflows/karma-tests.yml/badge.svg)](https://github.com/conversejs/skeletor/actions/workflows/karma-tests.yml)
 
-Skeletor is a [Backbone](http://backbonejs.org) fork that adds various improvements and features.
+Skeletor is a modernization of [Backbone](http://backbonejs.org)'s Models and Collections,
+while getting rid of the old Views.
+
+It provides you with a more modern Backbone-like way to manage state.
 
 ## Introduction
 
-The goal of Skeletor is to modernize Backbone and to allow you to stop
-writing imperative view code (e.g. manually adding and removing DOM nodes)
-and instead start writing declarative, component-based code that automatically
-updates only the changed parts of the DOM, similarly to basically all modern
-JavaScript frameworks.
+The original goal of Skeletor was to modernize Backbone to allow writing
+declarative view code instead of the imperative code (e.g. manually adding and
+removing DOM nodes). In other words, to allow for component-based code that
+automatically updates only the changed parts of the DOM, similarly to basically
+all modern JavaScript frameworks.
 
 The original Backbone Views aren't components and can't be rendered in a nested and
 declarative way. Instead, it's up to you to manually make sure that these views
@@ -23,48 +26,43 @@ which is very similar to the original Backbone `View` but which is also a web
 component that gets instantiated automatically as soon as its rendered in the
 DOM.
 
+The thing is, [Lit](https://lit.dev) Elements already provide anything one
+might need for a modern Backbone-line application. There's not really a need
+for the `ElementView` anymore, except to provide an upgrade path from a
+Backbone app to one that uses web components. It'll therefore likely be removed
+entirely in a future version, thereby leaving only Models and Collections, for
+managing state.
+
 ## Installation
 
 ```
 npm install @converse/skeletor
 ```
 
-## Why bother?
+## Changes from Backbone
 
-The goal of this fork is to allow the Converse team to gradually update the [Converse](https://conversejs.org)
-XMPP webchat client to use web components (using [LitElement](https://lit-element.polymer-project.org/))
-without requiring us to put everything on hold in order to do a massive rewrite.
-
-The end-goal is to not have any Skeletor Views at all, only LitElement components.
-
-We can cheat a little by letting the existing Views also be web components
-(more accurately, "custom elements"), this allows us to declaratively render the
-UI, while we're progressively getting rid of the views.
-
-## Big changes in version 2
-
-We've made big, backwards incompatible changes in version 2.
+We've made big, backwards incompatible changes in version 2:
 
 - Removed the old `View` type
+- Removed the old `Events` constructor function and instead added the `EventsEmitter` mixin class.
 - Removed the `Router` and `History` classes.
-- TypeScript type declarations (generated from typed JSDoc comments)
 - All other types (`Model`, `Collection`, `ElementView`) are now ES6 classes.
 
-## Sekeletor adds the following changes to Backbone
+### Sekeletor adds the following changes to Backbone
 
+* Added TypeScript type declarations (generated from typed JSDoc comments)
 * Removes the dependency on jQuery
-* Instead of the `render` method Views can have a `toHTML` method which must return a [lit-html](https://lit-html.polymer-project.org/) `TemplateResult`.
 * Replaces [underscore](http://underscorejs.org) with [lodash](https://lodash.com)
 * Imports lodash methods individually to allow for tree-shaking
 * Uses the native browser API instead of lodash whereever possible
 * Drops support for older browsers (including IE) and uses ES6+ language features
-* Splits models, views and collections into separate modules
+* Splits models and collections into separate modules
 * Adds the possibility to returns promises for asynchronous operations
 * Adds a new `ElementView` class, which is a like a Backbone View, but doubles
   as an instance of HTMLElement and can be used to register a custom element or
   web-component.
 
-### Backwards incompatible changes
+### Other backwards incompatible changes
 
 * Collection.prototype.forEach no longer returns the items being iterated over.
   If you need that, use `map` instead.

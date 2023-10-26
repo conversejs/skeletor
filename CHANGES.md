@@ -2,8 +2,15 @@
 
 ## 2.0.0 (Unreleased)
 
-Breaking changes:
+- Adds TypeScript type declarations (generated from typed JSDoc comments)
+
+### Breaking changes:
+
 - Removed the `clone()` method on `Model`.
+- Removed the old `View` type
+- Removed the old `Events` constructor function and instead added the `EventsEmitter` mixin class.
+- Removed the `Router` and `History` classes.
+- All other types (`Model`, `Collection`, `ElementView`) are now ES6 classes.
 
 ## 1.0.0 (Unreleased)
 
