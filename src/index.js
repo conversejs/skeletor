@@ -1,19 +1,17 @@
 /* global global */
 import ElementView from './element.js';
+import EventEmitter from './eventemitter.js';
 import { Collection } from './collection.js';
-import { Events } from './events.js';
 import { Model } from './model.js';
 import { sync } from './helpers.js';
 
 const skeletor = {
   Collection,
   ElementView,
-  Events,
+  EventEmitter,
   Model,
   sync,
 };
-
-Object.assign(skeletor, Events);
 
 // Establish the root object, `window` (`self`) in the browser, or `global` on the server.
 // We use `self` instead of `window` for `WebWorker` support.

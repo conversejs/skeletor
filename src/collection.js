@@ -34,7 +34,7 @@ const addOptions = { add: true, remove: false };
  * belonging to this particular author, and so on. Collections maintain
  * indexes of their models, both in order, and for lookup by `id`.
  */
-class Collection extends EventEmitter {
+class Collection extends EventEmitter(Object) {
   /**
    * Create a new **Collection**, perhaps to contain a specific type of `model`.
    * If a `comparator` is specified, the Collection will maintain

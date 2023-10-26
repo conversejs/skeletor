@@ -9,7 +9,7 @@ class Listening {
   /** @typedef {import('./eventemitter.js').default} EventEmitter */
 
   /**
-   * @param {EventEmitter} listener
+   * @param {any} listener
    * @param {any} obj
    */
   constructor(listener, obj) {
@@ -25,20 +25,23 @@ class Listening {
    * @param {string} name
    * @param {Function} callback
    * @param {any} context
+   * @param {Listening} _listening
    */
-  start(name, callback, context) {
+  start(name, callback, context, _listening) {
     this._events = eventsApi(onApi, this._events || {}, name, callback, {
       context: this.obj,
       ctx: context,
-      listening: this,
+      listening: _listening,
     });
 
-    const listeners = this.obj._listeners || (this.obj._listeners = {});
-    listeners[this.id] = this;
+    if (_listening) {
+      const listeners = this.obj._listeners || (this.obj._listeners = {});
+      listeners[this.id] = this;
 
-    // Allow the listening to use a counter, instead of tracking
-    // callbacks for library interop
-    this.interop = false;
+      // Allow the listening to use a counter, instead of tracking
+      // callbacks for library interop
+      this.interop = false;
+    }
 
     return this;
   }
