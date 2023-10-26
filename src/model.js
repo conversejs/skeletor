@@ -33,7 +33,7 @@ import EventEmitter from './eventemitter.js';
  * A discrete chunk of data and a bunch of useful, related methods for
  * performing computations and transformations on that data.
  */
-class Model extends EventEmitter {
+class Model extends EventEmitter(Object) {
   /**
    * Create a new model with the specified attributes. A client id (`cid`)
    * is automatically generated and assigned for you.

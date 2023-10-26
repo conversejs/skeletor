@@ -5,7 +5,7 @@ import EventEmitter from './eventemitter.js';
 // Cached regex to split keys for `delegate`.
 const delegateEventSplitter = /^(\S+)\s*(.*)$/;
 
-class ElementView extends HTMLElement {
+class ElementView extends EventEmitter(HTMLElement) {
 
   /**
    * @typedef {import('./model.js').Model} Model
@@ -32,8 +32,6 @@ class ElementView extends HTMLElement {
    */
   constructor(options={}) {
     super();
-
-    this.emitter = new EventEmitter();
 
     // Will be assigned to from Events
     this.stopListening = null;
@@ -227,26 +225,6 @@ class ElementView extends HTMLElement {
       }
     }
     return this;
-  }
-
-  /**
-   * @param {any} obj
-   * @param {string} name
-   * @param {EventCallback} [callback]
-   * @return {EventEmitter}
-   */
-  listenTo(obj, name, callback) {
-    return this.emitter.listenTo.call(this, obj, name, callback);
-  }
-
-  /**
-   * @param {any} [obj]
-   * @param {string} [name]
-   * @param {EventCallback} [callback]
-   * @return {EventEmitter}
-   */
-  stopListening(obj, name, callback) {
-    return this.emitter.stopListening.call(this, obj, name, callback);
   }
 }
 

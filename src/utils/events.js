@@ -39,7 +39,7 @@ export function onApi(events, name, callback, options) {
       listening = options.listening;
     if (listening) listening.count++;
 
-    handlers.push({ callback: callback, context: context, ctx: context || ctx, listening: listening });
+    handlers.push({ callback, context, ctx: context || ctx, listening });
   }
   return events;
 }
