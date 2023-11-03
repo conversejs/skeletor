@@ -37,7 +37,7 @@ class Model extends EventEmitter(Object) {
   /**
    * Create a new model with the specified attributes. A client id (`cid`)
    * is automatically generated and assigned for you.
-   * @param {Attributes} attributes
+   * @param {Attributes} [attributes]
    * @param {ModelOptions} [options]
    */
   constructor(attributes, options) {
