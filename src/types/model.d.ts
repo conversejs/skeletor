@@ -70,6 +70,15 @@ export class Model extends Model_base {
     collection: any;
     changed: {};
     /**
+     * @param {Storage} storage
+     */
+    set browserStorage(arg: Storage);
+    /**
+     * @returns {Storage} storage
+     */
+    get browserStorage(): Storage;
+    _browserStorage: Storage;
+    /**
      * The default name for the JSON `id` attribute is `"id"`. MongoDB and
      * CouchDB users may want to set this to `"_id"` (by overriding this getter
      * in a subclass).

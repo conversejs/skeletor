@@ -68,6 +68,20 @@ class Model extends EventEmitter(Object) {
   }
 
   /**
+   * @param {Storage} storage
+   */
+  set browserStorage(storage) {
+    this._browserStorage = storage;
+  }
+
+  /**
+   * @returns {Storage} storage
+   */
+  get browserStorage() {
+    return this._browserStorage;
+  }
+
+  /**
    * The default name for the JSON `id` attribute is `"id"`. MongoDB and
    * CouchDB users may want to set this to `"_id"` (by overriding this getter
    * in a subclass).
