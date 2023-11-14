@@ -51,8 +51,6 @@ class Model extends EventEmitter(Object) {
     // The value returned during the last failed validation.
     this.validationError = null;
 
-    this.validate = this.validate ?? null;
-
     if (options.collection) this.collection = options.collection;
     if (options.parse) attrs = this.parse(attrs, options) || {};
 
@@ -113,6 +111,15 @@ class Model extends EventEmitter(Object) {
    */
   // eslint-disable-next-line class-methods-use-this
   initialize() {}
+
+  /**
+   * @param {object} attrs
+   * @param {object} [options]
+   * @returns {string} The validation error message
+   */
+  validate(attrs, options) {
+    return '';
+  }
 
   /**
    * Return a copy of the model's `attributes` object.

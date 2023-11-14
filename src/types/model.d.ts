@@ -65,8 +65,7 @@ export class Model extends Model_base {
     constructor(attributes?: Attributes, options?: ModelOptions, ...args: any[]);
     cid: any;
     attributes: {};
-    validationError: any;
-    validate: any;
+    validationError: string;
     collection: any;
     changed: {};
     /**
@@ -99,6 +98,12 @@ export class Model extends Model_base {
      * initialization logic.
      */
     initialize(): void;
+    /**
+     * @param {object} attrs
+     * @param {object} [options]
+     * @returns {string} The validation error message
+     */
+    validate(attrs: object, options?: object): string;
     /**
      * Return a copy of the model's `attributes` object.
      */
