@@ -224,9 +224,9 @@ export class Collection extends Collection_base {
      * Return models with matching attributes. Useful for simple cases of
      * `filter`.
      * @param {Attributes} attrs
-     * @param {boolean} first
+     * @param {boolean} [first]
      */
-    where(attrs: Attributes, first: boolean): any;
+    where(attrs: Attributes, first?: boolean): any;
     /**
      * Return the first model with matching attributes. Useful for simple cases
      * of `find`.

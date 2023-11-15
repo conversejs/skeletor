@@ -536,7 +536,7 @@ class Collection extends EventEmitter(Object) {
    * Return models with matching attributes. Useful for simple cases of
    * `filter`.
    * @param {Attributes} attrs
-   * @param {boolean} first
+   * @param {boolean} [first]
    */
   where(attrs, first) {
     return this[first ? 'find' : 'filter'](attrs);
