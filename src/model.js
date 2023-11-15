@@ -358,9 +358,9 @@ class Model extends EventEmitter(Object) {
   /**
    * Fetch the model from the server, merging the response with the model's
    * local attributes. Any changed attributes will trigger a "change" event.
-   * @param {Options} options
+   * @param {Options} [options={}]
    */
-  fetch(options) {
+  fetch(options={}) {
     options = Object.assign({ parse: true }, options);
 
     const success = options.success;

@@ -194,9 +194,9 @@ export class Model extends Model_base {
     /**
      * Fetch the model from the server, merging the response with the model's
      * local attributes. Any changed attributes will trigger a "change" event.
-     * @param {Options} options
+     * @param {Options} [options={}]
      */
-    fetch(options: Options): any;
+    fetch(options?: Options): any;
     /**
      * Set a hash of model attributes, and sync the model to the server.
      * If the server returns an attributes hash that differs, the model's
