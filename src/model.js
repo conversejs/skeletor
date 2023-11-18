@@ -380,7 +380,7 @@ class Model extends EventEmitter(Object) {
    * Set a hash of model attributes, and sync the model to the server.
    * If the server returns an attributes hash that differs, the model's
    * state will be `set` again.
-   * @param {string|Attributes} key
+   * @param {string|Attributes} [key]
    * @param {string|Options} [val]
    * @param {Options} [options]
    */

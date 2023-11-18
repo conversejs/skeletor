@@ -201,11 +201,11 @@ export class Model extends Model_base {
      * Set a hash of model attributes, and sync the model to the server.
      * If the server returns an attributes hash that differs, the model's
      * state will be `set` again.
-     * @param {string|Attributes} key
+     * @param {string|Attributes} [key]
      * @param {string|Options} [val]
      * @param {Options} [options]
      */
-    save(key: string | Attributes, val?: string | Options, options?: Options): any;
+    save(key?: string | Attributes, val?: string | Options, options?: Options): any;
     /**
      * Destroy this model on the server if it was already persisted.
      * Optimistically removes the model from its collection, if it has one.
