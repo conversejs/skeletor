@@ -381,7 +381,7 @@ class Model extends EventEmitter(Object) {
    * If the server returns an attributes hash that differs, the model's
    * state will be `set` again.
    * @param {string|Attributes} [key]
-   * @param {string|Options} [val]
+   * @param {number|string|Options} [val]
    * @param {Options} [options]
    */
   save(key, val, options) {
