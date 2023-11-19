@@ -202,10 +202,10 @@ export class Model extends Model_base {
      * If the server returns an attributes hash that differs, the model's
      * state will be `set` again.
      * @param {string|Attributes} [key]
-     * @param {number|string|Options} [val]
+     * @param {boolean|number|string|Options} [val]
      * @param {Options} [options]
      */
-    save(key?: string | Attributes, val?: number | string | Options, options?: Options): any;
+    save(key?: string | Attributes, val?: boolean | number | string | Options, options?: Options): any;
     /**
      * Destroy this model on the server if it was already persisted.
      * Optimistically removes the model from its collection, if it has one.
