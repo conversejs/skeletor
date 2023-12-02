@@ -1,4 +1,5 @@
 export default ElementView;
+export type TemplateResult = import('lit-html').TemplateResult;
 declare const ElementView_base: {
     new (...args: any[]): {
         on(name: string, callback: (event: any, model: import("./model.js").Model, collection: import("./collection.js").Collection, options?: Record<string, any>) => any, context: any): any;
@@ -62,7 +63,10 @@ declare class ElementView extends ElementView_base {
      * convention is for **render** to always return `this`.
      */
     render(): this;
-    toHTML(): string;
+    /**
+     * @returns {string|TemplateResult}
+     */
+    toHTML(): string | TemplateResult;
     /**
      * Set callbacks, where `this.events` is a hash of
      *

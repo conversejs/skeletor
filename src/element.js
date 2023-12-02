@@ -1,3 +1,7 @@
+
+/**
+ * @typedef {import('lit-html').TemplateResult} TemplateResult
+ */
 import uniqueId from 'lodash-es/uniqueId.js';
 import { render } from 'lit-html';
 import EventEmitter from './eventemitter.js';
@@ -94,6 +98,9 @@ class ElementView extends EventEmitter(HTMLElement) {
     return this;
   }
 
+  /**
+   * @returns {string|TemplateResult}
+   */
   toHTML() {
     return '';
   }
