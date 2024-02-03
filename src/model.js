@@ -285,7 +285,7 @@ class Model extends EventEmitter(Object) {
    * Remove an attribute from the model, firing `"change"`. `unset` is a noop
    * if the attribute doesn't exist.
    * @param {string} attr
-   * @param {Options} options
+   * @param {Options} [options]
    */
   unset(attr, options) {
     return this.set(attr, undefined, Object.assign({}, options, { unset: true }));
