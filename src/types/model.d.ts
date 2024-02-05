@@ -156,9 +156,9 @@ export class Model extends Model_base {
      * Remove an attribute from the model, firing `"change"`. `unset` is a noop
      * if the attribute doesn't exist.
      * @param {string} attr
-     * @param {Options} options
+     * @param {Options} [options]
      */
-    unset(attr: string, options: Options): false | this;
+    unset(attr: string, options?: Options): false | this;
     /**
      * Clear all attributes on the model, firing `"change"`.
      * @param {Options} options
