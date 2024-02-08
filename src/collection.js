@@ -564,7 +564,7 @@ class Collection extends EventEmitter(Object) {
    * Force the collection to re-sort itself. You don't need to call this under
    * normal circumstances, as the set will maintain sort order as each item
    * is added.
-   * @param {Options} options
+   * @param {Options} [options]
    */
   sort(options) {
     let comparator = this.comparator;

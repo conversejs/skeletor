@@ -242,9 +242,9 @@ export class Collection extends Collection_base {
      * Force the collection to re-sort itself. You don't need to call this under
      * normal circumstances, as the set will maintain sort order as each item
      * is added.
-     * @param {Options} options
+     * @param {Options} [options]
      */
-    sort(options: Options): this;
+    sort(options?: Options): this;
     models: any;
     /**
      * Pluck an attribute from each model in the collection.
