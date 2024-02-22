@@ -207,7 +207,7 @@ class Model extends EventEmitter(Object) {
    * the core primitive operation of a model, updating the data and notifying
    * anyone who needs to know about the change in state. The heart of the beast.
    * @param {string|Object} key
-   * @param {string|Object} val
+   * @param {string|Object} [val]
    * @param {Options} [options]
    */
   set(key, val, options) {
