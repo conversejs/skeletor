@@ -1,6 +1,7 @@
 /* global global */
 import ElementView from './element.js';
 import EventEmitter from './eventemitter.js';
+import Storage from './storage.js';
 import { Collection } from './collection.js';
 import { Model } from './model.js';
 import { sync } from './helpers.js';
@@ -41,5 +42,6 @@ export {
   ElementView,
   EventEmitter,
   Model,
+  Storage,
   sync,
 }
