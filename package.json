@@ -20,12 +20,12 @@
   ],
   "dependencies": {
     "@converse/localforage-getitems": "1.4.3",
-    "lit-html": "^2.0.0-rc.2",
+    "lit-html": "^3.2.1",
     "localforage": "^1.10.0",
     "localforage-driver-memory": "^1.0.5",
     "localforage-setitems": "^1.4.0",
     "lodash-es": "^4.17.21",
-    "mergebounce": "0.1.1"
+    "mergebounce": "0.1.2"
   },
   "devDependencies": {
     "@babel/core": "^7.10.2",
