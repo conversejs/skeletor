@@ -1,9 +1,15 @@
-import { terser } from 'rollup-plugin-terser';
 import babel from '@rollup/plugin-babel';
 import resolve from '@rollup/plugin-node-resolve';
+import terser from '@rollup/plugin-terser';
+import commonjs from '@rollup/plugin-commonjs';
+import summary from 'rollup-plugin-summary';
 
 const plugins = [
-  resolve(),
+  resolve(), // Resolve bare module specifiers to relative paths
+  commonjs({
+    requireReturnsDefault: 'auto' // Handle mixed ES/CJS modules
+  }),
+  summary(), // Print bundle summary
   babel({
     'plugins': ['@babel/plugin-proposal-optional-chaining', '@babel/plugin-proposal-nullish-coalescing-operator'],
     'presets': [
@@ -29,6 +35,7 @@ export default [
       format: 'umd',
     },
     plugins,
+    preserveEntrySignatures: 'strict',
   },
   {
     input: 'src/index.js',
@@ -38,6 +45,13 @@ export default [
       file: 'dist/skeletor.min.js',
       format: 'umd',
     },
-    plugins: [terser(), ...plugins],
+    plugins: [
+      terser({
+        ecma: 2021,
+        module: true,
+        warnings: true,
+      }),
+      ...plugins,
+    ],
   },
 ];

@@ -4,7 +4,7 @@
 import * as memoryDriver from 'localforage-driver-memory';
 import cloneDeep from 'lodash-es/cloneDeep.js';
 import isString from 'lodash-es/isString.js';
-import localForage from 'localforage/src/localforage';
+import localForage from 'localforage';
 import mergebounce from 'mergebounce';
 import sessionStorageWrapper from './drivers/sessionStorage.js';
 import { extendPrototype as extendPrototypeWithSetItems } from 'localforage-setitems';
