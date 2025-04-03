@@ -2,10 +2,10 @@
  * @copyright 2010-2019 Jeremy Ashkenas and DocumentCloud
  * @copyright 2023 JC Brand
  */
-import Listening from './listening.js';
 import isEmpty from 'lodash-es/isEmpty.js';
 import keys from 'lodash-es/keys.js';
 import uniqueId from 'lodash-es/uniqueId.js';
+import Listening from './listening.js';
 import { eventsApi, onApi, offApi, onceMap, tryCatchOn, triggerApi } from './utils/events.js';
 
 // A private global variable to share between listeners and listenees.

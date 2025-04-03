@@ -108,9 +108,10 @@ class Model extends EventEmitter(Object) {
   /**
    * Initialize is an empty function by default. Override it with your own
    * initialization logic.
+   * @param {Attributes} [attrs]
+   * @param {ModelOptions} [options]
    */
-  // eslint-disable-next-line class-methods-use-this
-  initialize() {}
+  initialize(attrs, options) {}
 
   /**
    * @param {object} attrs

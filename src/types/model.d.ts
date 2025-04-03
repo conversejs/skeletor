@@ -96,8 +96,10 @@ export class Model extends Model_base {
     /**
      * Initialize is an empty function by default. Override it with your own
      * initialization logic.
+     * @param {Attributes} [attrs]
+     * @param {ModelOptions} [options]
      */
-    initialize(): void;
+    initialize(attrs?: Attributes, options?: ModelOptions): void;
     /**
      * @param {object} attrs
      * @param {object} [options]
