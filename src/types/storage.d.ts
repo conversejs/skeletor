@@ -28,7 +28,8 @@ declare class Storage {
     getItemName(id: any): string;
 }
 declare namespace Storage {
-    export let sessionStorageInitialized: any;
+    export let sessionStorageInitialized: Promise<void>;
     export { localForage };
 }
+import localForage from 'localforage';
 //# sourceMappingURL=storage.d.ts.map

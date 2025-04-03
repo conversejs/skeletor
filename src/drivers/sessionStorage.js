@@ -214,10 +214,17 @@ function removeItem(key, callback) {
   return promise;
 }
 
-// Set a key's value and run an optional callback once the value is set.
-// Unlike Gaia's implementation, the callback function is passed the value,
-// in case you want to operate on that value only after you're sure it
-// saved, or something like that.
+/**
+ * Set a key's value and run an optional callback once the value is set.
+ * Unlike Gaia's implementation, the callback function is passed the value,
+ * in case you want to operate on that value only after you're sure it
+ * saved, or something like that.
+ * @template T
+ * @param {string} key - The key under which the value is stored.
+ * @param {T} value - The value to be stored, can be of any type.
+ * @param {(err: any, value: T) => void} [callback] - Optional callback function to be called after the value is set.
+ * @returns {Promise<T>}
+ */
 async function setItem(key, value, callback) {
   key = normalizeKey(key);
   await this.ready();
@@ -245,6 +252,8 @@ async function setItem(key, value, callback) {
       }
     }
   });
+
+  return value;
 }
 
 function dropInstance(options, callback) {
@@ -286,15 +295,15 @@ const sessionStorageWrapper = {
   _driver: 'sessionStorageWrapper',
   _initStorage: _initStorage,
   _support: isSessionStorageValid(),
-  iterate: iterate,
-  getItem: getItem,
-  setItem: setItem,
-  removeItem: removeItem,
-  clear: clear,
-  length: length,
-  key: key,
-  keys: keys,
-  dropInstance: dropInstance,
+  iterate,
+  getItem,
+  setItem,
+  removeItem,
+  clear,
+  length,
+  key,
+  keys,
+  dropInstance,
 };
 
 export default sessionStorageWrapper;
