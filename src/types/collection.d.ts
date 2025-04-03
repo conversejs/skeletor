@@ -1,26 +1,20 @@
 export type Options = Record<string, any>;
 export type Attributes = Record<string, any>;
-export type Storage = import('./storage.js').default;
+export type Storage = import("./storage.js").default;
 export type CollectionOptions = Record<string, any>;
 declare const Collection_base: {
     new (...args: any[]): {
-        on(name: string, callback: (event: any, model: Model, collection: Collection, options: Record<string, any>) => any, context: any): any;
-        _events: any; /**
-         * Create a new **Collection**, perhaps to contain a specific type of `model`.
-         * If a `comparator` is specified, the Collection will maintain
-         * its models in sort order, as they're added and removed.
-         * @param {Model[]} [models]
-         * @param {CollectionOptions} [options]
-         */
+        on(name: string, callback: (event: any, model: Model, collection: Collection, options: Record<string, any>) => any, context: any): /*elided*/ any;
+        _events: any;
         _listeners: {};
-        listenTo(obj: any, name: string, callback?: (event: any, model: Model, collection: Collection, options: Record<string, any>) => any): any;
+        listenTo(obj: any, name: string, callback?: (event: any, model: Model, collection: Collection, options: Record<string, any>) => any): /*elided*/ any;
         _listeningTo: {};
         _listenId: any;
-        off(name: string, callback: (event: any, model: Model, collection: Collection, options: Record<string, any>) => any, context?: any): any;
-        stopListening(obj?: any, name?: string, callback?: (event: any, model: Model, collection: Collection, options: Record<string, any>) => any): any;
-        once(name: string, callback: (event: any, model: Model, collection: Collection, options: Record<string, any>) => any, context: any): any;
-        listenToOnce(obj: any, name: string, callback?: (event: any, model: Model, collection: Collection, options: Record<string, any>) => any): any;
-        trigger(name: string, ...args: any[]): any;
+        off(name: string, callback: (event: any, model: Model, collection: Collection, options: Record<string, any>) => any, context?: any): /*elided*/ any;
+        stopListening(obj?: any, name?: string, callback?: (event: any, model: Model, collection: Collection, options: Record<string, any>) => any): /*elided*/ any;
+        once(name: string, callback: (event: any, model: Model, collection: Collection, options: Record<string, any>) => any, context: any): /*elided*/ any;
+        listenToOnce(obj: any, name: string, callback?: (event: any, model: Model, collection: Collection, options: Record<string, any>) => any): /*elided*/ any;
+        trigger(name: string, ...args: any[]): /*elided*/ any;
     };
 } & ObjectConstructor;
 /**
@@ -55,16 +49,16 @@ export class Collection extends Collection_base {
     /**
      * @param {Storage} storage
      */
-    set browserStorage(arg: import("./storage.js").default);
+    set browserStorage(storage: Storage);
     /**
      * @returns {Storage} storage
      */
-    get browserStorage(): import("./storage.js").default;
+    get browserStorage(): Storage;
     _browserStorage: import("./storage.js").default;
     /**
      * @param {Model} model
      */
-    set model(arg: typeof Model);
+    set model(model: Model);
     /**
      * The default model for a collection is just a **Model**.
      * This should be overridden in most cases.
@@ -320,7 +314,7 @@ export class Collection extends Collection_base {
      * the purposes of adding to the collection.
      * @param {any} model
      */
-    _isModel(model: any): boolean;
+    _isModel(model: any): model is Model;
     /**
      * Internal method to create a model's ties to a collection.
      * @param {Model} model

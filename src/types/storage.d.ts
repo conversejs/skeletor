@@ -8,7 +8,7 @@ declare class Storage {
      * @param {'local'|'session'|'indexed'|'in_memory'} type
      * @param {boolean} batchedWrites
      */
-    initStore(type: 'local' | 'session' | 'indexed' | 'in_memory', batchedWrites: boolean): Promise<void>;
+    initStore(type: "local" | "session" | "indexed" | "in_memory", batchedWrites: boolean): Promise<void>;
     flush(): any;
     clear(): Promise<void>;
     sync(): {

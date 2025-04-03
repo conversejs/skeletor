@@ -42,15 +42,15 @@ export function getSyncMethod(model: Model | Collection): any;
  * @param {import('./model.js').Model} model
  * @param {SyncOptions} [options]
  */
-export function sync(method: 'create' | 'update' | 'patch', model: import('./model.js').Model, options?: SyncOptions): Promise<Response>;
+export function sync(method: "create" | "update" | "patch", model: import("./model.js").Model, options?: SyncOptions): Promise<Response>;
 /**
  * Custom error for indicating timeouts
  * @namespace _converse
  */
 export class NotImplementedError extends Error {
 }
-export type Model = import('./model.js').Model;
-export type Collection = import('./collection.js').Collection;
+export type Model = import("./model.js").Model;
+export type Collection = import("./collection.js").Collection;
 export type SyncOptions = {
     url?: string;
     data?: any;

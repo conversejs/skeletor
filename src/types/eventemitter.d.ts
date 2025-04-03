@@ -24,7 +24,7 @@ export function EventEmitter<ClassConstructor extends new (...args: any[]) => {}
          * @param {any} context
          * @return {EventEmitter}
          */
-        on(name: string, callback: (event: any, model: import("./model.js").Model, collection: import("./collection.js").Collection, options?: Record<string, any>) => any, context: any): any;
+        on(name: string, callback: (event: any, model: import("./model.js").Model, collection: import("./collection.js").Collection, options?: Record<string, any>) => any, context: any): /*elided*/ any;
         _events: any;
         _listeners: {};
         /**
@@ -36,7 +36,7 @@ export function EventEmitter<ClassConstructor extends new (...args: any[]) => {}
          * @param {EventCallback} [callback]
          * @return {EventEmitter}
          */
-        listenTo(obj: any, name: string, callback?: (event: any, model: import("./model.js").Model, collection: import("./collection.js").Collection, options?: Record<string, any>) => any): any;
+        listenTo(obj: any, name: string, callback?: (event: any, model: import("./model.js").Model, collection: import("./collection.js").Collection, options?: Record<string, any>) => any): /*elided*/ any;
         _listeningTo: {};
         _listenId: any;
         /**
@@ -49,7 +49,7 @@ export function EventEmitter<ClassConstructor extends new (...args: any[]) => {}
          * @param {any} [context]
          * @return {EventEmitter}
          */
-        off(name: string, callback: (event: any, model: import("./model.js").Model, collection: import("./collection.js").Collection, options?: Record<string, any>) => any, context?: any): any;
+        off(name: string, callback: (event: any, model: import("./model.js").Model, collection: import("./collection.js").Collection, options?: Record<string, any>) => any, context?: any): /*elided*/ any;
         /**
          * Tell this object to stop listening to either specific events ... or
          * to every object it's currently listening to.
@@ -58,7 +58,7 @@ export function EventEmitter<ClassConstructor extends new (...args: any[]) => {}
          * @param {EventCallback} [callback]
          * @return {EventEmitter}
          */
-        stopListening(obj?: any, name?: string, callback?: (event: any, model: import("./model.js").Model, collection: import("./collection.js").Collection, options?: Record<string, any>) => any): any;
+        stopListening(obj?: any, name?: string, callback?: (event: any, model: import("./model.js").Model, collection: import("./collection.js").Collection, options?: Record<string, any>) => any): /*elided*/ any;
         /**
          * Bind an event to only be triggered a single time. After the first time
          * the callback is invoked, its listener will be removed. If multiple events
@@ -69,7 +69,7 @@ export function EventEmitter<ClassConstructor extends new (...args: any[]) => {}
          * @param {any} context
          * @return {EventEmitter}
          */
-        once(name: string, callback: (event: any, model: import("./model.js").Model, collection: import("./collection.js").Collection, options?: Record<string, any>) => any, context: any): any;
+        once(name: string, callback: (event: any, model: import("./model.js").Model, collection: import("./collection.js").Collection, options?: Record<string, any>) => any, context: any): /*elided*/ any;
         /**
          * Inversion-of-control versions of `once`.
          * @param {any} obj
@@ -77,7 +77,7 @@ export function EventEmitter<ClassConstructor extends new (...args: any[]) => {}
          * @param {EventCallback} [callback]
          * @return {EventEmitter}
          */
-        listenToOnce(obj: any, name: string, callback?: (event: any, model: import("./model.js").Model, collection: import("./collection.js").Collection, options?: Record<string, any>) => any): any;
+        listenToOnce(obj: any, name: string, callback?: (event: any, model: import("./model.js").Model, collection: import("./collection.js").Collection, options?: Record<string, any>) => any): /*elided*/ any;
         /**
          * Trigger one or many events, firing all bound callbacks. Callbacks are
          * passed the same arguments as `trigger` is, apart from the event name
@@ -86,7 +86,7 @@ export function EventEmitter<ClassConstructor extends new (...args: any[]) => {}
          * @param {string} name
          * @return {EventEmitter}
          */
-        trigger(name: string, ...args: any[]): any;
+        trigger(name: string, ...args: any[]): /*elided*/ any;
     };
 } & ClassConstructor;
 export default EventEmitter;

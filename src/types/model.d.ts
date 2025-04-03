@@ -1,39 +1,20 @@
-export type Collection = import('./collection.js').Collection;
+export type Collection = import("./collection.js").Collection;
 export type Attributes = Record<string, any>;
 export type Options = Record<string, any>;
 export type ModelOptions = Record<string, any>;
 declare const Model_base: {
     new (...args: any[]): {
-        /**
-         * @typedef {import('./collection.js').Collection} Collection
-         * @typedef {Record.<string, any>} Attributes
-         *
-         * @typedef {Record.<string, any>} Options
-         * @property {boolean} [validate]
-         *
-         * @typedef {Record.<string, any>} ModelOptions
-         * @property {Collection} [collection]
-         * @property {boolean} [parse]
-         * @property {boolean} [unset]
-         * @property {boolean} [silent]
-         */
-        /**
-         * **Models** are the basic data object in the framework --
-         * frequently representing a row in a table in a database on your server.
-         * A discrete chunk of data and a bunch of useful, related methods for
-         * performing computations and transformations on that data.
-         */
-        on(name: string, callback: (event: any, model: Model, collection: import("./collection.js").Collection, options: Record<string, any>) => any, context: any): any;
+        on(name: string, callback: (event: any, model: Model, collection: import("./collection.js").Collection, options: Record<string, any>) => any, context: any): /*elided*/ any;
         _events: any;
         _listeners: {};
-        listenTo(obj: any, name: string, callback?: (event: any, model: Model, collection: import("./collection.js").Collection, options: Record<string, any>) => any): any;
+        listenTo(obj: any, name: string, callback?: (event: any, model: Model, collection: import("./collection.js").Collection, options: Record<string, any>) => any): /*elided*/ any;
         _listeningTo: {};
         _listenId: any;
-        off(name: string, callback: (event: any, model: Model, collection: import("./collection.js").Collection, options: Record<string, any>) => any, context?: any): any;
-        stopListening(obj?: any, name?: string, callback?: (event: any, model: Model, collection: import("./collection.js").Collection, options: Record<string, any>) => any): any;
-        once(name: string, callback: (event: any, model: Model, collection: import("./collection.js").Collection, options: Record<string, any>) => any, context: any): any;
-        listenToOnce(obj: any, name: string, callback?: (event: any, model: Model, collection: import("./collection.js").Collection, options: Record<string, any>) => any): any;
-        trigger(name: string, ...args: any[]): any;
+        off(name: string, callback: (event: any, model: Model, collection: import("./collection.js").Collection, options: Record<string, any>) => any, context?: any): /*elided*/ any;
+        stopListening(obj?: any, name?: string, callback?: (event: any, model: Model, collection: import("./collection.js").Collection, options: Record<string, any>) => any): /*elided*/ any;
+        once(name: string, callback: (event: any, model: Model, collection: import("./collection.js").Collection, options: Record<string, any>) => any, context: any): /*elided*/ any;
+        listenToOnce(obj: any, name: string, callback?: (event: any, model: Model, collection: import("./collection.js").Collection, options: Record<string, any>) => any): /*elided*/ any;
+        trigger(name: string, ...args: any[]): /*elided*/ any;
     };
 } & ObjectConstructor;
 /**
@@ -71,7 +52,7 @@ export class Model extends Model_base {
     /**
      * @param {Storage} storage
      */
-    set browserStorage(arg: Storage);
+    set browserStorage(storage: Storage);
     /**
      * @returns {Storage} storage
      */
@@ -116,7 +97,7 @@ export class Model extends Model_base {
      * @param {Model} model
      * @param {Options} options
      */
-    sync(method: 'create' | 'update' | 'patch' | 'delete' | 'read', model: Model, options: Options): any;
+    sync(method: "create" | "update" | "patch" | "delete" | "read", model: Model, options: Options): any;
     /**
      * Get the value of an attribute.
      * @param {string} attr
