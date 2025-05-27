@@ -126,7 +126,7 @@ class Collection extends EventEmitter(Object) {
    * Models or raw JavaScript objects to be converted to Models, or any
    * combination of the two.
    *@param {Model[]|Model|Attributes|Attributes[]} models
-   *@param {Options} options
+   *@param {Options} [options]
    */
   add(models, options) {
     return this.set(models, Object.assign({ merge: false }, options, addOptions));
@@ -287,7 +287,7 @@ class Collection extends EventEmitter(Object) {
         });
       }),
     );
-    await this.browserStorage.clear();
+    await this.browserStorage?.clear();
     this.reset();
   }
 
