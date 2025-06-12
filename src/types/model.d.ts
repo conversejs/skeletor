@@ -10,7 +10,7 @@ declare const Model_base: {
         listenTo(obj: any, name: string, callback?: (event: any, model: Model, collection: import("./collection.js").Collection, options: Record<string, any>) => any): /*elided*/ any;
         _listeningTo: {};
         _listenId: any;
-        off(name: string, callback: (event: any, model: Model, collection: import("./collection.js").Collection, options: Record<string, any>) => any, context?: any): /*elided*/ any;
+        off(name: string, callback?: (event: any, model: Model, collection: import("./collection.js").Collection, options: Record<string, any>) => any, context?: any): /*elided*/ any;
         stopListening(obj?: any, name?: string, callback?: (event: any, model: Model, collection: import("./collection.js").Collection, options: Record<string, any>) => any): /*elided*/ any;
         once(name: string, callback: (event: any, model: Model, collection: import("./collection.js").Collection, options: Record<string, any>) => any, context: any): /*elided*/ any;
         listenToOnce(obj: any, name: string, callback?: (event: any, model: Model, collection: import("./collection.js").Collection, options: Record<string, any>) => any): /*elided*/ any;

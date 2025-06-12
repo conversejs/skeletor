@@ -95,7 +95,7 @@ export function EventEmitter(Base) {
      * callbacks for the event. If `name` is null, removes all bound
      * callbacks for all events.
      * @param {string} name
-     * @param {EventCallback} callback
+     * @param {EventCallback} [callback]
      * @param {any} [context]
      * @return {EventEmitter}
      */

@@ -45,11 +45,11 @@ export function EventEmitter<ClassConstructor extends new (...args: any[]) => {}
          * callbacks for the event. If `name` is null, removes all bound
          * callbacks for all events.
          * @param {string} name
-         * @param {EventCallback} callback
+         * @param {EventCallback} [callback]
          * @param {any} [context]
          * @return {EventEmitter}
          */
-        off(name: string, callback: (event: any, model: import("./model.js").Model, collection: import("./collection.js").Collection, options?: Record<string, any>) => any, context?: any): /*elided*/ any;
+        off(name: string, callback?: (event: any, model: import("./model.js").Model, collection: import("./collection.js").Collection, options?: Record<string, any>) => any, context?: any): /*elided*/ any;
         /**
          * Tell this object to stop listening to either specific events ... or
          * to every object it's currently listening to.

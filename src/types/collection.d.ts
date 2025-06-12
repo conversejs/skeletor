@@ -10,7 +10,7 @@ declare const Collection_base: {
         listenTo(obj: any, name: string, callback?: (event: any, model: Model, collection: Collection, options: Record<string, any>) => any): /*elided*/ any;
         _listeningTo: {};
         _listenId: any;
-        off(name: string, callback: (event: any, model: Model, collection: Collection, options: Record<string, any>) => any, context?: any): /*elided*/ any;
+        off(name: string, callback?: (event: any, model: Model, collection: Collection, options: Record<string, any>) => any, context?: any): /*elided*/ any;
         stopListening(obj?: any, name?: string, callback?: (event: any, model: Model, collection: Collection, options: Record<string, any>) => any): /*elided*/ any;
         once(name: string, callback: (event: any, model: Model, collection: Collection, options: Record<string, any>) => any, context: any): /*elided*/ any;
         listenToOnce(obj: any, name: string, callback?: (event: any, model: Model, collection: Collection, options: Record<string, any>) => any): /*elided*/ any;
@@ -93,9 +93,9 @@ export class Collection extends Collection_base {
      * Models or raw JavaScript objects to be converted to Models, or any
      * combination of the two.
      *@param {Model[]|Model|Attributes|Attributes[]} models
-     *@param {Options} options
+     *@param {Options} [options]
      */
-    add(models: Model[] | Model | Attributes | Attributes[], options: Options): any;
+    add(models: Model[] | Model | Attributes | Attributes[], options?: Options): any;
     /**
      * Remove a model, or a list of models from the set.
      * @param {Model|Model[]} models
