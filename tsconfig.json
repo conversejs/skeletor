@@ -1,7 +1,5 @@
 {
-  "include": [
-      "src/**/*"
-  ],
+  "include": ["src/**/*"],
   "compilerOptions": {
     "target": "es2020",
     "module": "esnext",
@@ -14,19 +12,25 @@
     "emitDeclarationOnly": true,
     "declarationMap": true,
 
-    "rootDir": "./src",
-    "outDir": "./src/types/",
+    "rootDir": "./",
+    "outDir": "./dist/",
     "baseUrl": "./src/",
 
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
 
+    // Start with moderate strictness, we can increase later
     "strict": false,
     "noImplicitAny": false,
+    "noImplicitThis": false,
+    "alwaysStrict": false,
 
     "skipLibCheck": true,
 
     "moduleResolution": "node",
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+
+    // Allow default imports from modules with no default export
+    "allowSyntheticDefaultImports": true
   }
 }

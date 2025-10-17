@@ -64,10 +64,11 @@
   "scripts": {
     "test": "karma start && karma start karma.mocha.conf && npm run lint",
     "dev": "karma start --single-run=false",
-    "build": "rollup -c",
+    "build": "npm run build:types && rollup -c",
+    "build:types": "tsc",
     "types": "tsc",
-    "lint": "eslint src/*.js test/*.js",
-    "prettier": "prettier --write src/**/*.js test/**/*.js"
+    "lint": "eslint src/*.js test/*.js src/*.ts test/*.ts",
+    "prettier": "prettier --write src/**/*.js test/**/*.js src/**/*.ts test/**/*.ts"
   },
   "module": "src/main.js",
   "version": "0.0.9",
