@@ -1,11 +1,20 @@
 /* global global */
-import EventEmitter from './eventemitter.js';
-import Storage from './storage.js';
-import { Collection } from './collection.js';
-import { Model } from './model.js';
-import { sync } from './helpers.js';
+import EventEmitter from './eventemitter';
+import Storage from './storage';
+import { Collection } from './collection';
+import { Model } from './model';
+import { sync } from './helpers';
 
-const skeletor = {
+interface SkeletorType {
+  Collection: typeof Collection;
+  EventEmitter: typeof EventEmitter;
+  Model: typeof Model;
+  sync: typeof sync;
+  VERSION?: string;
+  noConflict?: () => SkeletorType;
+}
+
+const skeletor: SkeletorType = {
   Collection,
   EventEmitter,
   Model,
