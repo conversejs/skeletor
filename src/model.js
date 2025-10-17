@@ -32,27 +32,30 @@ import EventEmitter from './eventemitter.js';
  * frequently representing a row in a table in a database on your server.
  * A discrete chunk of data and a bunch of useful, related methods for
  * performing computations and transformations on that data.
+ * @template {Attributes} T
  */
 class Model extends EventEmitter(Object) {
   /**
    * Create a new model with the specified attributes. A client id (`cid`)
    * is automatically generated and assigned for you.
-   * @param {Attributes} [attributes]
+   * @param {T} [attributes]
    * @param {ModelOptions} [options]
    */
   constructor(attributes, options) {
     super();
-    let attrs = attributes || {};
+    /** @type {T} */
+    let attrs = attributes || /** @type {T} */ ({});
     options || (options = {});
     this.preinitialize.apply(this, arguments);
     this.cid = uniqueId(this.cidPrefix);
-    this.attributes = {};
+    /** @type {T} */
+    this.attributes = /** @type {T} */ ({});
 
     // The value returned during the last failed validation.
     this.validationError = null;
 
     if (options.collection) this.collection = options.collection;
-    if (options.parse) attrs = this.parse(attrs, options) || {};
+    if (options.parse) attrs = /** @type {T} */ (this.parse(attrs, options) || {});
 
     const default_attrs = result(this, 'defaults');
     attrs = defaults(Object.assign({}, default_attrs, attrs), default_attrs);
@@ -62,6 +65,7 @@ class Model extends EventEmitter(Object) {
     this.initialize.apply(this, arguments);
 
     // A hash of attributes whose current and previous value differ.
+    /** @type {Partial<T>} */
     this.changed = {};
   }
 
@@ -124,6 +128,7 @@ class Model extends EventEmitter(Object) {
 
   /**
    * Return a copy of the model's `attributes` object.
+   * @returns {T}
    */
   toJSON() {
     return clone(this.attributes);
@@ -143,6 +148,7 @@ class Model extends EventEmitter(Object) {
   /**
    * Get the value of an attribute.
    * @param {string} attr
+   * @returns {any}
    */
   get(attr) {
     return this.attributes[attr];
@@ -207,20 +213,23 @@ class Model extends EventEmitter(Object) {
    * Set a hash of model attributes on the object, firing `"change"`. This is
    * the core primitive operation of a model, updating the data and notifying
    * anyone who needs to know about the change in state. The heart of the beast.
-   * @param {string|Object} key
-   * @param {string|Object} [val]
+   * @param {string|Partial<T>} key
+   * @param {any} [val]
    * @param {Options} [options]
    */
   set(key, val, options) {
     if (key == null) return this;
 
     // Handle both `"key", value` and `{key: value}` -style arguments.
+    /** @type {Partial<T>} */
     let attrs;
     if (typeof key === 'object') {
-      attrs = key;
+      attrs = /** @type {Partial<T>} */ (key);
       options = val;
     } else {
-      (attrs = {})[key] = val;
+      attrs = /** @type {Partial<T>} */ ({});
+      // Use type assertion to bypass the indexing issue
+      attrs[/** @type {keyof T} */ (key)] = val;
     }
 
     options || (options = {});
@@ -246,14 +255,14 @@ class Model extends EventEmitter(Object) {
 
     // For each `set` attribute, update or delete the current value.
     for (const attr in attrs) {
-      val = attrs[attr];
-      if (!isEqual(current[attr], val)) changes.push(attr);
-      if (!isEqual(prev[attr], val)) {
-        changed[attr] = val;
+      val = attrs[/** @type {keyof T} */ (attr)];
+      if (!isEqual(current[/** @type {keyof T} */ (attr)], val)) changes.push(attr);
+      if (!isEqual(prev[/** @type {keyof T} */ (attr)], val)) {
+        changed[/** @type {keyof T} */ (attr)] = val;
       } else {
-        delete changed[attr];
+        delete changed[/** @type {keyof T} */ (attr)];
       }
-      unset ? delete current[attr] : (current[attr] = val);
+      unset ? delete current[/** @type {keyof T} */ (attr)] : (current[/** @type {keyof T} */ (attr)] = val);
     }
 
     // Update the `id`.
@@ -297,8 +306,8 @@ class Model extends EventEmitter(Object) {
    * @param {Options} options
    */
   clear(options) {
-    const attrs = {};
-    for (const key in this.attributes) attrs[key] = undefined;
+    const attrs = /** @type {Partial<T>} */ ({});
+    for (const key in this.attributes) attrs[/** @type {keyof T} */ (key)] = undefined;
     return this.set(attrs, Object.assign({}, options, { unset: true }));
   }
 
@@ -381,18 +390,20 @@ class Model extends EventEmitter(Object) {
    * Set a hash of model attributes, and sync the model to the server.
    * If the server returns an attributes hash that differs, the model's
    * state will be `set` again.
-   * @param {string|Attributes} [key]
-   * @param {boolean|number|string|Options} [val]
+   * @param {string|Partial<T>} [key]
+   * @param {any} [val]
    * @param {Options} [options]
    */
   save(key, val, options) {
     // Handle both `"key", value` and `{key: value}` -style arguments.
+    /** @type {Partial<T>} */
     let attrs;
     if (key == null || typeof key === 'object') {
-      attrs = key;
+      attrs = /** @type {Partial<T>} */ (key);
       options = /** @type {Options} */ (val);
     } else {
-      (attrs = {})[key] = val;
+      attrs = /** @type {Partial<T>} */ ({});
+      attrs[/** @type {keyof T} */ (key)] = val;
     }
 
     options = Object.assign({ validate: true, parse: true }, options);

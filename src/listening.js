@@ -22,7 +22,7 @@ class Listening {
   }
 
   /**
-   * @param {string} name
+   * @param {string|import('./eventemitter.js').EventMap} name
    * @param {Function} callback
    * @param {any} context
    * @param {Listening} _listening

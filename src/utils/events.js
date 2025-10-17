@@ -48,7 +48,7 @@ export function onApi(events, name, callback, options) {
  * An try-catch guarded #on function, to prevent poisoning the global
  * `_listening` variable.
  * @param {any} obj
- * @param {string} name
+ * @param {string | import('eventemitter').EventMap} name
  * @param {Function} callback
  * @param {any} context
  */

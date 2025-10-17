@@ -2,16 +2,16 @@ export default ElementView;
 export type TemplateResult = import("lit-html").TemplateResult;
 declare const ElementView_base: {
     new (...args: any[]): {
-        on(name: string, callback: (event: any, model: import("./model.js").Model, collection: import("./collection.js").Collection, options?: Record<string, any>) => any, context: any): /*elided*/ any;
+        on(name: string, callback: (event: any, model: import("./model.js").Model, collection: import("./collection.js").Collection<import("./model.js").Model>, options?: Record<string, any>) => any, context: any): /*elided*/ any;
         _events: any;
         _listeners: {};
-        listenTo(obj: any, name: string, callback?: (event: any, model: import("./model.js").Model, collection: import("./collection.js").Collection, options?: Record<string, any>) => any): /*elided*/ any;
+        listenTo(obj: any, name: string, callback?: (event: any, model: import("./model.js").Model, collection: import("./collection.js").Collection<import("./model.js").Model>, options?: Record<string, any>) => any): /*elided*/ any;
         _listeningTo: {};
         _listenId: any;
-        off(name: string, callback?: (event: any, model: import("./model.js").Model, collection: import("./collection.js").Collection, options?: Record<string, any>) => any, context?: any): /*elided*/ any;
-        stopListening(obj?: any, name?: string, callback?: (event: any, model: import("./model.js").Model, collection: import("./collection.js").Collection, options?: Record<string, any>) => any): /*elided*/ any;
-        once(name: string, callback: (event: any, model: import("./model.js").Model, collection: import("./collection.js").Collection, options?: Record<string, any>) => any, context: any): /*elided*/ any;
-        listenToOnce(obj: any, name: string, callback?: (event: any, model: import("./model.js").Model, collection: import("./collection.js").Collection, options?: Record<string, any>) => any): /*elided*/ any;
+        off(name: string, callback?: (event: any, model: import("./model.js").Model, collection: import("./collection.js").Collection<import("./model.js").Model>, options?: Record<string, any>) => any, context?: any): /*elided*/ any;
+        stopListening(obj?: any, name?: string, callback?: (event: any, model: import("./model.js").Model, collection: import("./collection.js").Collection<import("./model.js").Model>, options?: Record<string, any>) => any): /*elided*/ any;
+        once(name: string, callback: (event: any, model: import("./model.js").Model, collection: import("./collection.js").Collection<import("./model.js").Model>, options?: Record<string, any>) => any, context: any): /*elided*/ any;
+        listenToOnce(obj: any, name: string, callback?: (event: any, model: import("./model.js").Model, collection: import("./collection.js").Collection<import("./model.js").Model>, options?: Record<string, any>) => any): /*elided*/ any;
         trigger(name: string, ...args: any[]): /*elided*/ any;
     };
 } & {
