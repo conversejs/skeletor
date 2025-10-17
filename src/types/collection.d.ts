@@ -4,16 +4,16 @@ export type Storage = import("./storage.js").default;
 export type CollectionOptions = Record<string, any>;
 declare const Collection_base: {
     new (...args: any[]): {
-        on(name: string, callback: (event: any, model: Model, collection: Collection, options: Record<string, any>) => any, context: any): /*elided*/ any;
+        on(name: string, callback: (event: any, model: Model, collection: Collection<Model>, options: Record<string, any>) => any, context: any): /*elided*/ any;
         _events: any;
         _listeners: {};
-        listenTo(obj: any, name: string, callback?: (event: any, model: Model, collection: Collection, options: Record<string, any>) => any): /*elided*/ any;
+        listenTo(obj: any, name: string, callback?: (event: any, model: Model, collection: Collection<Model>, options: Record<string, any>) => any): /*elided*/ any;
         _listeningTo: {};
         _listenId: any;
-        off(name: string, callback?: (event: any, model: Model, collection: Collection, options: Record<string, any>) => any, context?: any): /*elided*/ any;
-        stopListening(obj?: any, name?: string, callback?: (event: any, model: Model, collection: Collection, options: Record<string, any>) => any): /*elided*/ any;
-        once(name: string, callback: (event: any, model: Model, collection: Collection, options: Record<string, any>) => any, context: any): /*elided*/ any;
-        listenToOnce(obj: any, name: string, callback?: (event: any, model: Model, collection: Collection, options: Record<string, any>) => any): /*elided*/ any;
+        off(name: string, callback?: (event: any, model: Model, collection: Collection<Model>, options: Record<string, any>) => any, context?: any): /*elided*/ any;
+        stopListening(obj?: any, name?: string, callback?: (event: any, model: Model, collection: Collection<Model>, options: Record<string, any>) => any): /*elided*/ any;
+        once(name: string, callback: (event: any, model: Model, collection: Collection<Model>, options: Record<string, any>) => any, context: any): /*elided*/ any;
+        listenToOnce(obj: any, name: string, callback?: (event: any, model: Model, collection: Collection<Model>, options: Record<string, any>) => any): /*elided*/ any;
         trigger(name: string, ...args: any[]): /*elided*/ any;
     };
 } & ObjectConstructor;
@@ -34,16 +34,17 @@ declare const Collection_base: {
  * -- all of the messages in this particular folder, all of the documents
  * belonging to this particular author, and so on. Collections maintain
  * indexes of their models, both in order, and for lookup by `id`.
+ * @template {Model} [T=Model]
  */
-export class Collection extends Collection_base {
+export class Collection<T extends Model = Model> extends Collection_base {
     /**
      * Create a new **Collection**, perhaps to contain a specific type of `model`.
      * If a `comparator` is specified, the Collection will maintain
      * its models in sort order, as they're added and removed.
-     * @param {Model[]} [models]
+     * @param {T[]} [models]
      * @param {CollectionOptions} [options]
      */
-    constructor(models?: Model[], options?: CollectionOptions, ...args: any[]);
+    constructor(models?: T[], options?: CollectionOptions, ...args: any[]);
     _model: any;
     comparator: any;
     /**
@@ -56,9 +57,9 @@ export class Collection extends Collection_base {
     get browserStorage(): Storage;
     _browserStorage: import("./storage.js").default;
     /**
-     * @param {Model} model
+     * @param {typeof Model} model
      */
-    set model(model: Model);
+    set model(model: typeof Model);
     /**
      * The default model for a collection is just a **Model**.
      * This should be overridden in most cases.
@@ -92,57 +93,65 @@ export class Collection extends Collection_base {
      * Add a model, or list of models to the set. `models` may be
      * Models or raw JavaScript objects to be converted to Models, or any
      * combination of the two.
-     *@param {Model[]|Model|Attributes|Attributes[]} models
+     *@param {T[]|T|Attributes|Attributes[]} models
      *@param {Options} [options]
+     *@returns {T|T[]}
      */
-    add(models: Model[] | Model | Attributes | Attributes[], options?: Options): any;
+    add(models: T[] | T | Attributes | Attributes[], options?: Options): T | T[];
     /**
      * Remove a model, or a list of models from the set.
-     * @param {Model|Model[]} models
+     * @param {T|T[]} models
      * @param {Options} options
+     * @returns {T|T[]}
      */
-    remove(models: Model | Model[], options: Options): any;
+    remove(models: T | T[], options: Options): T | T[];
     /**
      * Update a collection by `set`-ing a new list of models, adding new ones,
      * removing models that are no longer present, and merging models that
      * already exist in the collection, as necessary. Similar to **Model#set**,
      * the core operation for updating the data contained by the collection.
-     *@param {Model[]|Model|Attributes|Attributes[]} models
+     *@param {T[]|T|Attributes|Attributes[]} models
      * @param {Options} options
+     * @returns {T|T[]}
      */
-    set(models: Model[] | Model | Attributes | Attributes[], options: Options): any;
+    set(models: T[] | T | Attributes | Attributes[], options: Options): T | T[];
     clearStore(options?: {}, filter?: (o: any) => any): Promise<void>;
     /**
      * When you have more items than you want to add or remove individually,
      * you can reset the entire set with a new list of models, without firing
      * any granular `add` or `remove` events. Fires `reset` when finished.
      * Useful for bulk operations and optimizations.
-     * @param {Model|Model[]} [models]
+     * @param {T|T[]} [models]
      * @param {Options} [options]
+     * @returns {T|T[]}
      */
-    reset(models?: Model | Model[], options?: Options): Model | Model[];
+    reset(models?: T | T[], options?: Options): T | T[];
     /**
      * Add a model to the end of the collection.
-     * @param {Model} model
+     * @param {T} model
      * @param {Options} [options]
+     * @returns {T}
      */
-    push(model: Model, options?: Options): any;
+    push(model: T, options?: Options): T;
     /**
      * Remove a model from the end of the collection.
      * @param {Options} [options]
+     * @returns {T|undefined}
      */
-    pop(options?: Options): any;
+    pop(options?: Options): T | undefined;
     /**
      * Add a model to the beginning of the collection.
-     * @param {Model} model
+     * @param {T} model
      * @param {Options} [options]
+     * @returns {T}
      */
-    unshift(model: Model, options?: Options): any;
+    unshift(model: T, options?: Options): T;
     /**
      * Remove a model from the beginning of the collection.
      * @param {Options} [options]
+     * @returns {T|undefined}
      */
-    shift(options?: Options): any;
+    shift(options?: Options): T | undefined;
     /** Slice out a sub-array of models from the collection. */
     slice(...args: any[]): any;
     /**
@@ -353,7 +362,7 @@ declare class CollectionIterator {
      * @param {Number} kind
      */
     constructor(collection: Collection, kind: number);
-    _collection: Collection;
+    _collection: Collection<Model>;
     _kind: number;
     _index: number;
     next(): {

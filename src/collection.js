@@ -33,13 +33,14 @@ const addOptions = { add: true, remove: false };
  * -- all of the messages in this particular folder, all of the documents
  * belonging to this particular author, and so on. Collections maintain
  * indexes of their models, both in order, and for lookup by `id`.
+ * @template {Model} [T=Model]
  */
 class Collection extends EventEmitter(Object) {
   /**
    * Create a new **Collection**, perhaps to contain a specific type of `model`.
    * If a `comparator` is specified, the Collection will maintain
    * its models in sort order, as they're added and removed.
-   * @param {Model[]} [models]
+   * @param {T[]} [models]
    * @param {CollectionOptions} [options]
    */
   constructor(models, options) {
@@ -79,7 +80,7 @@ class Collection extends EventEmitter(Object) {
   }
 
   /**
-   * @param {Model} model
+   * @param {typeof Model} model
    */
   set model(model) {
     this._model = model;
@@ -125,8 +126,9 @@ class Collection extends EventEmitter(Object) {
    * Add a model, or list of models to the set. `models` may be
    * Models or raw JavaScript objects to be converted to Models, or any
    * combination of the two.
-   *@param {Model[]|Model|Attributes|Attributes[]} models
+   *@param {T[]|T|Attributes|Attributes[]} models
    *@param {Options} [options]
+   *@returns {T|T[]}
    */
   add(models, options) {
     return this.set(models, Object.assign({ merge: false }, options, addOptions));
@@ -134,13 +136,14 @@ class Collection extends EventEmitter(Object) {
 
   /**
    * Remove a model, or a list of models from the set.
-   * @param {Model|Model[]} models
+   * @param {T|T[]} models
    * @param {Options} options
+   * @returns {T|T[]}
    */
   remove(models, options) {
     options = Object.assign({}, options);
     const singular = !Array.isArray(models);
-    const modelsArray = singular ? [models] : /** @type {Model[]} */ (models).slice();
+    const modelsArray = singular ? [models] : /** @type {T[]} */ (models).slice();
     const removed = this._removeModels(modelsArray, options);
     if (!options.silent && removed.length) {
       options.changes = { added: [], merged: [], removed: removed };
@@ -154,8 +157,9 @@ class Collection extends EventEmitter(Object) {
    * removing models that are no longer present, and merging models that
    * already exist in the collection, as necessary. Similar to **Model#set**,
    * the core operation for updating the data contained by the collection.
-   *@param {Model[]|Model|Attributes|Attributes[]} models
+   *@param {T[]|T|Attributes|Attributes[]} models
    * @param {Options} options
+   * @returns {T|T[]}
    */
   set(models, options) {
     if (models == null) return;
@@ -166,7 +170,7 @@ class Collection extends EventEmitter(Object) {
     }
 
     const singular = !Array.isArray(models);
-    models = singular ? [/** @type {Model} */ (models)] : /** @type {Model[]} */ (models).slice();
+    models = singular ? [/** @type {T} */ (models)] : /** @type {T[]} */ (models).slice();
 
     let at = options.at;
     if (at != null) at = +at;
@@ -268,7 +272,7 @@ class Collection extends EventEmitter(Object) {
     }
 
     // Return the added (or merged) model (or models).
-    return singular ? models[0] : models;
+    return singular ? /** @type {T} */ (models[0]) : /** @type {T[]} */ (models);
   }
 
   async clearStore(options = {}, filter = (o) => o) {
@@ -296,8 +300,9 @@ class Collection extends EventEmitter(Object) {
    * you can reset the entire set with a new list of models, without firing
    * any granular `add` or `remove` events. Fires `reset` when finished.
    * Useful for bulk operations and optimizations.
-   * @param {Model|Model[]} [models]
+   * @param {T|T[]} [models]
    * @param {Options} [options]
+   * @returns {T|T[]}
    */
   reset(models, options) {
     options = options ? clone(options) : {};
@@ -313,38 +318,42 @@ class Collection extends EventEmitter(Object) {
 
   /**
    * Add a model to the end of the collection.
-   * @param {Model} model
+   * @param {T} model
    * @param {Options} [options]
+   * @returns {T}
    */
   push(model, options) {
-    return this.add(model, Object.assign({ at: this.length }, options));
+    return /** @type {T} */ (this.add(model, Object.assign({ at: this.length }, options)));
   }
 
   /**
    * Remove a model from the end of the collection.
    * @param {Options} [options]
+   * @returns {T|undefined}
    */
   pop(options) {
     const model = this.at(this.length - 1);
-    return this.remove(model, options);
+    return /** @type {T|undefined} */ (this.remove(model, options));
   }
 
   /**
    * Add a model to the beginning of the collection.
-   * @param {Model} model
+   * @param {T} model
    * @param {Options} [options]
+   * @returns {T}
    */
   unshift(model, options) {
-    return this.add(model, Object.assign({ at: 0 }, options));
+    return /** @type {T} */ (this.add(model, Object.assign({ at: 0 }, options)));
   }
 
   /**
    * Remove a model from the beginning of the collection.
    * @param {Options} [options]
+   * @returns {T|undefined}
    */
   shift(options) {
     const model = this.at(0);
-    return this.remove(model, options);
+    return /** @type {T|undefined} */ (this.remove(model, options));
   }
 
   /** Slice out a sub-array of models from the collection. */
@@ -810,7 +819,7 @@ class Collection extends EventEmitter(Object) {
   _onModelEvent(event, model, collection, options) {
     if (model) {
       if ((event === 'add' || event === 'remove') && collection !== this) return;
-      if (event === 'destroy') this.remove(model, options);
+      if (event === 'destroy') this.remove(/** @type {T} */ (model), options);
       if (event === 'change') {
         const prevId = this.modelId(model.previousAttributes());
         const id = this.modelId(model.attributes);
