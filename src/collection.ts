@@ -1,5 +1,5 @@
-import { getResolveablePromise, getSyncMethod, wrapError } from './helpers.js';
-import { Model, type Attributes as ModelAttributes } from './model.js';
+import { getResolveablePromise, getSyncMethod, wrapError } from './helpers';
+import { Model, type Attributes as ModelAttributes } from './model';
 import clone from 'lodash-es/clone';
 import countBy from 'lodash-es/countBy';
 import groupBy from 'lodash-es/groupBy';
@@ -9,6 +9,7 @@ import keyBy from 'lodash-es/keyBy';
 import sortBy from 'lodash-es/sortBy';
 import EventEmitter from './eventemitter';
 import type Storage from './storage';
+import { SyncOperation } from 'types';
 
 // Default options for `Collection#set`.
 const setOptions = { add: true, remove: true, merge: true };
@@ -82,13 +83,13 @@ class Collection<T extends Model = Model> extends EventEmitter(Object) {
    * preinitialize is an empty function by default. You can override it with a function
    * or object.  preinitialize will run before any instantiation logic is run in the Collection.
    */
-  preinitialize(...args: any[]): void {}
+  preinitialize(..._args: any[]): void {}
 
   /**
    * Initialize is an empty function by default. Override it with your own
    * initialization logic.
    */
-  initialize(...args: any[]): void {}
+  initialize(..._args: any[]): void {}
 
   /**
    * The JSON representation of a Collection is an array of the
@@ -100,7 +101,7 @@ class Collection<T extends Model = Model> extends EventEmitter(Object) {
     });
   }
 
-  sync(method: string, model: Model | Collection<T>, options?: SyncOptions): any {
+  sync(method: SyncOperation, model: Model | Collection<any>, options?: SyncOptions): any {
     return getSyncMethod(this)(method, model, options);
   }
 
@@ -611,7 +612,7 @@ class Collection<T extends Model = Model> extends EventEmitter(Object) {
    * **parse** converts a response into a list of models to be added to the
    * collection. The default implementation is just to pass it through.
    */
-  parse(resp: any, options?: Record<string, any>): any {
+  parse(resp: any, _options?: Record<string, any>): any {
     return resp;
   }
 

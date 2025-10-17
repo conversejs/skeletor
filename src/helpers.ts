@@ -6,6 +6,7 @@ import has from 'lodash-es/has';
 import result from 'lodash-es/result';
 import { Model } from './model';
 import { Collection } from './collection';
+import {SyncOperation} from 'types';
 
 /**
  * Custom error for indicating timeouts
@@ -46,7 +47,7 @@ export function inherits<T extends new (...args: any[]) => any>(
   } else {
     child = function (this: any, ...args: any[]) {
       return parent.apply(this, args);
-    } as T;
+    } as unknown as T;
   }
 
   // Add static properties to the constructor function, if supplied.
@@ -59,7 +60,7 @@ export function inherits<T extends new (...args: any[]) => any>(
 
   // Set a convenience property in case the parent's prototype is needed
   // later.
-  child.__super__ = parent.prototype;
+  (child as any).__super__ = parent.prototype;
 
   return child;
 }
@@ -68,7 +69,7 @@ interface PromiseWrapper {
   isResolved: boolean;
   isPending: boolean;
   isRejected: boolean;
-  resolve: ((value: any) => void) | null;
+  resolve: ((value?: any) => void) | null;
   reject: ((reason?: any) => void) | null;
 }
 
@@ -112,7 +113,7 @@ export function urlError(): never {
 }
 
 // Wrap an optional error callback with a fallback error event.
-export function wrapError(model: Model, options: any): void {
+export function wrapError(model: Model<any> | Collection<any>, options: any): void {
   const error = options.error;
   options.error = function (resp: any) {
     if (error) error.call(options.context, model, resp, options);
@@ -140,7 +141,7 @@ export interface SyncOptions {
 
 export function getSyncMethod(model: Model | Collection<any>): typeof sync {
   const store = result(model, 'browserStorage') || result((model as Model).collection, 'browserStorage');
-  return store ? (store.sync() as typeof sync) : sync;
+  return store ? ((store as any).sync() as typeof sync) : sync;
 }
 
 /**
@@ -156,8 +157,8 @@ export function getSyncMethod(model: Model | Collection<any>): typeof sync {
  * - Persist models to browser storage
  */
 export function sync(
-  method: 'create' | 'update' | 'patch' | 'delete' | 'read',
-  model: Model,
+  method: SyncOperation,
+  model: Model | Collection<any>,
   options: SyncOptions = {}
 ): Promise<any> {
   let data = options.data;

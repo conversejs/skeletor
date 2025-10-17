@@ -16,6 +16,7 @@ import EventEmitter from './eventemitter';
 // Import types
 import type { Collection } from './collection';
 import type Storage from './storage';
+import {SyncOperation} from 'types';
 
 export type Attributes = Record<string, any>;
 export type Options = Record<string, any>;
@@ -123,7 +124,7 @@ export class Model<T extends Record<string, any> = Attributes> extends EventEmit
   /**
    * Override this if you need custom syncing semantics for *this* particular model.
    */
-  sync(method: string, model: Model<any>, options: Options): any {
+  sync(method: SyncOperation, model: Model<any>, options: Options): any {
     return getSyncMethod(model)(method, model, options);
   }
 
@@ -184,7 +185,7 @@ export class Model<T extends Record<string, any> = Attributes> extends EventEmit
    * Special-cased proxy to lodash's `matches` method.
    */
   matches(attrs: Partial<T>): boolean {
-    return !!iteratee(attrs, this)(this.attributes);
+    return !!iteratee(attrs)(this.attributes);
   }
 
   /**
@@ -463,9 +464,9 @@ export class Model<T extends Record<string, any> = Attributes> extends EventEmit
    */
   url(): string {
     const base = result(this, 'urlRoot') || result(this.collection, 'url') || urlError();
-    if (this.isNew()) return base;
+    if (this.isNew()) return base as string;
     const id = this.get(this.idAttribute);
-    return base.replace(/[^\/]$/, '$&/') + encodeURIComponent(String(id));
+    return (base as string).replace(/[^\/]$/, '$&/') + encodeURIComponent(String(id));
   }
 
   /**
