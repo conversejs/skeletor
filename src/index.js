@@ -1,5 +1,4 @@
 /* global global */
-import ElementView from './element.js';
 import EventEmitter from './eventemitter.js';
 import Storage from './storage.js';
 import { Collection } from './collection.js';
@@ -8,7 +7,6 @@ import { sync } from './helpers.js';
 
 const skeletor = {
   Collection,
-  ElementView,
   EventEmitter,
   Model,
   sync,
@@ -39,7 +37,6 @@ export default skeletor;
 
 export {
   Collection,
-  ElementView,
   EventEmitter,
   Model,
   Storage,
