@@ -12,7 +12,7 @@ This document outlines the systematic approach to convert the JavaScript files i
 - [x] Make Model attributes generic: `Model<T extends Attributes>`
 
 ## Phase 3: Core Implementation Files Conversion
-- [ ] Convert `src/eventemitter.js` to `src/eventemitter.ts`
+- [x] Convert `src/eventemitter.js` to `src/eventemitter.ts`
 - [ ] Convert `src/model.js` to `src/model.ts` with proper generics
 - [ ] Convert `src/collection.js` to `src/collection.ts` with proper generics
 - [ ] Convert `src/helpers.js` to `src/helpers.ts`
