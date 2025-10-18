@@ -7,30 +7,10 @@ import keys from 'lodash-es/keys';
 import uniqueId from 'lodash-es/uniqueId';
 import Listening from './listening';
 import { eventsApi, onApi, offApi, onceMap, tryCatchOn, triggerApi } from './utils/events';
+import { ClassConstructor, EventCallback, EventMap, Events } from 'types';
 
 // A private global variable to share between listeners and listenees.
 let _listening: Listening | undefined;
-
-export type EventCallback = (...args: any[]) => void;
-
-export type EventMap = Record<string, EventCallback>;
-
-export interface EventEmitter {
-  _events?: Record<string, any>;
-  _listeners?: Record<string, Listening>;
-  _listeningTo?: Record<string, Listening>;
-  _listenId?: string;
-
-  on(name: string | EventMap, callback?: EventCallback, context?: any): this;
-  off(name?: string | null, callback?: EventCallback | null, context?: any): this;
-  trigger(name: string, ...args: any[]): this;
-  stopListening(obj?: any, name?: string, callback?: EventCallback): this;
-  once(name: string | EventMap, callback?: EventCallback, context?: any): this;
-  listenTo(obj: any, name: string | EventMap, callback?: EventCallback): this;
-  listenToOnce(obj: any, name: string | EventMap, callback?: EventCallback): this;
-}
-
-type ClassConstructor = new (...args: any[]) => {};
 
 export function EventEmitter<T extends ClassConstructor>(Base: T) {
   return class EventEmitter extends Base implements EventEmitter {
@@ -98,10 +78,10 @@ export function EventEmitter<T extends ClassConstructor>(Base: T) {
      */
     off(name?: string | null, callback?: EventCallback | null, context?: any): this {
       if (!this._events) return this;
-      this._events = eventsApi(offApi, this._events, name, callback, {
+      this._events = eventsApi(offApi, this._events as Events, name, callback, {
         context: context,
         listeners: this._listeners,
-      });
+      }) as Events;
 
       return this;
     }
@@ -140,7 +120,7 @@ export function EventEmitter<T extends ClassConstructor>(Base: T) {
       // Map the event into a `{event: once}` object.
       const events = eventsApi(onceMap, {}, name, callback, this.off.bind(this));
       if (typeof name === 'string' && (context === null || context === undefined)) callback = undefined;
-      return this.on(events, callback, context);
+      return this.on(events as string | EventMap, callback, context);
     }
 
     /**
@@ -149,7 +129,7 @@ export function EventEmitter<T extends ClassConstructor>(Base: T) {
     listenToOnce(obj: any, name: string | EventMap, callback?: EventCallback): this {
       // Map the event into a `{event: once}` object.
       const events = eventsApi(onceMap, {}, name, callback, this.stopListening.bind(this, obj));
-      return this.listenTo(obj, events);
+      return this.listenTo(obj, events as string | EventMap);
     }
 
     /**

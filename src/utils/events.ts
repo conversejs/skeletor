@@ -1,5 +1,17 @@
-import once from 'lodash-es/once.js';
-import keys from 'lodash-es/keys.js';
+import once from 'lodash-es/once';
+import keys from 'lodash-es/keys';
+import type {
+  EventCallback,
+  EventHandler,
+  EventMap,
+  EventsCallbackMap,
+  Events,
+  EventsApiOptions,
+  IterateeFunction,
+  OffApiOptions,
+  OfferFunction,
+  EventsHandlersMap,
+} from '../types';
 
 // Regular expression used to split event strings.
 const eventSplitter = /\s+/;
@@ -9,34 +21,48 @@ const eventSplitter = /\s+/;
  * space-separated events `"change blur", callback` and jQuery-style event
  * maps `{event: callback}`).
  */
-export function eventsApi(iteratee, events, name, callback, opts) {
-  let i = 0,
-    names;
+export function eventsApi(
+  iteratee: IterateeFunction,
+  events: Events | EventsCallbackMap | EventsHandlersMap,
+  name: string | EventMap | null,
+  callback: EventCallback | null,
+  opts: EventsApiOptions | OffApiOptions | any[]
+): Events | EventsCallbackMap | EventsHandlersMap {
+  let i = 0;
+  let names: string[];
   if (name && typeof name === 'object') {
     // Handle event maps.
-    if (callback !== undefined && 'context' in opts && opts.context === undefined) opts.context = callback;
-    for (names = keys(name); i < names.length; i++) {
-      events = eventsApi(iteratee, events, names[i], name[names[i]], opts);
+    if (callback !== undefined && 'context' in opts && opts.context === undefined) {
+      opts.context = callback;
     }
-  } else if (name && eventSplitter.test(name)) {
+    for (names = keys(name); i < names.length; i++) {
+      events = eventsApi(iteratee, events, names[i], (name as EventMap)[names[i]], opts);
+    }
+    return events;
+  } else if (name && typeof name === 'string' && eventSplitter.test(name)) {
     // Handle space-separated event names by delegating them individually.
     for (names = name.split(eventSplitter); i < names.length; i++) {
-      events = iteratee(events, names[i], callback, opts);
+      const result = iteratee(events, names[i], callback, opts);
+      if (result !== undefined) {
+        events = result as Events | EventsCallbackMap;
+      }
     }
-  } else {
+    return events;
+  } else if (typeof name === 'string') {
     // Finally, standard events.
-    events = iteratee(events, name, callback, opts);
+    const result = iteratee(events, name, callback, opts);
+    return result !== undefined ? result as Events | EventsCallbackMap : events;
   }
   return events;
 }
 
 // The reducing API that adds a callback to the `events` object.
-export function onApi(events, name, callback, options) {
+export function onApi(events: Events, name: string, callback: EventCallback | null, options: EventsApiOptions): Events {
   if (callback) {
     const handlers = events[name] || (events[name] = []);
-    const context = options.context,
-      ctx = options.ctx,
-      listening = options.listening;
+    const context = options.context;
+    const ctx = options.ctx;
+    const listening = options.listening;
     if (listening) listening.count++;
 
     handlers.push({ callback, context, ctx: context || ctx, listening });
@@ -47,12 +73,8 @@ export function onApi(events, name, callback, options) {
 /**
  * An try-catch guarded #on function, to prevent poisoning the global
  * `_listening` variable.
- * @param {any} obj
- * @param {string | import('eventemitter').EventMap} name
- * @param {Function} callback
- * @param {any} context
  */
-export function tryCatchOn(obj, name, callback, context) {
+export function tryCatchOn(obj: any, name: string | EventMap, callback: EventCallback, context: any): any {
   try {
     obj.on(name, callback, context);
   } catch (e) {
@@ -63,52 +85,59 @@ export function tryCatchOn(obj, name, callback, context) {
 /**
  * The reducing API that removes a callback from the `events` object.
  */
-export function offApi(events, name, callback, options) {
+export function offApi(
+  events: Events,
+  name: string | null,
+  callback: EventCallback | null,
+  options: OffApiOptions
+): Events | void {
   if (!events) return;
 
-  const context = options.context,
-    listeners = options.listeners;
-  let i = 0,
-    names;
+  const context = options.context;
+  const listeners = options.listeners;
+  let i = 0;
+  let names: string[];
 
   // Delete all event listeners and "drop" events.
   if (!name && !context && !callback) {
-    for (names = keys(listeners); i < names.length; i++) {
-      listeners[names[i]].cleanup();
+    if (listeners) {
+      for (names = keys(listeners); i < names.length; i++) {
+        listeners[names[i]].cleanup();
+      }
     }
     return;
   }
 
   names = name ? [name] : keys(events);
   for (; i < names.length; i++) {
-    name = names[i];
-    const handlers = events[name];
+    const currentName = names[i];
+    const handlers = events[currentName];
 
     // Bail out if there are no events stored.
     if (!handlers) {
-      break;
+      continue;
     }
 
     // Find any remaining events.
-    const remaining = [];
+    const remaining: EventHandler[] = [];
     for (let j = 0; j < handlers.length; j++) {
       const handler = handlers[j];
       if (
-        (callback && callback !== handler.callback && callback !== handler.callback._callback) ||
+        (callback && callback !== handler.callback && callback !== (handler.callback as any)._callback) ||
         (context && context !== handler.context)
       ) {
         remaining.push(handler);
       } else {
         const listening = handler.listening;
-        if (listening) listening.stop(name, callback);
+        if (listening) listening.stop(currentName, callback!);
       }
     }
 
     // Replace events if there are any remaining.  Otherwise, clean up.
     if (remaining.length) {
-      events[name] = remaining;
+      events[currentName] = remaining;
     } else {
-      delete events[name];
+      delete events[currentName];
     }
   }
 
@@ -119,19 +148,30 @@ export function offApi(events, name, callback, options) {
  * Reduces the event callbacks into a map of `{event: onceWrapper}`.
  * `offer` unbinds the `onceWrapper` after it has been called.
  */
-export function onceMap(map, name, callback, offer) {
+export function onceMap(
+  map: EventsCallbackMap,
+  name: string,
+  callback: EventCallback | null,
+  offer: OfferFunction
+): { [name: string]: EventCallback } {
   if (callback) {
-    const _once = (map[name] = once(function () {
+    const _once = once(function (this: any, ...args: any[]) {
       offer(name, _once);
-      callback.apply(this, arguments);
-    }));
+      callback.apply(this, args);
+    }) as EventCallback & { _callback?: EventCallback };
+    map[name] = _once;
     _once._callback = callback;
   }
   return map;
 }
 
 /** Handles triggering the appropriate event callbacks. */
-export function triggerApi(objEvents, name, callback, args) {
+export function triggerApi(
+  objEvents: EventsHandlersMap | null,
+  name: string,
+  _callback: EventCallback | null,
+  args: any[]
+): EventsHandlersMap | null {
   if (objEvents) {
     const events = objEvents[name];
     let allEvents = objEvents.all;
@@ -147,13 +187,13 @@ export function triggerApi(objEvents, name, callback, args) {
  * triggering events. Tries to keep the usual cases speedy (most internal
  * Backbone events have 3 arguments).
  */
-function triggerEvents(events, args) {
-  let ev,
-    i = -1;
-  const l = events.length,
-    a1 = args[0],
-    a2 = args[1],
-    a3 = args[2];
+function triggerEvents(events: EventHandler[], args: any[]): void {
+  let ev: EventHandler;
+  let i = -1;
+  const l = events.length;
+  const a1 = args[0];
+  const a2 = args[1];
+  const a3 = args[2];
   switch (args.length) {
     case 0:
       while (++i < l) (ev = events[i]).callback.call(ev.ctx);
