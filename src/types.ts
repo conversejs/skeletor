@@ -1,5 +1,15 @@
 export type SyncOperation = 'create' | 'update' | 'patch' | 'delete' | 'read';
 
+export interface SyncOptions {
+  url?: string;
+  data?: any;
+  attrs?: any;
+  success?: (data?: any, options?: SyncOptions) => void;
+  error?: (error: any) => void;
+  xhr?: any;
+  wait?: boolean;
+}
+
 export type ClassConstructor = new (...args: any[]) => {};
 
 export type EventCallback = (...args: any[]) => void;
