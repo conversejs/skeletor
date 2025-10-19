@@ -18,7 +18,7 @@ export default function (config) {
       'test/vendor/json2.js',
       'dist/skeletor.js',
       'src/**/*.ts',
-      'test/**/*.ts',
+      'test/model.ts',
     ],
 
     // list of files to exclude

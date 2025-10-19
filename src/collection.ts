@@ -1,5 +1,3 @@
-import { getResolveablePromise, getSyncMethod, wrapError } from './helpers';
-import { Model, type Attributes as ModelAttributes } from './model';
 import clone from 'lodash-es/clone';
 import countBy from 'lodash-es/countBy';
 import groupBy from 'lodash-es/groupBy';
@@ -9,18 +7,20 @@ import keyBy from 'lodash-es/keyBy';
 import sortBy from 'lodash-es/sortBy';
 import EventEmitter from './eventemitter';
 import type Storage from './storage';
-import { SyncOperation } from 'types';
+import { getResolveablePromise, getSyncMethod, wrapError } from './helpers';
+import { Model, type Attributes as ModelAttributes } from './model';
+import { SyncOperation } from './types';
 
 // Default options for `Collection#set`.
 const setOptions = { add: true, remove: true, merge: true };
 const addOptions = { add: true, remove: false };
 
-export type CollectionOptions<T extends Model> = Record<string, any> & {
+export type Options = Record<string, any>;
+
+export type CollectionOptions<T extends Model> = Options & {
   model?: typeof Model;
   comparator?: string | ((a: T, b: T) => number);
 };
-
-export type SyncOptions = Record<string, any>;
 
 /**
  * If models tend to represent a single row of data, a Collection is
@@ -101,7 +101,7 @@ class Collection<T extends Model = Model> extends EventEmitter(Object) {
     });
   }
 
-  sync(method: SyncOperation, model: Model | Collection<any>, options?: SyncOptions): any {
+  sync(method: SyncOperation, model: Model | Collection<any>, options?: Options): any {
     return getSyncMethod(this)(method, model, options);
   }
 
@@ -110,14 +110,14 @@ class Collection<T extends Model = Model> extends EventEmitter(Object) {
    * Models or raw JavaScript objects to be converted to Models, or any
    * combination of the two.
    */
-  add(models: T[] | T | ModelAttributes | ModelAttributes[], options?: Record<string, any>): T | T[] {
+  add(models: T[] | T | ModelAttributes | ModelAttributes[], options?: Options): T | T[] {
     return this.set(models, Object.assign({ merge: false }, options, addOptions));
   }
 
   /**
    * Remove a model, or a list of models from the set.
    */
-  remove(models: T | T[], options?: Record<string, any>): T | T[] {
+  remove(models: T | T[], options?: Options): T | T[] {
     options = Object.assign({}, options);
     const singular = !Array.isArray(models);
     const modelsArray = singular ? [models] : (models as T[]).slice();
@@ -135,7 +135,7 @@ class Collection<T extends Model = Model> extends EventEmitter(Object) {
    * already exist in the collection, as necessary. Similar to **Model#set**,
    * the core operation for updating the data contained by the collection.
    */
-  set(models: T[] | T | ModelAttributes | ModelAttributes[], options?: Record<string, any>): T | T[] {
+  set(models: T[] | T | ModelAttributes | ModelAttributes[], options?: Options): T | T[] {
     if (models == null) return;
 
     options = Object.assign({}, setOptions, options);
@@ -249,7 +249,7 @@ class Collection<T extends Model = Model> extends EventEmitter(Object) {
     return singular ? models[0] : (models as T);
   }
 
-  async clearStore(options: Record<string, any> = {}, filter: (model: T) => boolean = (o) => true): Promise<void> {
+  async clearStore(options: Options = {}, filter: (model: T) => boolean = (o) => true): Promise<void> {
     await Promise.all(
       this.models.filter(filter).map((m) => {
         return new Promise<void>((resolve) => {
@@ -275,7 +275,7 @@ class Collection<T extends Model = Model> extends EventEmitter(Object) {
    * any granular `add` or `remove` events. Fires `reset` when finished.
    * Useful for bulk operations and optimizations.
    */
-  reset(models?: T[] | T | ModelAttributes | ModelAttributes[], options?: Record<string, any>): T | T[] {
+  reset(models?: T[] | T | ModelAttributes | ModelAttributes[], options?: Options): T | T[] {
     options = options ? clone(options) : {};
     for (let i = 0; i < this.models.length; i++) {
       this._removeReference(this.models[i], options);
@@ -290,14 +290,14 @@ class Collection<T extends Model = Model> extends EventEmitter(Object) {
   /**
    * Add a model to the end of the collection.
    */
-  push(model: T | ModelAttributes, options?: Record<string, any>): T {
+  push(model: T | ModelAttributes, options?: Options): T {
     return this.add(model, Object.assign({ at: this.length }, options)) as T;
   }
 
   /**
    * Remove a model from the end of the collection.
    */
-  pop(options?: Record<string, any>): T | undefined {
+  pop(options?: Options): T | undefined {
     const model = this.at(this.length - 1);
     return this.remove(model, options) as T | undefined;
   }
@@ -305,14 +305,14 @@ class Collection<T extends Model = Model> extends EventEmitter(Object) {
   /**
    * Add a model to the beginning of the collection.
    */
-  unshift(model: T | ModelAttributes, options?: Record<string, any>): T {
+  unshift(model: T | ModelAttributes, options?: Options): T {
     return this.add(model, Object.assign({ at: 0 }, options)) as T;
   }
 
   /**
    * Remove a model from the beginning of the collection.
    */
-  shift(options?: Record<string, any>): T | undefined {
+  shift(options?: Options): T | undefined {
     const model = this.at(0);
     return this.remove(model, options) as T | undefined;
   }
@@ -331,7 +331,7 @@ class Collection<T extends Model = Model> extends EventEmitter(Object) {
     );
   }
 
-  every(pred: ((attrs: ModelAttributes) => boolean) | Record<string, any>): boolean {
+  every(pred: ((attrs: ModelAttributes) => boolean) | Options): boolean {
     if (isFunction(pred)) {
       return this.models.map((m) => m.attributes).every(pred as (attrs: ModelAttributes) => boolean);
     } else {
@@ -355,7 +355,7 @@ class Collection<T extends Model = Model> extends EventEmitter(Object) {
     return this.models.slice(n);
   }
 
-  some(pred: ((attrs: ModelAttributes) => boolean) | Record<string, any>): boolean {
+  some(pred: ((attrs: ModelAttributes) => boolean) | Options): boolean {
     if (isFunction(pred)) {
       return this.models.map((m) => m.attributes).some(pred as (attrs: ModelAttributes) => boolean);
     } else {
@@ -519,13 +519,13 @@ class Collection<T extends Model = Model> extends EventEmitter(Object) {
    * normal circumstances, as the set will maintain sort order as each item
    * is added.
    */
-  sort(options?: Record<string, any>): this {
+  sort(options?: Options): this {
     let comparator = this.comparator;
     if (!comparator) throw new Error('Cannot sort a set without a comparator');
     options = options || {};
 
     const length = isFunction(comparator) ? comparator.length : 0;
-    if (isFunction(comparator)) comparator = (comparator as Function).bind(this);
+    if (isFunction(comparator)) comparator = (comparator as (a: T, b: T) => number).bind(this);
 
     // Run sort based on type of `comparator`.
     if (length === 1 || isString(comparator)) {
@@ -549,7 +549,7 @@ class Collection<T extends Model = Model> extends EventEmitter(Object) {
    * collection when they arrive. If `reset: true` is passed, the response
    * data will be passed through the `reset` method instead of `set`.
    */
-  fetch(options?: Record<string, any>): Promise<any> | any {
+  fetch(options?: Options): Promise<any> | any {
     options = Object.assign({ parse: true }, options);
     const success = options.success;
     // eslint-disable-next-line @typescript-eslint/no-this-alias
@@ -571,7 +571,7 @@ class Collection<T extends Model = Model> extends EventEmitter(Object) {
    * collection immediately, unless `wait: true` is passed, in which case we
    * wait for the server to agree.
    */
-  create(model: T | ModelAttributes, options?: Record<string, any>): Promise<T> | T | false {
+  create(model: T | ModelAttributes, options?: Options): Promise<T> | T | false {
     options = options ? clone(options) : {};
     const wait = options.wait;
     const return_promise = options.promise;
@@ -584,7 +584,7 @@ class Collection<T extends Model = Model> extends EventEmitter(Object) {
     const collection = this;
     const success = options.success;
     const error = options.error;
-    options.success = function (m: T, resp: any, callbackOpts: Record<string, any>) {
+    options.success = function (m: T, resp: any, callbackOpts: Options) {
       if (wait) {
         collection.add(m, callbackOpts);
       }
@@ -595,7 +595,7 @@ class Collection<T extends Model = Model> extends EventEmitter(Object) {
         promise.resolve(m);
       }
     };
-    options.error = function (model: T, e: any, options: Record<string, any>) {
+    options.error = function (model: T, e: any, options: Options) {
       error && error.call(options.context, model, e, options);
       return_promise && promise.reject(e);
     };
@@ -612,7 +612,7 @@ class Collection<T extends Model = Model> extends EventEmitter(Object) {
    * **parse** converts a response into a list of models to be added to the
    * collection. The default implementation is just to pass it through.
    */
-  parse(resp: any, _options?: Record<string, any>): any {
+  parse(resp: any, _options?: Options): any {
     return resp;
   }
 
@@ -647,7 +647,7 @@ class Collection<T extends Model = Model> extends EventEmitter(Object) {
     this._byId = {};
   }
 
-  createModel(attrs: ModelAttributes, options?: Record<string, any>): T {
+  createModel(attrs: ModelAttributes, options?: Options): T {
     const Klass = this.model;
     return new Klass(attrs, options) as T;
   }
@@ -656,7 +656,7 @@ class Collection<T extends Model = Model> extends EventEmitter(Object) {
    * Prepare a hash of attributes (or other model) to be added to this
    * collection.
    */
-  _prepareModel(attrs: ModelAttributes | T, options?: Record<string, any>): T | null {
+  _prepareModel(attrs: ModelAttributes | T, options?: Options): T | null {
     if (this._isModel(attrs)) {
       if (!(attrs as T).collection) (attrs as T).collection = this;
       return attrs as T;
@@ -672,7 +672,7 @@ class Collection<T extends Model = Model> extends EventEmitter(Object) {
   /**
    * Internal method called by both remove and set.
    */
-  _removeModels(models: T[], options?: Record<string, any>): T[] {
+  _removeModels(models: T[], options?: Options): T[] {
     const removed: T[] = [];
     for (let i = 0; i < models.length; i++) {
       const model = this.get(models[i]);
@@ -710,7 +710,7 @@ class Collection<T extends Model = Model> extends EventEmitter(Object) {
   /**
    * Internal method to create a model's ties to a collection.
    */
-  _addReference(model: T, _options?: Record<string, any>): void {
+  _addReference(model: T, _options?: Options): void {
     this._byId[model.cid] = model;
     const id = this.modelId(model.attributes);
     if (id != null) this._byId[id as string] = model;
@@ -720,7 +720,7 @@ class Collection<T extends Model = Model> extends EventEmitter(Object) {
   /**
    * Internal method to sever a model's ties to a collection.
    */
-  _removeReference(model: T, _options?: Record<string, any>): void {
+  _removeReference(model: T, _options?: Options): void {
     delete this._byId[model.cid];
     const id = this.modelId(model.attributes);
     if (id != null) delete this._byId[id as string];
@@ -734,7 +734,7 @@ class Collection<T extends Model = Model> extends EventEmitter(Object) {
    * events simply proxy through. "add" and "remove" events that originate
    * in other collections are ignored.
    */
-  _onModelEvent(event: string, model: T, collection: Collection<T>, options?: Record<string, any>): void {
+  _onModelEvent(event: string, model: T, collection: Collection<T>, options?: Options): void {
     if (model) {
       if ((event === 'add' || event === 'remove') && collection !== this) return;
       if (event === 'destroy') this.remove(model, options);

@@ -16,9 +16,9 @@ import EventEmitter from './eventemitter';
 // Import types
 import type { Collection } from './collection';
 import type Storage from './storage';
-import {SyncOperation} from 'types';
+import { SyncOperation } from './types';
 
-export type Attributes = Record<string, any>;
+export type Attributes = Record<string | number, any> & { id?: string | number };
 export type Options = Record<string, any>;
 export type ModelOptions = Options & {
   collection?: Collection;
@@ -37,14 +37,14 @@ export type ModelOptions = Options & {
 export class Model<T extends Record<string, any> = Attributes> extends EventEmitter(Object) {
   cid: string;
   attributes: T;
-  validationError: string | null = null;
+  validationError: string | number | null = null;
   changed: Partial<T> = {};
   collection?: Collection;
   _browserStorage?: Storage;
   _previousAttributes?: T;
   _changing = false;
   _pending: boolean | ModelOptions = false;
-  id: string;
+  id: string | number;
 
   /**
    * Create a new model with the specified attributes. A client id (`cid`)
@@ -110,8 +110,15 @@ export class Model<T extends Record<string, any> = Attributes> extends EventEmit
    */
   initialize(attrs?: Partial<T>, options?: ModelOptions): void {}
 
-  validate(attrs: Partial<T>, options?: ModelOptions): string {
-    return '';
+  validate(attrs: Partial<T>, options?: ModelOptions): string | number | null | void {
+    return null;
+  }
+
+  /**
+   * Return a hash of defaults for the model's attributes.
+   */
+  defaults(): Partial<T> {
+    return {} as Partial<T>;
   }
 
   /**
@@ -193,8 +200,8 @@ export class Model<T extends Record<string, any> = Attributes> extends EventEmit
    * the core primitive operation of a model, updating the data and notifying
    * anyone who needs to know about the change in state. The heart of the beast.
    */
-  set(key: string | Partial<T>, val?: any, options?: ModelOptions): boolean {
-    if (key == null) return false;
+  set(key: string | Partial<T>, val?: any, options?: ModelOptions): boolean | this {
+    if (key == null) return this;
 
     // Handle both `"key", value` and `{key: value}` -style arguments.
     let attrs: Partial<T>;
@@ -263,21 +270,21 @@ export class Model<T extends Record<string, any> = Attributes> extends EventEmit
     }
     this._pending = false;
     this._changing = false;
-    return true;
+    return this;
   }
 
   /**
    * Remove an attribute from the model, firing `"change"`. `unset` is a noop
    * if the attribute doesn't exist.
    */
-  unset(attr: keyof T, options?: ModelOptions): boolean {
+  unset(attr: keyof T, options?: ModelOptions): boolean | this {
     return this.set(attr as string, undefined, Object.assign({}, options, { unset: true }));
   }
 
   /**
    * Clear all attributes on the model, firing `"change"`.
    */
-  clear(options?: ModelOptions): boolean {
+  clear(options?: ModelOptions): boolean | this {
     const attrs: Partial<T> = {};
     for (const key in this.attributes) attrs[key as keyof T] = undefined;
     return this.set(attrs, Object.assign({}, options, { unset: true }));
@@ -359,7 +366,7 @@ export class Model<T extends Record<string, any> = Attributes> extends EventEmit
    * If the server returns an attributes hash that differs, the model's
    * state will be `set` again.
    */
-  save(key?: string | Partial<T>, val?: any, options?: ModelOptions): any {
+  save(key?: string | null | Partial<T>, val?: any, options?: ModelOptions): any {
     // Handle both `"key", value` and `{key: value}` -style arguments.
     let attrs: Partial<T> | undefined;
     if (key == null || typeof key === 'object') {
@@ -473,7 +480,7 @@ export class Model<T extends Record<string, any> = Attributes> extends EventEmit
    * **parse** converts a response into the hash of attributes to be `set` on
    * the model. The default implementation is just to pass the response along.
    */
-  parse(resp: any, options?: ModelOptions): Partial<T> | null {
+  parse(resp: any, options?: ModelOptions): Partial<T> | null | void {
     return resp;
   }
 
