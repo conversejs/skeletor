@@ -22,15 +22,27 @@ import serializer from 'localforage/src/utils/serializer';
 const serialize = serializer['serialize'];
 const deserialize = serializer['deserialize'];
 
-function isSessionStorageValid() {
-  // If the app is running inside a Google Chrome packaged webapp, or some
-  // other context where sessionStorage isn't available, we don't use
-  // sessionStorage. This feature detection is preferred over the old
-  // `if (window.chrome && window.chrome.runtime)` code.
-  // See: https://github.com/mozilla/localForage/issues/68
+interface DbInfo {
+  keyPrefix: string;
+  serializer: {
+    serialize: typeof serialize;
+    deserialize: typeof deserialize;
+  };
+  [key: string]: any;
+}
+
+interface LocalForageOptions {
+  name: string;
+  storeName: string;
+  [key: string]: any;
+}
+
+interface IteratorCallback<T, U> {
+  (value: T, key: string, iterationNumber: number): U;
+}
+
+function isSessionStorageValid(): boolean {
   try {
-    // If sessionStorage isn't available, we get outta here!
-    // This should be inside a try catch
     if (sessionStorage && 'setItem' in sessionStorage) {
       return true;
     }
@@ -40,7 +52,7 @@ function isSessionStorageValid() {
   return false;
 }
 
-function _getKeyPrefix(options, defaultConfig) {
+function _getKeyPrefix(options: LocalForageOptions, defaultConfig: LocalForageOptions): string {
   let keyPrefix = options.name + '/';
 
   if (options.storeName !== defaultConfig.storeName) {
@@ -49,18 +61,18 @@ function _getKeyPrefix(options, defaultConfig) {
   return keyPrefix;
 }
 
-const dbInfo = {
-  'serializer': {
-    'serialize': serialize,
-    'deserialize': deserialize,
+const dbInfo: DbInfo = {
+  keyPrefix: '',
+  serializer: {
+    serialize: serialize,
+    deserialize: deserialize,
   },
 };
 
-function _initStorage(options) {
+function _initStorage(this: any, options: LocalForageOptions): void {
   dbInfo.keyPrefix = _getKeyPrefix(options, this._defaultConfig);
   if (options) {
     for (const i in options) {
-      // eslint-disable-line guard-for-in
       dbInfo[i] = options[i];
     }
   }
@@ -68,14 +80,13 @@ function _initStorage(options) {
 
 // Remove all keys from the datastore, effectively destroying all data in
 // the app's key/value store!
-function clear(callback) {
+function clear(callback?: (err: any) => void): Promise<void> {
   const promise = this.ready().then(function () {
     const keyPrefix = dbInfo.keyPrefix;
 
     for (let i = sessionStorage.length - 1; i >= 0; i--) {
       const key = sessionStorage.key(i);
-
-      if (key.indexOf(keyPrefix) === 0) {
+      if (key && key.indexOf(keyPrefix) === 0) {
         sessionStorage.removeItem(key);
       }
     }
@@ -85,66 +96,56 @@ function clear(callback) {
   return promise;
 }
 
-// Retrieve an item from the store. Unlike the original async_storage
-// library in Gaia, we don't modify return values at all. If a key's value
-// is `undefined`, we pass that value to the callback function.
-function getItem(key, callback) {
+function getItem<T>(key: string, callback?: (err: any, value: T | null) => void): Promise<T | null> {
   key = normalizeKey(key);
 
-  const promise = this.ready().then(function () {
-    let result = sessionStorage.getItem(dbInfo.keyPrefix + key);
+  const promise = this.ready().then(function (): T | null {
+    const result = sessionStorage.getItem(dbInfo.keyPrefix + key);
     // If a result was found, parse it from the serialized
     // string into a JS object. If result isn't truthy, the key
     // is likely undefined and we'll pass it straight to the
     // callback.
     if (result) {
-      result = dbInfo.serializer.deserialize(result);
+      return dbInfo.serializer.deserialize(result) as T;
     }
-    return result;
+    return null;
   });
+
   executeCallback(promise, callback);
   return promise;
 }
 
-// Iterate over all items in the store.
-function iterate(iterator, callback) {
+function iterate<T, U>(
+  iterator: IteratorCallback<T, U>,
+  callback?: (err: any, result: U | undefined) => void
+): Promise<U | undefined> {
   const self = this;
 
-  const promise = self.ready().then(function () {
+  const promise = self.ready().then(function (): U | undefined {
     const keyPrefix = dbInfo.keyPrefix;
     const keyPrefixLength = keyPrefix.length;
     const length = sessionStorage.length;
-
-    // We use a dedicated iterator instead of the `i` variable below
-    // so other keys we fetch in sessionStorage aren't counted in
-    // the `iterationNumber` argument passed to the `iterate()`
-    // callback.
-    //
-    // See: github.com/mozilla/localForage/pull/435#discussion_r38061530
     let iterationNumber = 1;
 
     for (let i = 0; i < length; i++) {
       const key = sessionStorage.key(i);
-      if (key.indexOf(keyPrefix) !== 0) {
+      if (!key || key.indexOf(keyPrefix) !== 0) {
         continue;
       }
-      let value = sessionStorage.getItem(key);
 
       // If a result was found, parse it from the serialized
       // string into a JS object. If result isn't truthy, the
       // key is likely undefined and we'll pass it straight
       // to the iterator.
-      if (value) {
-        value = dbInfo.serializer.deserialize(value);
-      }
+      const item = sessionStorage.getItem(key);
+      const value = item ? dbInfo.serializer.deserialize(item) : item;
 
-      value = iterator(value, key.substring(keyPrefixLength), iterationNumber++);
-
-      if (value !== void 0) {
-        // eslint-disable-line no-void
-        return value;
+      const result = iterator(value as T, key.substring(keyPrefixLength), iterationNumber++);
+      if (result !== void 0) {
+        return result;
       }
     }
+    return;
   });
 
   executeCallback(promise, callback);
@@ -152,10 +153,10 @@ function iterate(iterator, callback) {
 }
 
 // Same as sessionStorage's key() method, except takes a callback.
-function key(n, callback) {
+function key(n: number, callback?: (err: any, key: string | null) => void): Promise<string | null> {
   const self = this;
-  const promise = self.ready().then(function () {
-    let result;
+  const promise = self.ready().then(function (): string | null {
+    let result: string | null;
     try {
       result = sessionStorage.key(n);
     } catch (error) {
@@ -174,15 +175,15 @@ function key(n, callback) {
   return promise;
 }
 
-function keys(callback) {
+function keys(callback?: (err: any, keys: string[]) => void): Promise<string[]> {
   const self = this;
-  const promise = self.ready().then(function () {
+  const promise = self.ready().then(function (): string[] {
     const length = sessionStorage.length;
-    const keys = [];
+    const keys: string[] = [];
 
     for (let i = 0; i < length; i++) {
       const itemKey = sessionStorage.key(i);
-      if (itemKey.indexOf(dbInfo.keyPrefix) === 0) {
+      if (itemKey && itemKey.indexOf(dbInfo.keyPrefix) === 0) {
         keys.push(itemKey.substring(dbInfo.keyPrefix.length));
       }
     }
@@ -194,9 +195,9 @@ function keys(callback) {
 }
 
 // Supply the number of keys in the datastore to the callback function.
-function length(callback) {
+function length(callback?: (err: any, numberOfKeys: number) => void): Promise<number> {
   const self = this;
-  const promise = self.keys().then(function (keys) {
+  const promise = self.keys().then(function (keys: string[]) {
     return keys.length;
   });
 
@@ -204,8 +205,7 @@ function length(callback) {
   return promise;
 }
 
-// Remove an item from the store, nice and simple.
-function removeItem(key, callback) {
+function removeItem(key: string, callback?: (err: any) => void): Promise<void> {
   key = normalizeKey(key);
   const promise = this.ready().then(function () {
     sessionStorage.removeItem(dbInfo.keyPrefix + key);
@@ -214,50 +214,38 @@ function removeItem(key, callback) {
   return promise;
 }
 
-/**
- * Set a key's value and run an optional callback once the value is set.
- * Unlike Gaia's implementation, the callback function is passed the value,
- * in case you want to operate on that value only after you're sure it
- * saved, or something like that.
- * @template T
- * @param {string} key - The key under which the value is stored.
- * @param {T} value - The value to be stored, can be of any type.
- * @param {(err: any, value: T) => void} [callback] - Optional callback function to be called after the value is set.
- * @returns {Promise<T>}
- */
-async function setItem(key, value, callback) {
+async function setItem<T>(key: string, value: T, callback?: (err: any, value: T) => void): Promise<T> {
   key = normalizeKey(key);
   await this.ready();
 
-  // Convert undefined values to null.
-  // https://github.com/mozilla/localForage/pull/42
-  value = value ?? null;
-
-  // Save the original value to pass to the callback.
+  value = value ?? (null as unknown as T);
   const originalValue = value;
 
-  dbInfo.serializer.serialize(value, (value, error) => {
-    if (error) {
-      throw error;
-    } else {
-      try {
-        sessionStorage.setItem(dbInfo.keyPrefix + key, value);
-        executeCallback(Promise.resolve(originalValue), callback);
-      } catch (e) {
-        if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
-          console.error('Your sesionStorage capacity is used up.');
-          throw e;
-        }
-        throw e;
+  return new Promise<T>((resolve, reject) => {
+    dbInfo.serializer.serialize(value, (serializedValue: string, error: any) => {
+      if (error) {
+        reject(error);
+        executeCallback(Promise.reject(error), callback);
+        return;
       }
-    }
-  });
 
-  return value;
+      try {
+        sessionStorage.setItem(dbInfo.keyPrefix + key, serializedValue);
+        resolve(originalValue);
+        executeCallback(Promise.resolve(originalValue), callback);
+      } catch (e: any) {
+        if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
+          console.error('Your sessionStorage capacity is used up.');
+        }
+        reject(e);
+        executeCallback(Promise.reject(e), callback);
+      }
+    });
+  });
 }
 
-function dropInstance(options, callback) {
-  callback = getCallback.apply(this, arguments);
+function dropInstance(options: any, callback?: (err: any) => void): Promise<void> {
+  callback = getCallback.apply(this, arguments as any);
 
   options = (typeof options !== 'function' && options) || {};
   if (!options.name) {
@@ -267,20 +255,20 @@ function dropInstance(options, callback) {
   }
 
   const self = this;
-  let promise;
+  let promise: Promise<void>;
   if (!options.name) {
     promise = Promise.reject(new Error('Invalid arguments'));
   } else {
-    promise = new Promise(function (resolve) {
+    promise = new Promise<string>(function (resolve) {
       if (!options.storeName) {
         resolve(`${options.name}/`);
       } else {
         resolve(_getKeyPrefix(options, self._defaultConfig));
       }
-    }).then(function (keyPrefix) {
+    }).then(function (keyPrefix: string) {
       for (let i = sessionStorage.length - 1; i >= 0; i--) {
         const key = sessionStorage.key(i);
-        if (key.indexOf(keyPrefix) === 0) {
+        if (key && key.indexOf(keyPrefix) === 0) {
           sessionStorage.removeItem(key);
         }
       }
