@@ -71,8 +71,8 @@
     "window-or-global": "^1.0.1"
   },
   "scripts": {
-    "test": "karma start && karma start karma.mocha.conf && npm run lint",
-    "dev": "karma start --single-run=false",
+    "test": "karma start karma.conf.js && karma start karma.mocha.conf.js && npm run lint",
+    "dev": "karma start karma.conf.js --single-run=false",
     "build": "npm run build:types && rollup -c",
     "build:types": "tsc",
     "types": "tsc",

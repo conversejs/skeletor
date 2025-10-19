@@ -1,7 +1,7 @@
 /* global module */
-const path = require('path');
+import path from 'path';
 
-module.exports = function (config) {
+export default function (config) {
   config.set({
     // base path that will be used to resolve all patterns (eg. files, exclude)
     basePath: '',
@@ -54,9 +54,9 @@ module.exports = function (config) {
                   [
                     '@babel/preset-env',
                     {
-                      'targets': {
-                        'browsers': ['>1%', 'not ie 11', 'not op_mini all', 'not dead'],
-                      },
+                      "targets": {
+                        "browsers": [">1%", "not ie 11", "not op_mini all", "not dead"]
+                      }
                     },
                   ],
                 ],
@@ -112,4 +112,4 @@ module.exports = function (config) {
     // how many browser should be started simultaneous
     concurrency: Infinity,
   });
-};
+}
