@@ -13,6 +13,7 @@ export default function (config) {
 
     // list of files / patterns to load in the browser
     files: [
+      'node_modules/qunit/qunit/qunit.js',
       'node_modules/lodash/lodash.js',
       'node_modules/sinon/pkg/sinon.js',
       'test/vendor/json2.js',
@@ -40,11 +41,21 @@ export default function (config) {
           "util": false
         }
       },
+      externals: {
+        'qunit': 'QUnit'
+      },
       module: {
         rules: [
           {
             test: /\.ts$/,
-            use: 'ts-loader',
+            use: [
+              {
+                loader: 'ts-loader',
+                options: {
+                  transpileOnly: true
+                }
+              }
+            ],
             exclude: /node_modules/,
           },
         ],
