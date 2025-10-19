@@ -1,36 +1,31 @@
 {
   "include": ["src/**/*"],
   "compilerOptions": {
-    "target": "es2023",
+    "target": "es2020",
     "module": "esnext",
+    "lib": ["es2023", "dom"],
 
-    "allowJs": true,
-    "checkJs": true,
-
-    // Generate d.ts files
-    "declaration": true,
-    "emitDeclarationOnly": true,
-    "declarationMap": true,
-
-    "rootDir": "./",
-    "outDir": "./dist/",
-    "baseUrl": "./src/",
-
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-
-    // Start with moderate strictness, we can increase later
+    // Type checking
     "strict": false,
     "noImplicitAny": false,
     "noImplicitThis": false,
     "alwaysStrict": false,
 
-    "skipLibCheck": true,
-
+    // Modules
     "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
     "resolveJsonModule": true,
 
-    // Allow default imports from modules with no default export
-    "allowSyntheticDefaultImports": true
+    // Emit - Only declaration files, no JS files
+    "declaration": true,
+    "declarationMap": true,
+    "emitDeclarationOnly": true,
+    "outDir": "dist",
+
+    // Other
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "baseUrl": "./src/"
   }
 }

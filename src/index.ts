@@ -1,5 +1,5 @@
 /* global global */
-import EventEmitter from './eventemitter';
+import { EventEmitter } from './eventemitter';
 import Storage from './storage';
 import { Collection } from './collection';
 import { Model } from './model';
@@ -50,4 +50,4 @@ export {
   Model,
   Storage,
   sync,
-}
+};

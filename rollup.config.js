@@ -1,4 +1,4 @@
-import babel from '@rollup/plugin-babel';
+import typescript from '@rollup/plugin-typescript';
 import resolve from '@rollup/plugin-node-resolve';
 import terser from '@rollup/plugin-terser';
 import commonjs from '@rollup/plugin-commonjs';
@@ -9,25 +9,15 @@ const plugins = [
   commonjs({
     requireReturnsDefault: 'auto' // Handle mixed ES/CJS modules
   }),
-  summary(), // Print bundle summary
-  babel({
-    'plugins': ['@babel/plugin-proposal-optional-chaining', '@babel/plugin-proposal-nullish-coalescing-operator'],
-    'presets': [
-      [
-        '@babel/preset-env',
-        {
-          'targets': {
-            'browsers': ['>1%', 'not ie 11', 'not op_mini all'],
-          },
-        },
-      ],
-    ],
+  typescript({
+    tsconfig: './tsconfig.json'
   }),
+  summary(), // Print bundle summary
 ];
 
 export default [
   {
-    input: 'src/index.js',
+    input: 'src/index.ts',
     output: {
       name: 'skeletor',
       sourcemap: true,
@@ -38,7 +28,7 @@ export default [
     preserveEntrySignatures: 'strict',
   },
   {
-    input: 'src/index.js',
+    input: 'src/index.ts',
     output: {
       name: 'skeletor',
       sourcemap: true,
