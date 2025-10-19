@@ -17,17 +17,8 @@ export default function (config) {
       'node_modules/sinon/pkg/sinon.js',
       'test/vendor/json2.js',
       'dist/skeletor.js',
-      'test/indexeddb.test.js',
-      'test/localStorage.test.js',
-      'test/sessionStorage.test.js',
-
-      'test/setup/dom-setup.js',
-      'test/collection.js',
-      'test/events.js',
-      'test/model.js',
-      'test/noconflict.js',
-      'test/router.js',
-      'test/sync.js',
+      'src/**/*.ts',
+      'test/**/*.ts',
     ],
 
     // list of files to exclude
@@ -36,14 +27,13 @@ export default function (config) {
     // preprocess matching files before serving them to the browser
     // available preprocessors: https://npmjs.org/browse/keyword/karma-preprocessor
     preprocessors: {
-      'test/indexeddb.test.js': ['webpack'],
-      'test/localStorage.test.js': ['webpack'],
-      'test/sessionStorage.test.js': ['webpack'],
+      'test/**/*.ts': ['webpack'],
     },
     webpack: {
       mode: 'development',
       devtool: 'inline-source-map',
       resolve: {
+        extensions: ['.ts', '.js'],
         fallback: {
           "path": false,
           "fs": false,
@@ -53,26 +43,9 @@ export default function (config) {
       module: {
         rules: [
           {
-            test: /\.js$/,
-            use: {
-              loader: 'babel-loader',
-              options: {
-                presets: [
-                  [
-                    '@babel/preset-env',
-                    {
-                      "targets": {
-                        "browsers": [">1%", "not ie 11", "not op_mini all", "not dead"]
-                      }
-                    },
-                  ],
-                ],
-                plugins: [
-                  '@babel/plugin-proposal-optional-chaining',
-                  '@babel/plugin-proposal-nullish-coalescing-operator',
-                ],
-              },
-            },
+            test: /\.ts$/,
+            use: 'ts-loader',
+            exclude: /node_modules/,
           },
         ],
       },
