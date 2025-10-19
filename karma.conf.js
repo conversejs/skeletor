@@ -43,6 +43,13 @@ export default function (config) {
     webpack: {
       mode: 'development',
       devtool: 'inline-source-map',
+      resolve: {
+        fallback: {
+          "path": false,
+          "fs": false,
+          "util": false
+        }
+      },
       module: {
         rules: [
           {
