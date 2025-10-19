@@ -1,4 +1,11 @@
 /* eslint-disable class-methods-use-this */
+import * as _ from 'lodash-es';
+import * as sinon from 'sinon';
+import QUnit from 'qunit';
+import * as Skeletor from '../src/index';
+
+// Make Skeletor available globally for tests
+(window as any).Skeletor = Skeletor;
 
 (function (QUnit) {
   class ProxyModel extends Skeletor.Model {}
@@ -11,7 +18,7 @@
 
   QUnit.module('Skeletor.Model', {
     beforeEach(assert) {
-      sinon.stub(window, 'fetch').callsFake(() => {});
+      (window.fetch as any) = sinon.stub().callsFake(() => {});
       doc = new ProxyModel({
         id: '1-the-tempest',
         title: 'The Tempest',
@@ -23,20 +30,21 @@
     },
 
     afterEach(assert) {
-      window.fetch.restore();
+      (window.fetch as any).restore();
     },
   });
 
   QUnit.test('initialize', function (assert) {
     assert.expect(3);
     class Model extends Skeletor.Model {
+      one: number;
       initialize() {
         this.one = 1;
         assert.equal(this.collection, collection);
       }
     }
     const model = new Model({}, { collection: collection });
-    assert.equal(model.one, 1);
+    assert.equal((model as any).one, 1);
     assert.equal(model.collection, collection);
   });
 
@@ -49,12 +57,13 @@
   QUnit.test('initialize with attributes and options', function (assert) {
     assert.expect(1);
     class Model extends Skeletor.Model {
+      one: number;
       initialize(attributes, options) {
         this.one = options.one;
       }
     }
     const model = new Model({}, { one: 1 });
-    assert.equal(model.one, 1);
+    assert.equal((model as any).one, 1);
   });
 
   QUnit.test('initialize with parsed attributes', function (assert) {
@@ -72,12 +81,13 @@
   QUnit.test('preinitialize', function (assert) {
     assert.expect(2);
     class Model extends Skeletor.Model {
+      one: number;
       preinitialize() {
         this.one = 1;
       }
     }
     const model = new Model({}, { collection: collection });
-    assert.equal(model.one, 1);
+    assert.equal((model as any).one, 1);
     assert.equal(model.collection, collection);
   });
 
@@ -124,6 +134,7 @@
   QUnit.test('url when using urlRoot, and uri encoding', function (assert) {
     assert.expect(2);
     class Model extends Skeletor.Model {
+      urlRoot: string;
       constructor(attributes, options) {
         super(attributes, options);
         this.urlRoot = '/collection';
@@ -226,19 +237,19 @@
     var model = new Skeletor.Model({ a: 0 });
 
     assert.strictEqual(
-      model.matches(function (attr) {
+      model.matches(function (attr: any) {
         return attr.a > 1 && attr.b != null;
-      }),
-      false,
+      } as any),
+      false
     );
 
-    model.set({ a: 3, b: true });
+    model.set({ a: 3, b: true } as any);
 
     assert.strictEqual(
-      model.matches(function (attr) {
+      model.matches(function (attr: any) {
         return attr.a > 1 && attr.b != null;
-      }),
-      true,
+      } as any),
+      true
     );
   });
 
@@ -275,11 +286,12 @@
       error = 0;
 
     class Model extends Skeletor.Model {
-      validate(attrs) {
+      validate(attrs: any) {
         if (attrs.x > 1) {
           error++;
           return 'this is an error';
         }
+        return '';
       }
     }
     var model = new Model({ x: 0 });
@@ -517,7 +529,7 @@
     const model = new Skeletor.Model({ a: 'a', b: 'b' });
     assert.deepEqual(model.changedAttributes(), false);
     assert.equal(model.changedAttributes({ a: 'a' }), false);
-    assert.equal(model.changedAttributes({ a: 'b' }).a, 'b');
+    assert.equal((model.changedAttributes({ a: 'b' }) as any).a, 'b');
   });
 
   QUnit.test('change with options', function (assert) {
@@ -548,13 +560,13 @@
   QUnit.test('save within change event', function (assert) {
     assert.expect(1);
     const model = new Skeletor.Model({ firstName: 'Roger', lastName: 'Penrose' });
-    model.url = '/test';
+    (model as any).url = '/test';
     model.on('change', function () {
-      sinon.spy(model, 'sync');
+      const syncSpy = sinon.spy(model, 'sync');
       model.save();
-      const syncArgs = model.sync.lastCall.args;
+      const syncArgs = syncSpy.lastCall.args;
       assert.ok(_.isEqual(syncArgs[1], model));
-      model.sync.restore();
+      syncSpy.restore();
     });
     model.set({ lastName: 'Hicks' });
   });
@@ -579,28 +591,28 @@
   });
 
   QUnit.test('save', function (assert) {
-    sinon.spy(doc, 'sync');
+    const syncSpy = sinon.spy(doc, 'sync');
     assert.expect(2);
     doc.save({ title: 'Henry V' });
-    const syncArgs = doc.sync.lastCall.args;
+    const syncArgs = syncSpy.lastCall.args;
     assert.equal(syncArgs[0], 'update');
     assert.ok(_.isEqual(syncArgs[1], doc));
-    doc.sync.restore();
+    syncSpy.restore();
   });
 
   QUnit.test('save and return promise', async function (assert) {
     const done = assert.async();
-    sinon.spy(doc, 'sync');
+    const syncSpy = sinon.spy(doc, 'sync');
     assert.expect(3);
     const promise = doc.save({ title: 'Henry V' }, { 'promise': true, 'wait': true });
-    assert.equal(promise.isResolved, false);
-    const ajaxSettings = window.fetch.lastCall.args[1];
+    assert.equal((promise as any).isResolved, false);
+    const ajaxSettings = (window.fetch as any).lastCall.args[1];
     ajaxSettings.success();
     await promise;
-    const syncArgs = doc.sync.lastCall.args;
+    const syncArgs = syncSpy.lastCall.args;
     assert.equal(syncArgs[0], 'update');
     assert.ok(_.isEqual(syncArgs[1], doc));
-    doc.sync.restore();
+    syncSpy.restore();
     done();
   });
 
@@ -671,34 +683,34 @@
   });
 
   QUnit.test('save with PATCH', function (assert) {
-    sinon.spy(doc, 'sync');
+    const syncSpy = sinon.spy(doc, 'sync');
     doc.clear().set({ id: 1, a: 1, b: 2, c: 3, d: 4 });
     doc.save();
-    let syncArgs = doc.sync.lastCall.args;
+    let syncArgs = syncSpy.lastCall.args;
     assert.equal(syncArgs[0], 'update');
     assert.equal(syncArgs[2].attrs, undefined);
 
     doc.save({ b: 2, d: 4 }, { patch: true });
-    syncArgs = doc.sync.lastCall.args;
+    syncArgs = syncSpy.lastCall.args;
     assert.equal(syncArgs[0], 'patch');
     assert.equal(_.size(syncArgs[2].attrs), 2);
     assert.equal(syncArgs[2].attrs.d, 4);
     assert.equal(syncArgs[2].attrs.a, undefined);
-    const ajaxSettings = window.fetch.lastCall.args[1];
+    const ajaxSettings = (window.fetch as any).lastCall.args[1];
     assert.equal(ajaxSettings.body, '{"b":2,"d":4}');
-    doc.sync.restore();
+    syncSpy.restore();
   });
 
   QUnit.test('save with PATCH and different attrs', function (assert) {
-    sinon.spy(doc, 'sync');
+    const syncSpy = sinon.spy(doc, 'sync');
     doc.clear().save({ b: 2, d: 4 }, { patch: true, attrs: { B: 1, D: 3 } });
-    const syncArgs = doc.sync.lastCall.args;
-    const ajaxSettings = window.fetch.lastCall.args[1];
+    const syncArgs = syncSpy.lastCall.args;
+    const ajaxSettings = (window.fetch as any).lastCall.args[1];
     assert.equal(syncArgs[2].attrs.D, 3);
     assert.equal(syncArgs[2].attrs.d, undefined);
     assert.equal(ajaxSettings.body, '{"B":1,"D":3}');
     assert.deepEqual(doc.attributes, { b: 2, d: 4 });
-    doc.sync.restore();
+    syncSpy.restore();
   });
 
   QUnit.test('save in positional style', function (assert) {
@@ -724,29 +736,27 @@
         success(m) {
           assert.deepEqual(m.attributes, { testing: 'empty' });
         },
-      },
+      }
     );
   });
 
   QUnit.test('save with wait and supplied id', function (assert) {
     class Model extends Skeletor.Model {
-      constructor(attributes, options) {
-        super(attributes, options);
-        this.urlRoot = '/collection';
+      get urlRoot() {
+        return '/collection';
       }
     }
     const model = new Model();
     model.save({ id: 42 }, { wait: true });
-    const url = window.fetch.lastCall.args[0];
+    const url = (window.fetch as any).lastCall.args[0];
     assert.equal(url, '/collection/42');
   });
 
   QUnit.test('save will pass extra options to success callback', function (assert) {
     assert.expect(1);
     class SpecialSyncModel extends Skeletor.Model {
-      constructor(attributes, options) {
-        super(attributes, options);
-        this.urlRoot = '/test';
+      get urlRoot() {
+        return '/test';
       }
       sync(method, m, options) {
         _.extend(options, { specialSync: true });
@@ -756,29 +766,28 @@
 
     const model = new SpecialSyncModel();
     const onSuccess = function (m, response, options) {
-      assert.ok(options.specialSync, 'Options were passed correctly to callback');
+      assert.ok((options as any).specialSync, 'Options were passed correctly to callback');
     };
     model.save(null, { success: onSuccess });
-    const ajaxSettings = window.fetch.lastCall.args[1];
+    const ajaxSettings = (window.fetch as any).lastCall.args[1];
     ajaxSettings.success();
   });
 
   QUnit.test('fetch', function (assert) {
     assert.expect(2);
-    sinon.spy(doc, 'sync');
+    const syncSpy = sinon.spy(doc, 'sync');
     doc.fetch();
-    const syncArgs = doc.sync.lastCall.args;
+    const syncArgs = syncSpy.lastCall.args;
     assert.equal(syncArgs[0], 'read');
     assert.ok(_.isEqual(syncArgs[1], doc));
-    doc.sync.restore();
+    syncSpy.restore();
   });
 
   QUnit.test('fetch will pass extra options to success callback', function (assert) {
     assert.expect(1);
     class SpecialSyncModel extends Skeletor.Model {
-      constructor(attributes, options) {
-        super(attributes, options);
-        this.urlRoot = '/test';
+      get urlRoot() {
+        return '/test';
       }
       sync(method, m, options) {
         _.extend(options, { specialSync: true });
@@ -788,32 +797,31 @@
 
     const model = new SpecialSyncModel();
     const onSuccess = function (m, response, options) {
-      assert.ok(options.specialSync, 'Options were passed correctly to callback');
+      assert.ok((options as any).specialSync, 'Options were passed correctly to callback');
     };
     model.fetch({ success: onSuccess });
-    const ajaxSettings = window.fetch.lastCall.args[1];
+    const ajaxSettings = (window.fetch as any).lastCall.args[1];
     ajaxSettings.success();
   });
 
   QUnit.test('destroy', function (assert) {
     assert.expect(3);
-    sinon.spy(doc, 'sync');
+    const syncSpy = sinon.spy(doc, 'sync');
     doc.destroy();
-    const syncArgs = doc.sync.lastCall.args;
+    const syncArgs = syncSpy.lastCall.args;
     assert.equal(syncArgs[0], 'delete');
     assert.ok(_.isEqual(syncArgs[1], doc));
     const newModel = new Skeletor.Model();
     assert.equal(newModel.destroy(), false);
-    doc.sync.restore();
+    syncSpy.restore();
   });
 
   QUnit.test('destroy will pass extra options to success callback', function (assert) {
     assert.expect(1);
 
     class SpecialSyncModel extends Skeletor.Model {
-      constructor(attributes, options) {
-        super(attributes, options);
-        this.urlRoot = '/test';
+      get urlRoot() {
+        return '/test';
       }
 
       sync(method, m, options) {
@@ -824,10 +832,10 @@
 
     const model = new SpecialSyncModel({ id: 'id' });
     const onSuccess = function (m, response, options) {
-      assert.ok(options.specialSync, 'Options were passed correctly to callback');
+      assert.ok((options as any).specialSync, 'Options were passed correctly to callback');
     };
     model.destroy({ success: onSuccess });
-    const ajaxSettings = window.fetch.lastCall.args[1];
+    const ajaxSettings = (window.fetch as any).lastCall.args[1];
     ajaxSettings.success();
   });
 
@@ -914,7 +922,7 @@
         return { one: 1 };
       }
 
-      initialize(attrs, opts) {
+      initialize(attrs: any, opts: any) {
         assert.equal(this.attributes.one, 1);
       }
     }
@@ -1041,12 +1049,12 @@
   QUnit.test('save with `wait` succeeds without `validate`', function (assert) {
     assert.expect(1);
     const model = new Skeletor.Model();
-    sinon.spy(model, 'sync');
-    model.url = '/test';
+    const syncSpy = sinon.spy(model, 'sync');
+    (model as any).url = '/test';
     model.save({ x: 1 }, { wait: true });
-    const syncArgs = model.sync.lastCall.args;
+    const syncArgs = syncSpy.lastCall.args;
     assert.ok(syncArgs[1] === model);
-    model.sync.restore();
+    syncSpy.restore();
   });
 
   QUnit.test("save without `wait` doesn't set invalid attributes", function (assert) {
@@ -1123,7 +1131,7 @@
       });
       model.save({ x: 3 }, { wait: true });
       assert.equal(model.get('x'), 3);
-    },
+    }
   );
 
   QUnit.test('save with wait validates attributes', function (assert) {
@@ -1141,7 +1149,11 @@
         assert.ok(options.parse);
       }
     }
-    new Model().save();
+    const model = new Model();
+    model.sync = function(method, m, options) {
+      assert.ok(options.parse);
+    };
+    model.save();
   });
 
   QUnit.test("nested `set` during `'change:attr'`", function (assert) {
@@ -1435,7 +1447,7 @@
       model.set({ x: 2 }, { silent: true });
       model.set({ x: 3 }, { silent: true });
       model.set({ x: 1 });
-    },
+    }
   );
 
   QUnit.test('#1664 - multiple silent changes nested inside a change event', function (assert) {
@@ -1529,7 +1541,7 @@
       }
       const model = new Model({ id: 1 }, { validate: true });
       assert.equal(model.validationError, "This shouldn't happen");
-    },
+    }
   );
 
   QUnit.test('toJSON receives attrs during save(..., {wait: true})', function (assert) {

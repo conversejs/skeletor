@@ -7,7 +7,7 @@ import keys from 'lodash-es/keys';
 import uniqueId from 'lodash-es/uniqueId';
 import Listening from './listening';
 import { eventsApi, onApi, offApi, onceMap, tryCatchOn, triggerApi } from './utils/events';
-import { ClassConstructor, EventCallback, EventMap, Events } from 'types';
+import { ClassConstructor, EventCallback, EventMap, Events } from './types';
 
 // A private global variable to share between listeners and listenees.
 let _listening: Listening | undefined;

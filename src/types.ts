@@ -10,7 +10,7 @@ export interface SyncOptions {
   wait?: boolean;
 }
 
-export type ClassConstructor = new (...args: any[]) => {};
+export type ClassConstructor = new (...args: any[]) => object;
 
 export type EventCallback = (...args: any[]) => void;
 

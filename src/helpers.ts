@@ -6,7 +6,7 @@ import has from 'lodash-es/has';
 import result from 'lodash-es/result';
 import { Model } from './model';
 import { Collection } from './collection';
-import {SyncOperation} from 'types';
+import { SyncOperation } from './types';
 
 /**
  * Custom error for indicating timeouts
@@ -156,11 +156,7 @@ export function getSyncMethod(model: Model | Collection<any>): typeof sync {
  * - Persist models via WebSockets instead of Ajax.
  * - Persist models to browser storage
  */
-export function sync(
-  method: SyncOperation,
-  model: Model | Collection<any>,
-  options: SyncOptions = {}
-): Promise<any> {
+export function sync(method: SyncOperation, model: Model | Collection<any>, options: SyncOptions = {}): Promise<any> {
   let data = options.data;
 
   // Ensure that we have the appropriate request data.
