@@ -1,5 +1,5 @@
 {
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "test/**/*"],
   "compilerOptions": {
     "target": "es2020",
     "module": "esnext",
@@ -17,15 +17,14 @@
     "esModuleInterop": true,
     "resolveJsonModule": true,
 
-    // Emit - Only declaration files, no JS files
     "declaration": true,
     "declarationMap": true,
-    "emitDeclarationOnly": true,
+    "sourceMap": true,
     "outDir": "dist",
 
     // Other
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
-    "baseUrl": "./src/"
+    "baseUrl": "."
   }
 }
