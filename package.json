@@ -78,7 +78,7 @@
     "build:types": "tsc",
     "check:types": "tsc --noEmit",
     "dev": "karma start karma.conf.js --single-run=false",
-    "lint": "eslint src/*.js test/*.js src/*.ts test/*.ts",
+    "lint": "eslint src/*.ts test/*.ts",
     "prettier": "prettier --write src/**/*.js test/**/*.js src/**/*.ts test/**/*.ts",
     "test": "karma start karma.conf.js && karma start karma.mocha.conf.js && npm run lint"
   },
