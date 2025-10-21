@@ -59,7 +59,7 @@ export default function (config) {
         ],
       },
       output: {
-        path: path.resolve('test'),
+        path: path.resolve('.tmp'),
         filename: '[name].out.js',
         chunkFilename: '[id].[chunkHash].js',
       },
