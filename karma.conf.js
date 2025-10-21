@@ -7,8 +7,6 @@ export default function (config) {
     basePath: '',
     // frameworks to use
     // available frameworks: https://npmjs.org/browse/keyword/karma-adapter
-    // XXX: change this to ['mocha'] and uncomment the skeletor tests to run
-    // the storage tests.
     frameworks: ['qunit', 'mocha'],
 
     // list of files / patterns to load in the browser
@@ -36,13 +34,13 @@ export default function (config) {
       resolve: {
         extensions: ['.ts', '.js'],
         fallback: {
-          "path": false,
-          "fs": false,
-          "util": false
-        }
+          'path': false,
+          'fs': false,
+          'util': false,
+        },
       },
       externals: {
-        'qunit': 'QUnit'
+        'qunit': 'QUnit',
       },
       module: {
         rules: [
@@ -52,9 +50,9 @@ export default function (config) {
               {
                 loader: 'ts-loader',
                 options: {
-                  transpileOnly: true
-                }
-              }
+                  transpileOnly: true,
+                },
+              },
             ],
             exclude: /node_modules/,
           },
