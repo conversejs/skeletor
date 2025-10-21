@@ -1,10 +1,9 @@
-/* eslint-disable class-methods-use-this */
-import { clone } from 'lodash';
-import { Model } from '../src/model.js';
-import { Collection } from '../src/collection';
-import { expect } from 'chai';
-import Storage from '../src/storage.js';
 import root from 'window-or-global';
+import { expect } from 'chai';
+import { clone } from 'lodash';
+import { Model } from '../src/model';
+import { Collection } from '../src/collection';
+import Storage from '../src/storage';
 
 const attributes = {
   string: 'String',

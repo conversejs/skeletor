@@ -1,9 +1,9 @@
 /* eslint-disable class-methods-use-this */
+import { expect } from 'chai';
 import * as localForage from 'localforage';
 import { Collection } from '../src/collection';
-import { Model } from '../src/model.js';
-import { expect } from 'chai';
-import Storage from '../src/storage.js';
+import { Model } from '../src/model';
+import Storage from '../src/storage';
 
 describe('Collection using IndexedDB', function () {
   class TestCollection extends Collection {

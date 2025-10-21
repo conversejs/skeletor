@@ -1,21 +1,16 @@
-/* eslint-disable class-methods-use-this */
-import { clone, each, extend, range, times } from 'lodash';
-import { Collection } from '../src/collection';
-import { getSyncMethod, sync } from '../src/helpers.js';
-import { Model } from '../src/model.js';
 import { assert } from 'chai';
-import Storage from '../src/storage.js';
 import root from 'window-or-global';
+import { clone, extend, range } from 'lodash';
+import { Collection } from '../src/collection';
+import { getSyncMethod, sync } from '../src/helpers';
+import { Model } from '../src/model';
+import Storage from '../src/storage';
 
 describe('Storage using localStorage', function () {
   const attributes = {
     string: 'String',
     string2: 'String 2',
     number: 1337,
-  };
-
-  const onError = function (model, resp, options) {
-    throw new Error(resp);
   };
 
   describe('on a Collection', function () {
