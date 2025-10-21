@@ -139,9 +139,9 @@ export interface SyncOptions {
   xhr?: any;
 }
 
-export function getSyncMethod(model: Model | Collection<any>): typeof sync {
+export function getSyncMethod(model: Model | Collection<any>): typeof sync & { __name__?: string } {
   const store = result(model, 'browserStorage') || result((model as Model).collection, 'browserStorage');
-  return store ? ((store as any).sync() as typeof sync) : sync;
+  return store ? (store as any).sync() : sync;
 }
 
 /**

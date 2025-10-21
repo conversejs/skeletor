@@ -1,11 +1,10 @@
 import { eventsApi, onApi, offApi } from './utils/events';
 import type {
-  EventEmitter,
   EventCallback,
-  EventMap,
-  Events,
+  EventEmitter,
+  EventCallbackMap,
   EventsApiOptions,
-  Listening as ListeningType,
+  ListeningType,
 } from './types';
 
 /**
@@ -18,7 +17,7 @@ class Listening implements ListeningType {
   obj: any;
   interop: boolean;
   count: number;
-  _events?: Events;
+  _events?: EventCallbackMap;
 
   constructor(listener: EventEmitter, obj: any) {
     this.id = listener._listenId!;
@@ -29,14 +28,14 @@ class Listening implements ListeningType {
     this._events = undefined;
   }
 
-  start(name: string | EventMap, callback: EventCallback, context: any, _listening: ListeningType): this {
+  start(name: string | EventCallbackMap, callback: EventCallback, context: any, _listening: ListeningType): this {
     const options: EventsApiOptions = {
       context: this.obj,
       ctx: context,
       listening: _listening,
     };
 
-    this._events = eventsApi(onApi, this._events || {}, name, callback, options) as Events;
+    this._events = eventsApi(onApi, this._events || {}, name, callback, options) as EventCallbackMap;
 
     if (_listening) {
       const listeners = this.obj._listeners || (this.obj._listeners = {});
@@ -56,13 +55,13 @@ class Listening implements ListeningType {
    * Otherwise, falls back to manual tracking to support events
    * library interop.
    */
-  stop(name: string, callback: EventCallback): void {
+  stop(name: string | EventCallbackMap, callback: EventCallback): void {
     let cleanup: boolean;
     if (this.interop) {
       this._events = eventsApi(offApi, this._events, name, callback, {
         context: undefined,
         listeners: undefined,
-      }) as Events;
+      }) as EventCallbackMap;
       cleanup = !this._events;
     } else {
       this.count--;

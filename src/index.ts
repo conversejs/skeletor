@@ -36,18 +36,13 @@ const previousSkeletor = root.Skeletor;
 
 // Runs Skeletor.js in *noConflict* mode, returning the `Skeletor` variable
 // to its previous owner. Returns a reference to this Skeletor object.
-skeletor.noConflict = function () {
+function noConflict() {
   root.Skeletor = previousSkeletor;
   return this;
-};
+}
+skeletor.noConflict = noConflict;
 
 root.Skeletor = skeletor;
 export default skeletor;
 
-export {
-  Collection,
-  EventEmitter,
-  Model,
-  Storage,
-  sync,
-};
+export { noConflict, Collection, EventEmitter, Model, Storage, sync };

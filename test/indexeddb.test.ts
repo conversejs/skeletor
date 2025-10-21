@@ -17,10 +17,10 @@ describe('Collection using IndexedDB', function () {
 
   it('saves to localForage', async function () {
     const collection = new TestCollection();
-    await new Promise((resolve, reject) => collection.fetch({ success: () => resolve() }));
-    const model = await new Promise((resolve, reject) =>
+    await new Promise<void>((resolve) => collection.fetch({ success: () => resolve() }));
+    const model = await new Promise((resolve) =>
       collection.create({ 'hello': 'world!' }, { 'success': resolve }),
-    );
+    ) as Model;
     const id = model.get('id');
     expect(id).to.be.a('string');
     expect(model.get('hello')).to.equal('world!');
@@ -28,21 +28,21 @@ describe('Collection using IndexedDB', function () {
 
   it('removes from localForage', async function () {
     const collection = new TestCollection();
-    const model = await new Promise((resolve, reject) =>
+    const model = await new Promise((resolve) =>
       collection.create({ 'hello': 'world!' }, { 'success': resolve }),
-    );
+    ) as Model;
     const store = model.collection.browserStorage;
     const stored_model = await localForage.getItem(store.getItemName(model.id));
     expect(stored_model).to.deep.equal(model.attributes);
     expect(collection.length).to.equal(1);
 
-    const stored_collection = await localForage.getItem(store.name);
-    await new Promise((resolve, reject) => collection.get(model.id).destroy({ 'success': resolve }));
+    const stored_collection = await localForage.getItem(store.name) as TestCollection;
+    await new Promise((resolve) => collection.get(model.id).destroy({ 'success': resolve }));
     expect(collection.length).to.equal(0);
     expect(await localForage.getItem(store.getItemName(model.id))).to.be.null;
 
     // expect collection references to be reset
-    const stored_collection2 = await localForage.getItem(store.name);
+    const stored_collection2 = await localForage.getItem(store.name) as TestCollection;
     expect(stored_collection2.length).to.equal(stored_collection.length - 1);
   });
 });
@@ -59,7 +59,7 @@ describe('Model using IndexedDB', function () {
     it('saves to localForage', async function () {
       let model = new TestModel();
       try {
-        model = await new Promise((resolve, reject) => model.save({ 'hello': 'world!' }, { 'success': resolve }));
+        model = await new Promise((resolve) => model.save({ 'hello': 'world!' }, { 'success': resolve }));
       } catch (e) {
         console.error(e);
       }
@@ -69,8 +69,8 @@ describe('Model using IndexedDB', function () {
 
     it('fetches from localForage', async function () {
       const model = new TestModel();
-      await new Promise((resolve, reject) => model.save({ 'hello': 'world!' }, { 'success': resolve }));
-      await new Promise((resolve, reject) => model.fetch({ success: resolve }));
+      await new Promise((resolve) => model.save({ 'hello': 'world!' }, { 'success': resolve }));
+      await new Promise((resolve) => model.fetch({ success: resolve }));
       expect(model.attributes).to.deep.equal({
         id: model.id,
         hello: 'world!',
@@ -79,20 +79,20 @@ describe('Model using IndexedDB', function () {
 
     it('updates to localForage', async function () {
       const model = new TestModel();
-      await new Promise((resolve, reject) => model.save({ 'hello': 'world!' }, { 'success': resolve }));
+      await new Promise((resolve) => model.save({ 'hello': 'world!' }, { 'success': resolve }));
       expect(model.get('hello')).to.equal('world!');
-      await new Promise((resolve, reject) => model.save({ 'hello': 'you!' }, { 'success': resolve }));
+      await new Promise((resolve) => model.save({ 'hello': 'you!' }, { 'success': resolve }));
       expect(model.get('hello')).to.equal('you!');
-      await new Promise((resolve, reject) => model.fetch({ success: resolve }));
+      await new Promise((resolve) => model.fetch({ success: resolve }));
       expect(model.get('hello')).to.equal('you!');
     });
 
     it('removes from localForage', async function () {
       const model = new TestModel();
-      await new Promise((resolve, reject) => model.save({ 'hello': 'world!' }, { 'success': resolve }));
-      const fetched_model = await new Promise((resolve, reject) => model.destroy({ 'success': resolve }));
+      await new Promise((resolve) => model.save({ 'hello': 'world!' }, { 'success': resolve }));
+      const fetched_model = await new Promise((resolve) => model.destroy({ 'success': resolve }));
       expect(model).to.deep.equal(fetched_model);
-      const result = await new Promise((resolve, reject) =>
+      const result = await new Promise((resolve) =>
         model.fetch({ 'success': () => resolve('success'), 'error': () => resolve('error') }),
       );
       expect(result).to.equal('error');

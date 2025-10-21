@@ -1,11 +1,14 @@
-/* eslint-disable class-methods-use-this */
+import * as _ from 'lodash-es';
+import * as sinon from 'sinon';
+import * as Skeletor from '../src/index';
+
 (function (QUnit) {
   class Library extends Skeletor.Collection {
     get url() {
       return '/library';
     }
   }
-  let library;
+  let library: Library;
 
   const attrs = {
     title: 'The Tempest',
@@ -14,22 +17,22 @@
   };
 
   QUnit.module('Skeletor.sync', {
-    beforeEach: function (assert) {
-      sinon.stub(window, 'fetch').callsFake(() => {});
+    beforeEach() {
+      sinon.stub(window, 'fetch').callsFake((_i: RequestInfo | URL) => Promise.resolve(new Response()));
       library = new Library();
       library.create(attrs, { wait: false });
     },
 
-    afterEach: function (assert) {
-      window.fetch.restore();
+    afterEach() {
+      (window.fetch as any).restore();
     },
   });
 
   QUnit.test('read', function (assert) {
     assert.expect(3);
     library.fetch();
-    const url = window.fetch.lastCall.args[0];
-    const ajaxSettings = window.fetch.lastCall.args[1];
+    const url = (window.fetch as sinon.SinonStub).lastCall.args[0];
+    const ajaxSettings = (window.fetch as sinon.SinonStub).lastCall.args[1];
     assert.equal(url, '/library');
     assert.equal(ajaxSettings.method, 'GET');
     assert.ok(_.isEmpty(ajaxSettings.body));
@@ -37,8 +40,8 @@
 
   QUnit.test('passing data', function (assert) {
     library.fetch({ data: { a: 'a', one: 1 } });
-    const url = window.fetch.lastCall.args[0];
-    const ajaxSettings = window.fetch.lastCall.args[1];
+    const url = (window.fetch as any).lastCall.args[0];
+    const ajaxSettings = (window.fetch as any).lastCall.args[1];
     assert.equal(url, '/library');
     console.log(ajaxSettings);
     const body = JSON.parse(ajaxSettings.body);
@@ -48,8 +51,8 @@
 
   QUnit.test('create', function (assert) {
     assert.expect(5);
-    const url = window.fetch.lastCall.args[0];
-    const ajaxSettings = window.fetch.lastCall.args[1];
+    const url = (window.fetch as any).lastCall.args[0];
+    const ajaxSettings = (window.fetch as any).lastCall.args[1];
     assert.equal(url, '/library');
     assert.equal(ajaxSettings.method, 'POST');
     const data = JSON.parse(ajaxSettings.body);
@@ -61,8 +64,8 @@
   QUnit.test('update', function (assert) {
     assert.expect(6);
     library.first().save({ id: '1-the-tempest', author: 'William Shakespeare' });
-    const url = window.fetch.lastCall.args[0];
-    const ajaxSettings = window.fetch.lastCall.args[1];
+    const url = (window.fetch as sinon.SinonStub).lastCall.args[0];
+    const ajaxSettings = (window.fetch as any).lastCall.args[1];
     assert.equal(url, '/library/1-the-tempest');
     assert.equal(ajaxSettings.method, 'PUT');
     const data = JSON.parse(ajaxSettings.body);
@@ -76,8 +79,8 @@
     assert.expect(3);
     library.first().save({ id: '2-the-tempest', author: 'Tim Shakespeare' });
     library.first().fetch();
-    const url = window.fetch.lastCall.args[0];
-    const ajaxSettings = window.fetch.lastCall.args[1];
+    const url = (window.fetch as sinon.SinonStub).lastCall.args[0];
+    const ajaxSettings = (window.fetch as any).lastCall.args[1];
     assert.equal(url, '/library/2-the-tempest');
     assert.equal(ajaxSettings.method, 'GET');
     assert.ok(_.isEmpty(ajaxSettings.body));
@@ -87,8 +90,8 @@
     assert.expect(3);
     library.first().save({ id: '2-the-tempest', author: 'Tim Shakespeare' });
     library.first().destroy({ wait: true });
-    const url = window.fetch.lastCall.args[0];
-    const ajaxSettings = window.fetch.lastCall.args[1];
+    const url = (window.fetch as any).lastCall.args[0];
+    const ajaxSettings = (window.fetch as any).lastCall.args[1];
     assert.equal(url, '/library/2-the-tempest');
     assert.equal(ajaxSettings.method, 'DELETE');
     assert.equal(ajaxSettings.body, '');
@@ -101,7 +104,7 @@
       model.fetch();
     });
     model.fetch({ url: '/one/two' });
-    const url = window.fetch.lastCall.args[0];
+    const url = (window.fetch as any).lastCall.args[0];
     assert.equal(url, '/one/two');
   });
 
@@ -119,6 +122,6 @@
     Skeletor.sync('read', model, {
       error: () => assert.ok(true),
     });
-    window.fetch.lastCall.args[1].error();
+    (window.fetch as any).lastCall.args[1].error();
   });
 })(QUnit);

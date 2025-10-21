@@ -7,28 +7,36 @@ import keys from 'lodash-es/keys';
 import uniqueId from 'lodash-es/uniqueId';
 import Listening from './listening';
 import { eventsApi, onApi, offApi, onceMap, tryCatchOn, triggerApi } from './utils/events';
-import { ClassConstructor, EventCallback, EventMap, Events } from './types';
+import {
+  ClassConstructor,
+  EventCallback,
+  EventCallbackMap,
+  EventContext,
+  EventHandlersMap,
+  EventListenerMap,
+  ObjectListenedTo,
+} from './types';
 
 // A private global variable to share between listeners and listenees.
 let _listening: Listening | undefined;
 
 export function EventEmitter<T extends ClassConstructor>(Base: T) {
   return class EventEmitter extends Base implements EventEmitter {
-    _events?: Record<string, any>;
-    _listeners?: Record<string, Listening>;
-    _listeningTo?: Record<string, Listening>;
+    _events?: EventHandlersMap;
+    _listeners?: EventListenerMap;
+    _listeningTo?: EventListenerMap;
     _listenId?: string;
 
     /**
      * Bind an event to a `callback` function. Passing `"all"` will bind
      * the callback to all events fired.
      */
-    on(name: string | EventMap, callback?: EventCallback, context?: any): this {
+    on(name: string | EventCallbackMap, callback?: EventCallback | EventContext, context?: EventContext): this {
       this._events = eventsApi(onApi, this._events || {}, name, callback, {
         context: context,
         ctx: this,
         listening: _listening,
-      });
+      }) as EventHandlersMap;
 
       if (_listening) {
         const listeners = this._listeners || (this._listeners = {});
@@ -46,8 +54,9 @@ export function EventEmitter<T extends ClassConstructor>(Base: T) {
      * an event in another object... keeping track of what it's listening to
      * for easier unbinding later.
      */
-    listenTo(obj: any, name: string | EventMap, callback?: EventCallback): this {
+    listenTo(obj: ObjectListenedTo, name: string | EventCallbackMap, callback?: EventCallback): this {
       if (!obj) return this;
+
       const id = obj._listenId || (obj._listenId = uniqueId('l'));
       const listeningTo = this._listeningTo || (this._listeningTo = {});
       let listening = (_listening = listeningTo[id]);
@@ -76,12 +85,16 @@ export function EventEmitter<T extends ClassConstructor>(Base: T) {
      * callbacks for the event. If `name` is null, removes all bound
      * callbacks for all events.
      */
-    off(name?: string | null, callback?: EventCallback | null, context?: any): this {
+    off(
+      name?: string | EventCallbackMap | null,
+      callback?: EventCallback | EventContext | null,
+      context?: EventContext
+    ): this {
       if (!this._events) return this;
-      this._events = eventsApi(offApi, this._events as Events, name, callback, {
+      this._events = eventsApi(offApi, this._events, name, callback, {
         context: context,
         listeners: this._listeners,
-      }) as Events;
+      }) as EventHandlersMap;
 
       return this;
     }
@@ -90,7 +103,7 @@ export function EventEmitter<T extends ClassConstructor>(Base: T) {
      * Tell this object to stop listening to either specific events ... or
      * to every object it's currently listening to.
      */
-    stopListening(obj?: any, name?: string, callback?: EventCallback): this {
+    stopListening(obj?: any, name?: string | EventCallbackMap, callback?: EventCallback): this {
       const listeningTo = this._listeningTo;
       if (!listeningTo) return this;
 
@@ -116,20 +129,20 @@ export function EventEmitter<T extends ClassConstructor>(Base: T) {
      * are passed in using the space-separated syntax, the handler will fire
      * once for each event, not once for a combination of all events.
      */
-    once(name: string | EventMap, callback?: EventCallback, context?: any): this {
+    once(name: string | EventCallbackMap, callback?: EventCallback | EventContext, context?: EventContext): this {
       // Map the event into a `{event: once}` object.
       const events = eventsApi(onceMap, {}, name, callback, this.off.bind(this));
       if (typeof name === 'string' && (context === null || context === undefined)) callback = undefined;
-      return this.on(events as string | EventMap, callback, context);
+      return this.on(events as EventCallbackMap, callback, context);
     }
 
     /**
      * Inversion-of-control versions of `once`.
      */
-    listenToOnce(obj: any, name: string | EventMap, callback?: EventCallback): this {
+    listenToOnce(obj: any, name: string | EventCallbackMap, callback?: EventCallback): this {
       // Map the event into a `{event: once}` object.
       const events = eventsApi(onceMap, {}, name, callback, this.stopListening.bind(this, obj));
-      return this.listenTo(obj, events as string | EventMap);
+      return this.listenTo(obj, events as string | EventCallbackMap);
     }
 
     /**
