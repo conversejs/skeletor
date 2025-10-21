@@ -16,9 +16,8 @@ import EventEmitter from './eventemitter';
 // Import types
 import type { Collection } from './collection';
 import type Storage from './storage';
-import { SyncOperation } from './types';
+import { ModelAttributes, ObjectWithId, SyncOperation } from './types';
 
-export type Attributes = Record<string | number, any> & { id?: string | number };
 export type Options = Record<string, any>;
 export type ModelOptions = Options & {
   collection?: Collection;
@@ -34,17 +33,19 @@ export type ModelOptions = Options & {
  * A discrete chunk of data and a bunch of useful, related methods for
  * performing computations and transformations on that data.
  */
-export class Model<T extends Record<string, any> = Attributes> extends EventEmitter(Object) {
-  cid: string;
-  attributes: T;
-  validationError: string | number | null = null;
-  changed: Partial<T> = {};
-  collection?: Collection;
+export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmitter(Object) {
   _browserStorage?: Storage;
-  _previousAttributes?: T;
   _changing = false;
   _pending: boolean | ModelOptions = false;
+  _previousAttributes?: T;
+  _url: string = '';
+  _urlRoot: string;
+  attributes: T;
+  changed: Partial<T> = {};
+  cid: string;
+  collection?: Collection;
   id: string | number;
+  validationError: string | number | null = null;
 
   /**
    * Create a new model with the specified attributes. A client id (`cid`)
@@ -110,7 +111,7 @@ export class Model<T extends Record<string, any> = Attributes> extends EventEmit
    */
   initialize(attrs?: Partial<T>, options?: ModelOptions): void {}
 
-  validate(attrs: Partial<T>, options?: ModelOptions): string | number | null | void {
+  validate(attrs: Partial<T> | ObjectWithId, options?: ModelOptions): string | number | null | void {
     return null;
   }
 
@@ -200,11 +201,11 @@ export class Model<T extends Record<string, any> = Attributes> extends EventEmit
    * the core primitive operation of a model, updating the data and notifying
    * anyone who needs to know about the change in state. The heart of the beast.
    */
-  set(key: string | Partial<T>, val?: any, options?: ModelOptions): boolean | this {
+  set(key: string | Partial<T> | ObjectWithId, val?: any, options?: ModelOptions): boolean | this {
     if (key == null) return this;
 
     // Handle both `"key", value` and `{key: value}` -style arguments.
-    let attrs: Partial<T>;
+    let attrs: Partial<T> | ObjectWithId;
     if (typeof key === 'object') {
       attrs = key;
       options = val;
@@ -236,7 +237,7 @@ export class Model<T extends Record<string, any> = Attributes> extends EventEmit
 
     // For each `set` attribute, update or delete the current value.
     for (const attr in attrs) {
-      val = attrs[attr as keyof T];
+      val = attrs[attr as keyof (T | ObjectWithId)];
       if (!isEqual(current[attr as keyof T], val)) changes.push(attr);
       if (!isEqual(prev[attr as keyof T], val)) {
         changed[attr as keyof T] = val;
@@ -464,16 +465,30 @@ export class Model<T extends Record<string, any> = Attributes> extends EventEmit
     return xhr;
   }
 
+  get urlRoot(): string {
+    return this._urlRoot;
+  }
+
+  set urlRoot(root: string) {
+    this._urlRoot = root;
+  }
+
   /**
    * Default URL for the model's representation on the server -- if you're
    * using Backbone's restful methods, override this to change the endpoint
    * that will be called.
    */
-  url(): string {
+  get url(): string {
+    if (this._url) return this._url;
+
     const base = result(this, 'urlRoot') || result(this.collection, 'url') || urlError();
     if (this.isNew()) return base as string;
     const id = this.get(this.idAttribute);
     return (base as string).replace(/[^\/]$/, '$&/') + encodeURIComponent(String(id));
+  }
+
+  set url(url: string) {
+    this._url = url;
   }
 
   /**
@@ -502,7 +517,7 @@ export class Model<T extends Record<string, any> = Attributes> extends EventEmit
    * Run validation against the next complete set of model attributes,
    * returning `true` if all is well. Otherwise, fire an `"invalid"` event.
    */
-  _validate(attrs: Partial<T>, options?: ModelOptions): boolean {
+  _validate(attrs: Partial<T> | ObjectWithId, options?: ModelOptions): boolean {
     if (!options?.validate || !this.validate) return true;
     attrs = Object.assign({}, this.attributes, attrs);
     const error = (this.validationError = this.validate(attrs, options) || null);

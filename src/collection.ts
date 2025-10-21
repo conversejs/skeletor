@@ -8,8 +8,8 @@ import sortBy from 'lodash-es/sortBy';
 import EventEmitter from './eventemitter';
 import type Storage from './storage';
 import { getResolveablePromise, getSyncMethod, wrapError } from './helpers';
-import { Model, type Attributes as ModelAttributes } from './model';
-import { SyncOperation } from './types';
+import { Model, type ModelOptions } from './model';
+import { Comparator, ObjectWithId, SyncOperation, ModelAttributes } from './types';
 
 // Default options for `Collection#set`.
 const setOptions = { add: true, remove: true, merge: true };
@@ -18,8 +18,9 @@ const addOptions = { add: true, remove: false };
 export type Options = Record<string, any>;
 
 export type CollectionOptions<T extends Model> = Options & {
-  model?: typeof Model;
-  comparator?: string | ((a: T, b: T) => number);
+  model?: new (attributes?: Partial<ModelAttributes>, options?: ModelOptions) => T;
+  comparator?: Comparator<T>;
+  previousModels?: Model[];
 };
 
 /**
@@ -31,11 +32,12 @@ export type CollectionOptions<T extends Model> = Options & {
  * indexes of their models, both in order, and for lookup by `id`.
  */
 class Collection<T extends Model = Model> extends EventEmitter(Object) {
-  models: T[];
-  private _byId: Record<string, T>;
-  private _model?: typeof Model;
+  _url: string = '';
   _browserStorage?: Storage;
-  comparator?: string | ((a: T, b: T) => number);
+  _comparator?: Comparator<T>;
+  models: T[];
+  protected _byId: Record<string, T>;
+  protected _model?: new (attributes?: Partial<ModelAttributes>, options?: ModelOptions) => T;
 
   /**
    * Create a new **Collection**, perhaps to contain a specific type of `model`.
@@ -55,6 +57,14 @@ class Collection<T extends Model = Model> extends EventEmitter(Object) {
     this[Symbol.iterator] = this.values;
   }
 
+  get comparator(): Comparator<T> {
+    return this._comparator;
+  }
+
+  set comparator(c: Comparator<T>) {
+    this._comparator = c;
+  }
+
   set browserStorage(storage: Storage) {
     this._browserStorage = storage;
   }
@@ -67,16 +77,24 @@ class Collection<T extends Model = Model> extends EventEmitter(Object) {
    * The default model for a collection is just a **Model**.
    * This should be overridden in most cases.
    */
-  get model(): typeof Model {
+  get model(): new (attributes?: Partial<ModelAttributes>, options?: ModelOptions) => T | Model {
     return this._model ?? Model;
   }
 
-  set model(model: typeof Model) {
+  set model(model: new (attributes?: Partial<ModelAttributes>, options?: ModelOptions) => T) {
     this._model = model;
   }
 
   get length(): number {
     return this.models.length;
+  }
+
+  get url(): string {
+    return this._url;
+  }
+
+  set url(url: string) {
+    this._url = url;
   }
 
   /**
@@ -117,7 +135,7 @@ class Collection<T extends Model = Model> extends EventEmitter(Object) {
   /**
    * Remove a model, or a list of models from the set.
    */
-  remove(models: T | T[], options?: Options): T | T[] {
+  remove(models: T | ObjectWithId | (T | ObjectWithId)[], options?: Options): T | T[] {
     options = Object.assign({}, options);
     const singular = !Array.isArray(models);
     const modelsArray = singular ? [models] : (models as T[]).slice();
@@ -167,7 +185,7 @@ class Collection<T extends Model = Model> extends EventEmitter(Object) {
 
     // Turn bare objects into model references, and prevent invalid models
     // from being added.
-    let model, i;
+    let model: T, i: number;
     for (i = 0; i < models.length; i++) {
       model = models[i];
 
@@ -177,9 +195,10 @@ class Collection<T extends Model = Model> extends EventEmitter(Object) {
       if (existing) {
         if (merge && model !== existing) {
           let attrs = this._isModel(model) ? model.attributes : model;
-          if (options.parse) attrs = existing.parse(attrs, options);
+          if (options.parse) attrs = existing.parse(attrs, options) as Partial<ModelAttributes>;
           existing.set(attrs, options);
           toMerge.push(existing);
+
           if (sortable && !sort) sort = existing.hasChanged(sortAttr as string);
         }
         if (!modelMap[existing.cid]) {
@@ -249,14 +268,14 @@ class Collection<T extends Model = Model> extends EventEmitter(Object) {
     return singular ? models[0] : (models as T);
   }
 
-  async clearStore(options: Options = {}, filter: (model: T) => boolean = (o) => true): Promise<void> {
+  async clearStore(options: Options = {}, filter: (model: T) => boolean = () => true): Promise<void> {
     await Promise.all(
       this.models.filter(filter).map((m) => {
         return new Promise<void>((resolve) => {
           m.destroy(
             Object.assign(options, {
               'success': resolve,
-              'error': (m: T, e: any) => {
+              'error': (_m: T, e: any) => {
                 console.error(e);
                 resolve();
               },
@@ -396,7 +415,7 @@ class Collection<T extends Model = Model> extends EventEmitter(Object) {
     return this.models.length;
   }
 
-  countBy(f: string | ((model: T) => string)): Record<string, number> {
+  countBy(f: string | ((model: T) => string) | Partial<ModelAttributes>): Record<string, number> {
     return countBy(this.models, isFunction(f) ? f : (m) => (isString(f) ? m.get(f) : m.matches(f)));
   }
 
@@ -451,12 +470,12 @@ class Collection<T extends Model = Model> extends EventEmitter(Object) {
     );
   }
 
-  reduce<U>(callback: (accumulator: U, model: T, index: number, array: T[]) => U, initialValue: U): U {
-    return this.models.reduce(callback, initialValue);
+  reduce(callback: (accumulator: T, model: T, index: number, array: T[]) => T, initialValue: T): T {
+    return this.models.reduce(callback, initialValue || this.models[0]);
   }
 
-  reduceRight<U>(callback: (accumulator: U, model: T, index: number, array: T[]) => U, initialValue: U): U {
-    return this.models.reduceRight(callback, initialValue);
+  reduceRight(callback: (accumulator: T, model: T, index: number, array: T[]) => T, initialValue: T): T {
+    return this.models.reduceRight(callback, initialValue || this.models[0]);
   }
 
   toArray(): T[] {
@@ -467,7 +486,7 @@ class Collection<T extends Model = Model> extends EventEmitter(Object) {
    * Get a model from the set by id, cid, model object with id or cid
    * properties, or an attributes object that is transformed through modelId.
    */
-  get(obj: string | number | ModelAttributes | T | null): T | undefined {
+  get(obj?: string | number | ModelAttributes | T | null): T | undefined {
     if (obj == null) return undefined;
     return (
       this._byId[obj as string] ||
@@ -495,7 +514,7 @@ class Collection<T extends Model = Model> extends EventEmitter(Object) {
    * Return models with matching attributes. Useful for simple cases of
    * `filter`.
    */
-  where(attrs: ModelAttributes, first?: boolean): T[] | T | undefined {
+  where(attrs: ModelAttributes | Partial<ModelAttributes>, first?: boolean): T[] | T | undefined {
     return this[first ? 'find' : 'filter'](attrs);
   }
 
@@ -507,7 +526,7 @@ class Collection<T extends Model = Model> extends EventEmitter(Object) {
     return this.where(attrs, true) as T | undefined;
   }
 
-  find(predicate: ((model: T) => boolean) | Partial<ModelAttributes>, fromIndex?: number): T | undefined {
+  find(predicate: ((model: T) => boolean) | Partial<ModelAttributes> | string, fromIndex?: number): T | undefined {
     const pred = isFunction(predicate)
       ? (predicate as (model: T) => boolean)
       : (m: T) => m.matches(predicate as Partial<ModelAttributes>);
@@ -672,7 +691,7 @@ class Collection<T extends Model = Model> extends EventEmitter(Object) {
   /**
    * Internal method called by both remove and set.
    */
-  _removeModels(models: T[], options?: Options): T[] {
+  _removeModels(models: (T | ObjectWithId)[], options?: Options): T[] {
     const removed: T[] = [];
     for (let i = 0; i < models.length; i++) {
       const model = this.get(models[i]);
@@ -787,7 +806,7 @@ class CollectionIterator<T extends Model> {
         }
 
         // Construct a value depending on what kind of values should be iterated.
-        let value;
+        let value: T | string | number | [string | number, T];
         if (this._kind === ITERATOR_VALUES) {
           value = model;
         } else {
@@ -799,7 +818,7 @@ class CollectionIterator<T extends Model> {
             value = [id, model];
           }
         }
-        return { value: value, done: false };
+        return { value, done: false };
       }
 
       // Once exhausted, remove the reference to the collection so future

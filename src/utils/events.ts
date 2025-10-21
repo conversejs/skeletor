@@ -1,16 +1,14 @@
 import once from 'lodash-es/once';
-import keys from 'lodash-es/keys';
 import type {
   EventCallback,
   EventHandler,
-  EventMap,
-  EventsCallbackMap,
-  Events,
+  EventCallbackMap,
   EventsApiOptions,
   IterateeFunction,
   OffApiOptions,
   OfferFunction,
-  EventsHandlersMap,
+  EventHandlersMap,
+  EventContext,
 } from '../types';
 
 // Regular expression used to split event strings.
@@ -23,41 +21,48 @@ const eventSplitter = /\s+/;
  */
 export function eventsApi(
   iteratee: IterateeFunction,
-  events: Events | EventsCallbackMap | EventsHandlersMap,
-  name: string | EventMap | null,
-  callback: EventCallback | null,
+  events: EventHandlersMap | EventCallbackMap,
+  name: string | EventCallbackMap | null,
+  callback: EventCallback | EventHandler | EventContext | null,
   opts: EventsApiOptions | OffApiOptions | any[]
-): Events | EventsCallbackMap | EventsHandlersMap {
+): EventHandlersMap | EventCallbackMap {
   let i = 0;
   let names: string[];
+
   if (name && typeof name === 'object') {
     // Handle event maps.
     if (callback !== undefined && 'context' in opts && opts.context === undefined) {
       opts.context = callback;
     }
-    for (names = keys(name); i < names.length; i++) {
-      events = eventsApi(iteratee, events, names[i], (name as EventMap)[names[i]], opts);
+    for (names = Object.keys(name); i < names.length; i++) {
+      events = eventsApi(iteratee, events, names[i], name[names[i]], opts);
     }
-    return events;
   } else if (name && typeof name === 'string' && eventSplitter.test(name)) {
     // Handle space-separated event names by delegating them individually.
     for (names = name.split(eventSplitter); i < names.length; i++) {
-      const result = iteratee(events, names[i], callback, opts);
+      const result = iteratee(events, names[i], callback as EventCallback | EventHandler, opts);
       if (result !== undefined) {
-        events = result as Events | EventsCallbackMap;
+        events = result as EventHandlersMap;
       }
     }
-    return events;
-  } else if (typeof name === 'string') {
+  } else {
     // Finally, standard events.
-    const result = iteratee(events, name, callback, opts);
-    return result !== undefined ? result as Events | EventsCallbackMap : events;
+    events = iteratee(events, name as string | null, callback as EventCallback | EventHandler, opts) as
+      | EventHandlersMap
+      | EventCallbackMap;
   }
   return events;
 }
 
-// The reducing API that adds a callback to the `events` object.
-export function onApi(events: Events, name: string, callback: EventCallback | null, options: EventsApiOptions): Events {
+/**
+ * A reducer that adds a callback to the `events` object.
+ */
+export function onApi(
+  events: EventHandlersMap,
+  name: string,
+  callback: EventCallback | null,
+  options: EventsApiOptions
+): EventHandlersMap {
   if (callback) {
     const handlers = events[name] || (events[name] = []);
     const context = options.context;
@@ -74,7 +79,12 @@ export function onApi(events: Events, name: string, callback: EventCallback | nu
  * An try-catch guarded #on function, to prevent poisoning the global
  * `_listening` variable.
  */
-export function tryCatchOn(obj: any, name: string | EventMap, callback: EventCallback, context: any): any {
+export function tryCatchOn(
+  obj: any,
+  name: string | EventCallbackMap,
+  callback: EventCallback | EventContext,
+  context: EventContext
+): any {
   try {
     obj.on(name, callback, context);
   } catch (e) {
@@ -86,11 +96,11 @@ export function tryCatchOn(obj: any, name: string | EventMap, callback: EventCal
  * The reducing API that removes a callback from the `events` object.
  */
 export function offApi(
-  events: Events,
+  events: EventHandlersMap,
   name: string | null,
   callback: EventCallback | null,
   options: OffApiOptions
-): Events | void {
+): EventHandlersMap | void {
   if (!events) return;
 
   const context = options.context;
@@ -101,14 +111,14 @@ export function offApi(
   // Delete all event listeners and "drop" events.
   if (!name && !context && !callback) {
     if (listeners) {
-      for (names = keys(listeners); i < names.length; i++) {
+      for (names = Object.keys(listeners); i < names.length; i++) {
         listeners[names[i]].cleanup();
       }
     }
     return;
   }
 
-  names = name ? [name] : keys(events);
+  names = name ? [name] : Object.keys(events);
   for (; i < names.length; i++) {
     const currentName = names[i];
     const handlers = events[currentName];
@@ -149,7 +159,7 @@ export function offApi(
  * `offer` unbinds the `onceWrapper` after it has been called.
  */
 export function onceMap(
-  map: EventsCallbackMap,
+  map: EventCallbackMap,
   name: string,
   callback: EventCallback | null,
   offer: OfferFunction
@@ -167,11 +177,11 @@ export function onceMap(
 
 /** Handles triggering the appropriate event callbacks. */
 export function triggerApi(
-  objEvents: EventsHandlersMap | null,
+  objEvents: EventHandlersMap | null,
   name: string,
   _callback: EventCallback | null,
   args: any[]
-): EventsHandlersMap | null {
+): EventHandlersMap | null {
   if (objEvents) {
     const events = objEvents[name];
     let allEvents = objEvents.all;

@@ -1,4 +1,8 @@
+import { Model } from './model';
+
 export type SyncOperation = 'create' | 'update' | 'patch' | 'delete' | 'read';
+
+export type ObjectListenedTo = object & { _listenId?: string };
 
 export interface SyncOptions {
   url?: string;
@@ -12,11 +16,24 @@ export interface SyncOptions {
 
 export type ClassConstructor = new (...args: any[]) => object;
 
+export type EventContext = unknown;
+
 export type EventCallback = (...args: any[]) => void;
 
-export type EventMap = Record<string, EventCallback>;
+export type EventCallbackMap = Record<string, EventCallback>;
 
-export type ListeningMap = Record<string, Listening>;
+export type EventCallbacksMap = Record<string, EventCallback[]>;
+
+export type EventListenerMap = Record<string, ListeningType>;
+
+export interface EventHandlersMap {
+  all?: EventHandler[];
+  [name: string]: EventHandler[];
+}
+
+export type ListeningMap = Record<string, ListeningType>;
+
+export type ObjectWithId = Record<string, any> & { id: string | number };
 
 export interface EventEmitter {
   _events?: Record<string, any>;
@@ -24,58 +41,60 @@ export interface EventEmitter {
   _listeningTo?: ListeningMap;
   _listenId?: string;
 
-  on(name: string | EventMap, callback?: EventCallback, context?: any): this;
-  off(name?: string | null, callback?: EventCallback | null, context?: any): this;
+  on(name: string | EventCallbackMap, callback?: EventCallback | EventContext, context?: EventContext): this;
+  off(
+    name?: string | EventCallbackMap | null,
+    callback?: EventCallback | EventContext | null,
+    context?: EventContext
+  ): this;
   trigger(name: string, ...args: any[]): this;
-  stopListening(obj?: any, name?: string, callback?: EventCallback): this;
-  once(name: string | EventMap, callback?: EventCallback, context?: any): this;
-  listenTo(obj: any, name: string | EventMap, callback?: EventCallback): this;
-  listenToOnce(obj: any, name: string | EventMap, callback?: EventCallback): this;
+  stopListening(obj?: any, name?: string | EventCallbackMap, callback?: EventCallback): this;
+  once(name: string | EventCallbackMap, callback?: EventCallback | EventContext, context?: EventContext): this;
+  listenTo(obj: ObjectListenedTo, name: string | EventCallbackMap, callback?: EventCallback): this;
+  listenToOnce(obj: any, name: string | EventCallbackMap, callback?: EventCallback): this;
 }
 
 export interface EventHandler {
   callback: EventCallback;
   context: any;
   ctx: any;
-  listening?: Listening | null;
+  listening?: ListeningType | null;
 }
 
-export interface Events {
-  [name: string]: EventHandler[];
-}
-
-export interface Listening {
-  count: number;
-  stop(name: string, callback: EventCallback): void;
+export interface ListeningType {
+  _events?: EventCallbackMap;
   cleanup(): void;
+  count: number;
+  id: string;
+  interop: boolean;
+  listener: EventEmitter;
+  obj: any;
+
+  start(name: string | EventCallbackMap, callback: EventCallback, context: any, _listening: ListeningType): this;
+  stop(name: string | EventCallbackMap, callback: EventCallback): void;
 }
 
 export interface EventsApiOptions {
   context?: any;
   ctx?: any;
-  listening?: Listening;
+  listening?: ListeningType;
   listeners?: ListeningMap;
 }
 
 export interface OffApiOptions {
   context?: any;
-  listeners?: { [key: string]: Listening };
+  listeners?: { [key: string]: ListeningType };
 }
 
-export interface EventsCallbackMap {
-  [name: string]: EventCallback;
-}
-
-export interface EventsHandlersMap {
-  all?: EventHandler[];
-  [name: string]: EventHandler[];
-}
+export type Comparator<T extends Model = Model> = string | boolean | ((a: T, b: T) => number) | (() => string);
 
 export type OfferFunction = (name: string, callback: EventCallback) => void;
 
 export type IterateeFunction = (
-  eventsOrMap: Events | EventsCallbackMap | EventsHandlersMap,
-  name: string,
-  callback: EventCallback | null,
+  eventsOrMap: EventCallbackMap | EventHandlersMap,
+  name: string | null,
+  callback: EventCallback | EventHandler | null,
   options: EventsApiOptions | OffApiOptions | OfferFunction | any[]
-) => Events | EventsCallbackMap | EventsHandlersMap | void;
+) => EventCallbackMap | EventHandlersMap | void;
+
+export type ModelAttributes = Record<string | number, any> & { id?: string | number };

@@ -7,17 +7,18 @@ export default function (config) {
     basePath: '',
     // frameworks to use
     // available frameworks: https://npmjs.org/browse/keyword/karma-adapter
-    frameworks: ['qunit', 'mocha'],
+    frameworks: ['qunit'],
 
     // list of files / patterns to load in the browser
     files: [
-      'node_modules/qunit/qunit/qunit.js',
-      'node_modules/lodash/lodash.js',
-      'node_modules/sinon/pkg/sinon.js',
-      'test/vendor/json2.js',
       'dist/skeletor.js',
       'src/**/*.ts',
+      'test/setup/dom-setup.js',
+      'test/collection.ts',
+      'test/events.ts',
       'test/model.ts',
+      'test/sync.ts',
+      'test/noconflict.ts.ts',
     ],
 
     // list of files to exclude

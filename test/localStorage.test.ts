@@ -5,6 +5,7 @@ import { Collection } from '../src/collection';
 import { getSyncMethod, sync } from '../src/helpers';
 import { Model } from '../src/model';
 import Storage from '../src/storage';
+import { ModelAttributes } from 'src/types';
 
 describe('Storage using localStorage', function () {
   const attributes = {
@@ -50,27 +51,27 @@ describe('Storage using localStorage', function () {
 
       it('should have 1 model', async function () {
         const collection = new TestCollection();
-        const model = await new Promise((resolve, reject) => collection.create({}, { 'success': resolve }));
+        (await new Promise((resolve) => collection.create({}, { 'success': resolve }))) as Model;
         assert.equal(collection.length, 1);
       });
 
       it('should have a populated model', async function () {
         const collection = new TestCollection();
-        const model = await new Promise((resolve, reject) => collection.create({}, { 'success': resolve }));
+        const model = (await new Promise((resolve) => collection.create({}, { 'success': resolve }))) as Model;
         assert.equal(collection.length, 1);
         assert.deepEqual(model.toJSON(), extend(clone(attributes), { 'id': model.id }));
       });
 
       it('should have assigned an `id` to the model', async function () {
         const collection = new TestCollection();
-        const model = await new Promise((resolve, reject) => collection.create({}, { 'success': resolve }));
+        const model = (await new Promise((resolve) => collection.create({}, { 'success': resolve }))) as Model;
         await model.collection.browserStorage.storeInitialized;
         assert.isDefined(model.id);
       });
 
       it('should be saved to the localstorage', async function () {
         const collection = new TestCollection();
-        const model = await new Promise((resolve, reject) => collection.create({}, { 'success': resolve }));
+        const model = (await new Promise((resolve) => collection.create({}, { 'success': resolve }))) as Model;
         await model.collection.browserStorage.storeInitialized;
         assert.isNotNull(root.localStorage.getItem('localforage/collectionStore' + '-' + model.id));
       });
@@ -81,7 +82,7 @@ describe('Storage using localStorage', function () {
 
       it('should find the model with its `id`', async function () {
         const collection = new TestCollection();
-        const model = await new Promise((resolve, reject) => collection.create({}, { 'success': resolve }));
+        const model = (await new Promise((resolve) => collection.create({}, { 'success': resolve }))) as Model;
         await model.collection.browserStorage.storeInitialized;
         assert.deepEqual(collection.get(model.id), model);
       });
@@ -95,7 +96,7 @@ describe('Storage using localStorage', function () {
 
         it('should persist the changes', async function () {
           const collection = new TestCollection();
-          const model = await new Promise((resolve, reject) => collection.create({}, { 'success': resolve }));
+          const model = (await new Promise((resolve) => collection.create({}, { 'success': resolve }))) as Model;
           model.save({ 'string': 'String 0' });
           collection.fetch();
 
@@ -107,7 +108,7 @@ describe('Storage using localStorage', function () {
 
           it('should have a new `id`', async function () {
             const collection = new TestCollection();
-            const model = await new Promise((resolve, reject) => collection.create({}, { 'success': resolve }));
+            const model = (await new Promise((resolve) => collection.create({}, { 'success': resolve }))) as Model;
             model.save({ 'id': 1 });
             collection.fetch();
 
@@ -116,20 +117,20 @@ describe('Storage using localStorage', function () {
 
           it('should have kept its old properties', async function () {
             const collection = new TestCollection();
-            const model = await new Promise((resolve, reject) => collection.create({}, { 'success': resolve }));
+            const model = (await new Promise((resolve) => collection.create({}, { 'success': resolve }))) as Model;
             model.save({ 'id': 1 });
             collection.fetch();
 
-            const withId = clone(attributes);
+            const withId = clone(attributes) as ModelAttributes;
             withId.id = 1;
             assert.deepEqual(model.toJSON(), withId);
           });
 
           it('should be saved in localstorage by new id', async function () {
             const collection = new TestCollection();
-            const model = await new Promise((resolve, reject) => collection.create({}, { 'success': resolve }));
+            const model = (await new Promise((resolve) => collection.create({}, { 'success': resolve }))) as Model;
             model.save({ 'id': 1 });
-            await new Promise((resolve, reject) => collection.fetch({ 'success': resolve }));
+            await new Promise((resolve) => collection.fetch({ 'success': resolve }));
             assert.isNotNull(root.localStorage.getItem('localforage/collectionStore-1'));
           });
         });
@@ -141,7 +142,7 @@ describe('Storage using localStorage', function () {
         it('should remove all items from the collection and its store', async function () {
           const collection = new TestCollection();
           await Promise.all(
-            range(5).map((i) => new Promise((resolve, reject) => collection.create({}, { 'success': resolve }))),
+            range(5).map(() => new Promise((resolve) => collection.create({}, { 'success': resolve })))
           );
           assert.equal(collection.length, 5);
           while (collection.length) {
@@ -178,7 +179,7 @@ describe('Storage using localStorage', function () {
           }
 
           const collection = new TestCollection();
-          const model = await new Promise((resolve) => collection.create({}, { 'success': resolve }));
+          await new Promise((resolve) => collection.create({}, { 'success': resolve }));
           assert.equal(collection.first().id, collection.first().get('_id'));
         });
       });
@@ -189,8 +190,8 @@ describe('Storage using localStorage', function () {
     beforeEach(() => localStorage.clear());
 
     class TestModel extends Model {
-      constructor() {
-        super();
+      constructor(attributes?: ModelAttributes) {
+        super(attributes);
         this.browserStorage = new Storage('modelStore', 'local');
       }
 
@@ -220,21 +221,21 @@ describe('Storage using localStorage', function () {
 
       it('should have assigned an `id` to the model', async function () {
         const model = new TestModel();
-        await new Promise((resolve, reject) => model.save(null, { 'success': resolve }));
+        await new Promise((resolve) => model.save(null, { 'success': resolve }));
         model.fetch();
         assert.isDefined(model.id);
       });
 
       it('should be saved to the localstorage', async function () {
         const model = new TestModel();
-        await new Promise((resolve, reject) => model.save(null, { 'success': resolve }));
+        await new Promise((resolve) => model.save(null, { 'success': resolve }));
         assert.isNotNull(root.localStorage.getItem('localforage/modelStore' + '-' + model.id));
       });
 
       describe('with new attributes', function () {
         it('should persist the changes', async function () {
           const model = new TestModel();
-          await new Promise((resolve, reject) => model.save({ number: 42 }, { 'success': resolve }));
+          await new Promise((resolve) => model.save({ number: 42 }, { 'success': resolve }));
           model.fetch();
           assert.deepEqual(model.toJSON(), extend(clone(attributes), { id: model.id, number: 42 }));
         });
@@ -252,11 +253,11 @@ describe('Storage using localStorage', function () {
     describe('destroy', function () {
       it('should have removed the instance from the store', async function () {
         const model = new TestModel();
-        await new Promise((resolve, reject) => model.save(null, { 'success': resolve }));
+        await new Promise((resolve) => model.save(null, { 'success': resolve }));
         const store = model.browserStorage.store;
         let item = await store.getItem(model.browserStorage.getItemName(model.id));
         assert.isNotNull(item);
-        await new Promise((resolve, reject) => model.destroy({ 'success': resolve }));
+        await new Promise((resolve) => model.destroy({ 'success': resolve }));
         item = await store.getItem(model.browserStorage.getItemName(model.id));
         assert.isNull(item);
       });

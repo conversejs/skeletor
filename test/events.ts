@@ -1,5 +1,11 @@
-(function (QUnit) {
+// QUnit is loaded globally via karma.conf.js
+import * as _ from 'lodash-es';
+import * as Skeletor from '../src/index';
+import { EventCallbackMap } from '../src/types';
+
+(function () {
   class Foo extends Skeletor.EventEmitter(Object) {
+    counter: number;
     constructor() {
       super();
       this.counter = 0;
@@ -7,6 +13,8 @@
   }
 
   class FooWith2Counters extends Skeletor.EventEmitter(Object) {
+    counterA: number;
+    counterB: number;
     constructor() {
       super();
       this.counterA = 0;
@@ -56,6 +64,7 @@
 
   QUnit.test('binding and triggering with event maps', function (assert) {
     class Foo extends Skeletor.EventEmitter(Object) {
+      counter: number;
       constructor() {
         super();
         this.counter = 0;
@@ -74,7 +83,7 @@
         b: foo.increment,
         c: foo.increment,
       },
-      foo,
+      foo
     );
 
     foo.trigger('a');
@@ -91,7 +100,7 @@
         a: foo.increment,
         c: foo.increment,
       },
-      foo,
+      foo
     );
     foo.trigger('a b c');
     assert.equal(foo.counter, 5);
@@ -99,6 +108,7 @@
 
   QUnit.test('binding and triggering multiple event names with event maps', function (assert) {
     class Foo extends Skeletor.EventEmitter(Object) {
+      counter: number;
       constructor() {
         super();
         this.counter = 0;
@@ -144,7 +154,7 @@
             assert.strictEqual(this, context, 'defaults `context` to `callback` param');
           },
         },
-        context,
+        context
       )
       .trigger('a');
 
@@ -157,7 +167,7 @@
           },
         },
         this,
-        context,
+        context
       )
       .trigger('a');
   });
@@ -184,11 +194,11 @@
     const cb = function () {
       assert.ok(true);
     };
-    a.listenTo(b, { event: cb });
+    a.listenTo(b, { event: cb } as EventCallbackMap);
     b.trigger('event');
-    a.listenTo(b, { event2: cb });
+    a.listenTo(b, { event2: cb } as EventCallbackMap);
     b.on('event2', cb);
-    a.stopListening(b, { event2: cb });
+    a.stopListening(b, { event2: cb } as EventCallbackMap);
     b.trigger('event event2');
     a.stopListening();
     b.trigger('event event2');
@@ -407,12 +417,8 @@
     const a = new Foo();
     const b = new Foo();
     a.listenToOnce(b, {
-      one: function () {
-        assert.ok(this === a);
-      },
-      two: function () {
-        assert.ok(false);
-      },
+      one: function () { assert.ok(this === a) },
+      two: function () { assert.ok(false) },
     });
     b.trigger('one');
   });
@@ -524,7 +530,7 @@
 
   QUnit.test('bind a callback with a supplied context', function (assert) {
     assert.expect(1);
-    const TestClass = function () {
+    const TestClass = function (): void {
       return this;
     };
     TestClass.prototype.assertTrue = function () {
@@ -537,7 +543,7 @@
       function () {
         this.assertTrue();
       },
-      new TestClass(),
+      new TestClass()
     );
     obj.trigger('event');
   });
@@ -603,7 +609,7 @@
       assert.raises(function () {
         view.trigger('test');
       });
-    },
+    }
   );
 
   QUnit.test('remove all events for a specific context', function (assert) {
@@ -700,7 +706,7 @@
         b: increment,
         c: increment,
       },
-      obj,
+      obj
     );
 
     obj.trigger('a');
@@ -728,7 +734,7 @@
             assert.strictEqual(this, context, 'defaults `context` to `callback` param');
           },
         },
-        context,
+        context
       )
       .trigger('a');
   });
@@ -742,7 +748,7 @@
       function () {
         assert.ok(false);
       },
-      context,
+      context
     );
     obj.off(null, null, context);
     obj.trigger('event');
@@ -858,4 +864,4 @@
     other.trigger('test');
     assert.equal(_.size(obj._listeningTo), 0);
   });
-})(QUnit);
+})();

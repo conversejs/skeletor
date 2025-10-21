@@ -1,9 +1,10 @@
 import root from 'window-or-global';
 import { expect } from 'chai';
 import { clone } from 'lodash';
-import { Model } from '../src/model';
+import { Model, Options as ModelOptions } from '../src/model';
 import { Collection } from '../src/collection';
 import Storage from '../src/storage';
+import { ModelAttributes } from '../src/types';
 
 const attributes = {
   string: 'String',
@@ -12,7 +13,7 @@ const attributes = {
 };
 
 class SavedModel extends Model {
-  constructor(attributes, options) {
+  constructor(attributes?: ModelAttributes, options?: ModelOptions) {
     super(attributes, options);
     this.browserStorage = new Storage('SavedModel', 'session');
   }
@@ -28,11 +29,11 @@ class AjaxModel extends Model {
   }
 }
 
-class SavedCollection extends Collection {
+class SavedCollection extends Collection<AjaxModel> {
   get model() {
     return AjaxModel;
   }
-  get browserStorage() {
+  get browserStorage(): Storage {
     return new Storage('SavedCollection', 'session');
   }
 }
@@ -86,8 +87,8 @@ describe('Storage Model using sessionStorage', function () {
 
     it('can be updated', async function () {
       const mySavedModel = new SavedModel({ 'id': 10 });
-      await new Promise((resolve, reject) =>
-        mySavedModel.save({ 'string': 'New String', 'number2': 1234 }, { 'success': resolve }),
+      await new Promise((resolve) =>
+        mySavedModel.save({ 'string': 'New String', 'number2': 1234 }, { 'success': resolve })
       );
       expect(mySavedModel.pick('string', 'number2')).to.eql({
         'string': 'New String',
@@ -98,7 +99,7 @@ describe('Storage Model using sessionStorage', function () {
     it('persists its update to sessionStorage', async function () {
       const mySavedModel = new SavedModel({ 'id': 10 });
       await new Promise((resolve, reject) =>
-        mySavedModel.save({ 'string': 'New String', 'number2': 1234 }, { 'success': resolve }),
+        mySavedModel.save({ 'string': 'New String', 'number2': 1234 }, { 'success': resolve })
       );
       const item = root.sessionStorage.getItem(`localforage/SavedModel-${mySavedModel.id}`);
       expect(item).to.be.a('string');
@@ -116,7 +117,7 @@ describe('Storage Model using sessionStorage', function () {
       const mySavedModel = new SavedModel({ 'id': 10 });
       await new Promise((success) => mySavedModel.save(null, { success }));
       await new Promise((success) =>
-        mySavedModel.save({ 'string': 'New String', 'number2': 1234 }, { 'patch': true, success }),
+        mySavedModel.save({ 'string': 'New String', 'number2': 1234 }, { 'patch': true, success })
       );
       const item = root.sessionStorage.getItem(`localforage/SavedModel-${mySavedModel.id}`);
       expect(item).to.be.a('string');
@@ -149,7 +150,7 @@ describe('Storage Model using sessionStorage', function () {
 
       const mySavedModel = new SavedModel({ 'id': 10 });
       await new Promise((resolve, reject) =>
-        mySavedModel.save({ 'string': 'Brand new string' }, { 'success': resolve }),
+        mySavedModel.save({ 'string': 'Brand new string' }, { 'success': resolve })
       );
       await new Promise((resolve, reject) => newModel.fetch({ 'success': resolve }));
       expect(newModel.get('string')).to.equal('Brand new string');
@@ -164,12 +165,11 @@ describe('Storage Model using sessionStorage', function () {
         return 'number';
       }
 
-      constructor(attributes, options) {
+      constructor(attributes?: ModelAttributes, options?: ModelOptions) {
         super(attributes, options);
         this.browserStorage = new Storage('DifferentId', 'session');
       }
 
-      // eslint-disable-next-line class-methods-use-this
       defaults() {
         return attributes;
       }
@@ -177,7 +177,7 @@ describe('Storage Model using sessionStorage', function () {
 
     it('can be saved with the new value', async function () {
       const mySavedModel = new DifferentIdAttribute(attributes);
-      await new Promise((resolve, reject) => mySavedModel.save(null, { 'success': resolve }));
+      await new Promise((resolve) => mySavedModel.save(null, { 'success': resolve }));
       const item = root.sessionStorage.getItem('localforage/DifferentId-1337');
       const parsed = JSON.parse(item);
 
@@ -186,10 +186,10 @@ describe('Storage Model using sessionStorage', function () {
     });
 
     it('can be fetched with the new value', async function () {
-      const mySavedModel = new DifferentIdAttribute(attributes);
+      new DifferentIdAttribute(attributes);
       root.sessionStorage.setItem('localforage/DifferentId-1337', JSON.stringify(attributes));
       const newModel = new DifferentIdAttribute({ 'number': 1337 });
-      await new Promise((resolve, reject) => newModel.fetch({ 'success': resolve }));
+      await new Promise((resolve) => newModel.fetch({ 'success': resolve }));
       expect(newModel.id).to.equal(1337);
       expect(newModel.get('string')).to.be.a('string');
     });
@@ -200,7 +200,7 @@ describe('Storage Model using sessionStorage', function () {
 
     it('creates a new item in sessionStorage', async function () {
       const mySavedModel = new SavedModel();
-      await new Promise((resolve, reject) => mySavedModel.save({ 'data': 'value' }, { 'success': resolve }));
+      await new Promise((resolve) => mySavedModel.save({ 'data': 'value' }, { 'success': resolve }));
       const item = root.sessionStorage.getItem(`localforage/SavedModel-${mySavedModel.id}`);
       const parsed = JSON.parse(item);
       expect(parsed).to.eql(mySavedModel.attributes);
@@ -229,11 +229,11 @@ describe('browserStorage Collection using sessionStorage', function () {
   });
 
   it('cannot duplicate id in sessionStorage', async function () {
-    const item = clone(attributes);
+    const item = clone(attributes as ModelAttributes);
     item.id = 5;
     const newCollection = new SavedCollection([item]);
-    await new Promise((resolve, reject) => newCollection.create(item, { 'success': resolve }));
-    await new Promise((resolve, reject) => newCollection.create(item, { 'success': resolve }));
+    await new Promise((resolve) => newCollection.create(item, { 'success': resolve }));
+    await new Promise((resolve) => newCollection.create(item, { 'success': resolve }));
     const localItem = root.sessionStorage.getItem('localforage/SavedCollection-5');
     expect(newCollection.length).to.equal(1);
     expect(JSON.parse(localItem).id).to.equal(5);
@@ -244,18 +244,18 @@ describe('browserStorage Collection using sessionStorage', function () {
 
     it('saves into the sessionStorage', async function () {
       const mySavedCollection = new SavedCollection();
-      const model = await new Promise((resolve, reject) =>
-        mySavedCollection.create(attributes, { 'success': resolve }),
-      );
+      const model = (await new Promise((resolve) =>
+        mySavedCollection.create(attributes, { 'success': resolve })
+      )) as Model;
       const item = root.sessionStorage.getItem(`localforage/SavedCollection-${model.id}`);
       expect(item).to.be.a('string');
     });
 
     it('saves the right data', async function () {
       const mySavedCollection = new SavedCollection();
-      const model = await new Promise((resolve, reject) =>
-        mySavedCollection.create(attributes, { 'success': resolve }),
-      );
+      const model = (await new Promise((resolve, reject) =>
+        mySavedCollection.create(attributes, { 'success': resolve })
+      )) as Model;
       const item = root.sessionStorage.getItem(`localforage/SavedCollection-${model.id}`);
       const parsed = JSON.parse(item);
       expect(parsed.id).to.equal(model.id);
@@ -264,9 +264,9 @@ describe('browserStorage Collection using sessionStorage', function () {
 
     it('reads from sessionStorage', async function () {
       const mySavedCollection = new SavedCollection();
-      let model = await new Promise((resolve, reject) => mySavedCollection.create(attributes, { 'success': resolve }));
+      await new Promise((resolve) => mySavedCollection.create(attributes, { 'success': resolve }));
       const newCollection = new SavedCollection();
-      model = await new Promise((resolve, reject) => newCollection.fetch({ 'success': resolve }));
+      await new Promise((resolve) => newCollection.fetch({ 'success': resolve }));
       expect(newCollection.length).to.equal(1);
       const newModel = newCollection.at(0);
       expect(newModel.get('string')).to.equal('String');
@@ -274,13 +274,13 @@ describe('browserStorage Collection using sessionStorage', function () {
 
     it('destroys models and removes from collection', async function () {
       const mySavedCollection = new SavedCollection();
-      const model = await new Promise((resolve, reject) =>
-        mySavedCollection.create(attributes, { 'success': resolve }),
-      );
+      const model = (await new Promise((resolve) =>
+        mySavedCollection.create(attributes, { 'success': resolve })
+      )) as Model;
       const item = root.sessionStorage.getItem(`localforage/SavedCollection-${model.id}`);
       const parsed = JSON.parse(item);
       const newModel = mySavedCollection.get(parsed.id);
-      await new Promise((resolve, reject) => newModel.destroy({ 'success': resolve }));
+      await new Promise((resolve) => newModel.destroy({ 'success': resolve }));
       const removed = root.sessionStorage.getItem(`localforage/SavedCollection-${parsed.id}`);
       expect(removed).to.be.null;
       expect(mySavedCollection.length).to.equal(0);
@@ -292,9 +292,9 @@ describe('browserStorage Collection using sessionStorage', function () {
 
     it('fetches the items from the original collection', async function () {
       const mySavedCollection = new SavedCollection();
-      await new Promise((resolve, reject) => mySavedCollection.create(attributes, { 'success': resolve }));
+      await new Promise((resolve) => mySavedCollection.create(attributes, { 'success': resolve }));
       const newCollection = new SavedCollection();
-      await new Promise((resolve, reject) => newCollection.fetch({ 'success': resolve }));
+      await new Promise((resolve) => newCollection.fetch({ 'success': resolve }));
       expect(newCollection.length).to.equal(1);
     });
 
@@ -302,10 +302,10 @@ describe('browserStorage Collection using sessionStorage', function () {
       const mySavedCollection = new SavedCollection();
       const newAttributes = clone(attributes);
       mySavedCollection.create(newAttributes);
-      await new Promise((resolve, reject) => mySavedCollection.create(newAttributes, { 'success': resolve }));
+      await new Promise((resolve) => mySavedCollection.create(newAttributes, { 'success': resolve }));
 
       const newCollection = new SavedCollection();
-      await new Promise((resolve, reject) => newCollection.fetch({ 'success': resolve }));
+      await new Promise((resolve) => newCollection.fetch({ 'success': resolve }));
       expect(newCollection.length).to.equal(2);
     });
   });

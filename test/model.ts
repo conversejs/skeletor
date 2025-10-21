@@ -1,8 +1,8 @@
-// QUnit is loaded globally via karma.conf.js
 import * as _ from 'lodash-es';
 import * as sinon from 'sinon';
 import * as Skeletor from '../src/index';
-import { Attributes, ModelOptions } from '../src/model';
+import { ModelOptions } from '../src/model';
+import { ModelAttributes } from 'src/types';
 
 // Make Skeletor available globally for tests
 (window as any).Skeletor = Skeletor;
@@ -10,10 +10,15 @@ import { Attributes, ModelOptions } from '../src/model';
 (function () {
   class ProxyModel extends Skeletor.Model {}
   class Klass extends Skeletor.Collection {
-    url() {
-      return '/collection';
+    get url() {
+      return this._url || '/collection';
+    }
+
+    set url(url: string) {
+      this._url = url;
     }
   }
+
   let doc: ProxyModel;
   let collection: Skeletor.Collection;
 
@@ -123,43 +128,39 @@ import { Attributes, ModelOptions } from '../src/model';
   QUnit.test('url', function (assert) {
     assert.expect(3);
     doc.urlRoot = null;
-    assert.equal(doc.url(), '/collection/1-the-tempest');
+    assert.equal(doc.url, '/collection/1-the-tempest');
     doc.collection.url = '/collection/';
-    assert.equal(doc.url(), '/collection/1-the-tempest');
+    assert.equal(doc.url, '/collection/1-the-tempest');
     doc.collection = null;
-    assert.raises(function () {
-      doc.url();
-    });
+    assert.raises(() => doc.url);
     doc.collection = collection;
   });
 
   QUnit.test('url when using urlRoot, and uri encoding', function (assert) {
     assert.expect(2);
     class Model extends Skeletor.Model {
-      urlRoot: string;
-      constructor(attributes?: Attributes, options?: ModelOptions) {
-        super(attributes, options);
-        this.urlRoot = '/collection';
+      get urlRoot() {
+        return '/collection';
       }
     }
     const model = new Model();
-    assert.equal(model.url(), '/collection');
+    assert.equal(model.url, '/collection');
     model.set({ id: '+1+' });
-    assert.equal(model.url(), '/collection/%2B1%2B');
+    assert.equal(model.url, '/collection/%2B1%2B');
   });
 
   QUnit.test('url when using urlRoot as a function to determine urlRoot at runtime', function (assert) {
     assert.expect(2);
     class Model extends Skeletor.Model {
-      urlRoot() {
+      get urlRoot() {
         return '/nested/' + this.get('parentId') + '/collection';
       }
     }
 
     const model = new Model({ parentId: 1 });
-    assert.equal(model.url(), '/nested/1/collection');
+    assert.equal(model.url, '/nested/1/collection');
     model.set({ id: 2 });
-    assert.equal(model.url(), '/nested/1/collection/2');
+    assert.equal(model.url, '/nested/1/collection/2');
   });
 
   QUnit.test('underscore methods', function (assert) {
@@ -174,11 +175,11 @@ import { Attributes, ModelOptions } from '../src/model';
 
   QUnit.test('isNew', function (assert) {
     assert.expect(6);
-    let a = new Skeletor.Model({ foo: 1, bar: 2, baz: 3 } as Attributes);
+    let a = new Skeletor.Model({ foo: 1, bar: 2, baz: 3 } as ModelAttributes);
     assert.ok(a.isNew(), 'it should be new');
-    a = new Skeletor.Model({ foo: 1, bar: 2, baz: 3, id: -5 } as Attributes);
+    a = new Skeletor.Model({ foo: 1, bar: 2, baz: 3, id: -5 } as ModelAttributes);
     assert.ok(!a.isNew(), 'any defined ID is legal, negative or positive');
-    a = new Skeletor.Model({ foo: 1, bar: 2, baz: 3, id: 0 } as Attributes);
+    a = new Skeletor.Model({ foo: 1, bar: 2, baz: 3, id: 0 } as ModelAttributes);
     assert.ok(!a.isNew(), 'any defined ID is legal, including zero');
     assert.ok(new Skeletor.Model().isNew(), 'is true when there is no id');
     assert.ok(!new Skeletor.Model({ id: 2 }).isNew(), 'is false for a positive integer');
@@ -323,7 +324,7 @@ import { Attributes, ModelOptions } from '../src/model';
 
   QUnit.test('set falsy values in the correct order', function (assert) {
     assert.expect(2);
-    const model = new Skeletor.Model({ result: 'result' } as Attributes);
+    const model = new Skeletor.Model({ result: 'result' } as ModelAttributes);
     model.on('change', function () {
       assert.equal(model.changed.result, undefined);
       assert.equal(model.previous('result'), false);
@@ -460,7 +461,7 @@ import { Attributes, ModelOptions } from '../src/model';
       changed = true;
     });
     model.on('change', function () {
-      const changedAttrs = model.changedAttributes() as Partial<Attributes>;
+      const changedAttrs = model.changedAttributes() as Partial<ModelAttributes>;
       assert.ok('name' in changedAttrs);
     });
     model.clear();
@@ -566,7 +567,7 @@ import { Attributes, ModelOptions } from '../src/model';
   QUnit.test('save within change event', function (assert) {
     assert.expect(1);
     const model = new Skeletor.Model({ firstName: 'Roger', lastName: 'Penrose' });
-    model.url = () => '/test';
+    model.url = '/test';
     model.on('change', function () {
       const syncSpy = sinon.spy(model, 'sync');
       model.save();
@@ -749,7 +750,7 @@ import { Attributes, ModelOptions } from '../src/model';
   QUnit.test('save will pass extra options to success callback', function (assert) {
     assert.expect(1);
     class SpecialSyncModel extends Skeletor.Model {
-      get urlRoot() {
+      urlRoot() {
         return '/test';
       }
       sync(method, m, options) {
@@ -780,7 +781,7 @@ import { Attributes, ModelOptions } from '../src/model';
   QUnit.test('fetch will pass extra options to success callback', function (assert) {
     assert.expect(1);
     class SpecialSyncModel extends Skeletor.Model {
-      get urlRoot() {
+      urlRoot() {
         return '/test';
       }
       sync(method, m, options) {
@@ -814,7 +815,7 @@ import { Attributes, ModelOptions } from '../src/model';
     assert.expect(1);
 
     class SpecialSyncModel extends Skeletor.Model {
-      get urlRoot() {
+      urlRoot() {
         return '/test';
       }
 
@@ -1048,7 +1049,7 @@ import { Attributes, ModelOptions } from '../src/model';
     assert.expect(1);
     const model = new Skeletor.Model();
     const syncSpy = sinon.spy(model, 'sync');
-    (model as any).url = '/test';
+    (model as Skeletor.Model).url = '/test';
     model.save({ x: 1 }, { wait: true });
     const syncArgs = syncSpy.lastCall.args;
     assert.ok(syncArgs[1] === model);
@@ -1057,7 +1058,7 @@ import { Attributes, ModelOptions } from '../src/model';
 
   QUnit.test("save without `wait` doesn't set invalid attributes", function (assert) {
     var model = new Skeletor.Model();
-    model.url = () => '/test';
+    model.url = '/test';
     model.validate = function () {
       return 1;
     };
@@ -1067,7 +1068,7 @@ import { Attributes, ModelOptions } from '../src/model';
 
   QUnit.test("save doesn't validate twice", function (assert) {
     var model = new Skeletor.Model();
-    model.url = () => '/test';
+    model.url = '/test';
     var times = 0;
     model.sync = function () {};
     model.validate = function () {
@@ -1097,7 +1098,7 @@ import { Attributes, ModelOptions } from '../src/model';
     assert.expect(5);
     let changed = 0;
     const model = new Skeletor.Model({ x: 1, y: 2 });
-    model.url = () => '/test';
+    model.url = '/test';
     model.on('change:x', () => changed++);
     model.save({ x: 3 }, { wait: true });
     const ajaxSettings = (window.fetch as any).getCall((window.fetch as any).callCount - 1).args[1];
@@ -1113,7 +1114,7 @@ import { Attributes, ModelOptions } from '../src/model';
   QUnit.test("a failed `save` with `wait` doesn't leave attributes behind", function (assert) {
     assert.expect(1);
     const model = new Skeletor.Model();
-    model.url = () => '/test';
+    model.url = '/test';
     model.save({ x: 1 }, { wait: true });
     assert.equal(model.get('x'), undefined);
   });
@@ -1136,7 +1137,7 @@ import { Attributes, ModelOptions } from '../src/model';
 
   QUnit.test('save with wait validates attributes', function (assert) {
     const model = new Skeletor.Model();
-    model.url = () => '/test';
+    model.url = '/test';
     model.validate = function () {
       assert.ok(true);
     };
@@ -1385,9 +1386,9 @@ import { Attributes, ModelOptions } from '../src/model';
     assert.expect(1);
 
     class Model extends Skeletor.Model {
-      constructor(attributes?: Attributes, options?: ModelOptions) {
+      constructor(attributes?: ModelAttributes, options?: ModelOptions) {
         super(attributes, options);
-        this.url = () => '/test/';
+        this.url = '/test/';
       }
       sync(method, m, options) {
         options.success();
@@ -1547,9 +1548,9 @@ import { Attributes, ModelOptions } from '../src/model';
   QUnit.test('toJSON receives attrs during save(..., {wait: true})', function (assert) {
     assert.expect(1);
     class Model extends Skeletor.Model {
-      constructor(attributes?: Attributes, options?: ModelOptions) {
+      constructor(attributes?: ModelAttributes, options?: ModelOptions) {
         super(attributes, options);
-        this.url = () => '/test';
+        this.url = '/test';
       }
       toJSON() {
         assert.strictEqual(this.attributes.x, 1);
@@ -1572,7 +1573,7 @@ import { Attributes, ModelOptions } from '../src/model';
 
   QUnit.test('#3778 - id will only be updated if it is set', function (assert) {
     assert.expect(2);
-    const model = new Skeletor.Model({ id: 1 } as Attributes);
+    const model = new Skeletor.Model({ id: 1 } as ModelAttributes);
     model.id = 2;
     model.set({ foo: 'bar' });
     assert.equal(model.id, 2);
