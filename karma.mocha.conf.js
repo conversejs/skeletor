@@ -1,7 +1,7 @@
 /* global module */
 import path from 'path';
 
-export default function(config) {
+export default function (config) {
   config.set({
     // base path that will be used to resolve all patterns (eg. files, exclude)
     basePath: '',
@@ -11,7 +11,9 @@ export default function(config) {
 
     // list of files / patterns to load in the browser
     files: [
-      'test/**/*.ts',
+        'test/localStorage.test.ts',
+        'test/indexeddb.test.ts',
+        'test/sessionStorage.test.ts'
     ],
 
     // list of files to exclude
@@ -28,23 +30,35 @@ export default function(config) {
       resolve: {
         extensions: ['.ts', '.js'],
         fallback: {
-          "path": false,
-          "fs": false,
-          "util": false
-        }
+          'path': false,
+          'fs': false,
+          'util': false,
+        },
+      },
+      externals: {
+        'qunit': 'QUnit',
       },
       module: {
-         rules: [{
-           test: /\.ts$/,
-           use: 'ts-loader',
-           exclude: /node_modules/,
-         }]
+        rules: [
+          {
+            test: /\.ts$/,
+            use: [
+              {
+                loader: 'ts-loader',
+                options: {
+                  transpileOnly: true,
+                },
+              },
+            ],
+            exclude: /node_modules/,
+          },
+        ],
       },
       output: {
         path: path.resolve('test'),
         filename: '[name].out.js',
-        chunkFilename: '[id].[chunkHash].js'
-      }
+        chunkFilename: '[id].[chunkHash].js',
+      },
     },
 
     // test results reporter to use
@@ -54,8 +68,8 @@ export default function(config) {
     client: {
       mocha: {
         reporter: 'html',
-        ui: 'bdd'
-      }
+        ui: 'bdd',
+      },
     },
 
     // web server port
@@ -81,6 +95,6 @@ export default function(config) {
 
     // Concurrency level
     // how many browser should be started simultaneous
-    concurrency: Infinity
-  })
+    concurrency: Infinity,
+  });
 }
