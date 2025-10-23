@@ -78,11 +78,12 @@
   "scripts": {
     "build": "npm run build:types && rollup -c",
     "build:types": "tsc",
+    "check": "npm run check:types && npm run test && npm run lint",
     "check:types": "tsc --noEmit",
-    "dev": "karma start karma.conf.js --single-run=false",
+    "dev": "karma start --single-run=false",
     "lint": "eslint src/*.ts test/*.ts",
     "prettier": "prettier --write src/**/*.js test/**/*.js src/**/*.ts test/**/*.ts",
-    "test": "karma start karma.conf.js && karma start karma.mocha.conf.js && npm run lint"
+    "test": "karma start && karma start --mocha-only"
   },
   "files": [
     "LICENSE",

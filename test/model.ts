@@ -750,7 +750,7 @@ import { ModelAttributes } from 'src/types';
   QUnit.test('save will pass extra options to success callback', function (assert) {
     assert.expect(1);
     class SpecialSyncModel extends Skeletor.Model {
-      urlRoot() {
+      get urlRoot() {
         return '/test';
       }
       sync(method, m, options) {
@@ -781,7 +781,7 @@ import { ModelAttributes } from 'src/types';
   QUnit.test('fetch will pass extra options to success callback', function (assert) {
     assert.expect(1);
     class SpecialSyncModel extends Skeletor.Model {
-      urlRoot() {
+      get urlRoot() {
         return '/test';
       }
       sync(method, m, options) {
@@ -815,7 +815,7 @@ import { ModelAttributes } from 'src/types';
     assert.expect(1);
 
     class SpecialSyncModel extends Skeletor.Model {
-      urlRoot() {
+      get urlRoot() {
         return '/test';
       }
 

@@ -18,7 +18,6 @@ describe('Storage using localStorage', function () {
     beforeEach(() => localStorage.clear());
 
     class TestModel extends Model {
-      // eslint-disable-next-line class-methods-use-this
       defaults() {
         return attributes;
       }

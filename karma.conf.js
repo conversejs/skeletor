@@ -2,24 +2,29 @@
 import path from 'path';
 
 export default function (config) {
-  config.set({
+  // Determine if we're running Mocha-only tests based on command line arguments
+  const isMochaOnly = config.mochaOnly || process.argv.includes('--mocha-only');
+
+  const configObj = {
     // base path that will be used to resolve all patterns (eg. files, exclude)
     basePath: '',
     // frameworks to use
     // available frameworks: https://npmjs.org/browse/keyword/karma-adapter
-    frameworks: ['qunit'],
+    frameworks: isMochaOnly ? ['mocha'] : ['qunit'],
 
     // list of files / patterns to load in the browser
-    files: [
-      'dist/skeletor.js',
-      'src/**/*.ts',
-      'test/setup/dom-setup.js',
-      'test/collection.ts',
-      'test/events.ts',
-      'test/model.ts',
-      'test/sync.ts',
-      'test/noconflict.ts.ts',
-    ],
+    files: isMochaOnly
+      ? ['test/localStorage.test.ts', 'test/indexeddb.test.ts', 'test/sessionStorage.test.ts']
+      : [
+          'dist/skeletor.js',
+          'src/**/*.ts',
+          'test/setup/dom-setup.js',
+          'test/collection.ts',
+          'test/events.ts',
+          'test/model.ts',
+          'test/sync.ts',
+          'test/noconflict.ts.ts',
+        ],
 
     // list of files to exclude
     exclude: [],
@@ -40,9 +45,11 @@ export default function (config) {
           'util': false,
         },
       },
-      externals: {
-        'qunit': 'QUnit',
-      },
+      externals: isMochaOnly
+        ? {}
+        : {
+            'qunit': 'QUnit',
+          },
       module: {
         rules: [
           {
@@ -70,12 +77,14 @@ export default function (config) {
     // possible values: 'dots', 'progress'
     // available reporters: https://npmjs.org/browse/keyword/karma-reporter
     reporters: ['progress'],
-    client: {
-      mocha: {
-        reporter: 'html',
-        ui: 'bdd',
-      },
-    },
+    client: isMochaOnly
+      ? {
+          mocha: {
+            reporter: 'html',
+            ui: 'bdd',
+          },
+        }
+      : {},
 
     // web server port
     port: 9876,
@@ -101,5 +110,7 @@ export default function (config) {
     // Concurrency level
     // how many browser should be started simultaneous
     concurrency: Infinity,
-  });
+  };
+
+  config.set(configObj);
 }
