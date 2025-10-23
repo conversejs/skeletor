@@ -1,18 +1,19 @@
 # Changelog
 
-## 2.0.0 (Unreleased)
+## 1.0.0 (Unreleased)
 
-- Adds TypeScript type declarations (generated from typed JSDoc comments)
+- Rewrite as TypeScript
 
 ### Breaking changes:
 
 - Removed the `clone()` method on `Model`.
 - Removed the old `View` type
+- Removed `ElementView`
 - Removed the old `Events` constructor function and instead added the `EventsEmitter` mixin class.
 - Removed the `Router` and `History` classes.
-- All other types (`Model`, `Collection`, `ElementView`) are now ES6 classes.
+- All other types (`Model`, `Collection`) are now ES6 classes.
 
-## 1.0.0 (Unreleased)
+## 0.0.9 (2025-03-04)
 
 - Fix a race condition when setting a localForage driver
 - Refactor the sync method to properly call the `fetch` API
