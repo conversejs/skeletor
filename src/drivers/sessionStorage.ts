@@ -1,6 +1,6 @@
 // Copyright 2014 Mozilla
 // Copyright 2015 Thodoris Greasidis
-// Copyright 2018 JC Brand
+// Copyright 2018-2025 JC Brand
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.

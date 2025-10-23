@@ -19,7 +19,10 @@ localForage.defineDriver(memoryDriver);
 extendPrototypeWithSetItems(localForage);
 extendPrototypeWithGetItems(localForage);
 
-interface LocalForageWithExtensions {
+/**
+ * @public
+ */
+export interface LocalForageWithExtensions {
   setItem(key: string, value: any): Promise<any>;
   getItem(key: string): Promise<any>;
   removeItem(key: string): Promise<void>;
@@ -35,6 +38,9 @@ interface LocalForageWithExtensions {
   };
 }
 
+/**
+ * @public
+ */
 class Storage {
   storeInitialized: Promise<void>;
   store: LocalForageWithExtensions;
@@ -65,8 +71,8 @@ class Storage {
   }
 
   /**
-   * @param {'local'|'session'|'indexed'|'in_memory'} type
-   * @param {boolean} batchedWrites
+   * @param type - The storage type: 'local', 'session', 'indexed', or 'in_memory'
+   * @param batchedWrites - Whether to enable batched writes
    */
   async initStore(type: 'local' | 'session' | 'indexed' | 'in_memory', batchedWrites: boolean): Promise<void> {
     if (type === 'session') {

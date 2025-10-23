@@ -5,25 +5,26 @@ import isFunction from 'lodash-es/isFunction';
 import isString from 'lodash-es/isString';
 import keyBy from 'lodash-es/keyBy';
 import sortBy from 'lodash-es/sortBy';
-import EventEmitter from './eventemitter';
+import { EventEmitterObject } from './eventemitter';
 import type Storage from './storage';
 import { getResolveablePromise, getSyncMethod, wrapError } from './helpers';
-import { Model, type ModelOptions } from './model';
-import { Comparator, ObjectWithId, SyncOperation, ModelAttributes } from './types';
+import { Model } from './model';
+import {
+  CollectionOptions,
+  Comparator,
+  ModelAttributes,
+  ModelOptions,
+  ObjectWithId,
+  Options,
+  SyncOperation,
+} from './types';
 
 // Default options for `Collection#set`.
 const setOptions = { add: true, remove: true, merge: true };
 const addOptions = { add: true, remove: false };
 
-export type Options = Record<string, any>;
-
-export type CollectionOptions<T extends Model> = Options & {
-  model?: new (attributes?: Partial<ModelAttributes>, options?: ModelOptions) => T;
-  comparator?: Comparator<T>;
-  previousModels?: Model[];
-};
-
 /**
+ * @public
  * If models tend to represent a single row of data, a Collection is
  * more analogous to a table full of data ... or a small slice or page of that
  * table, or a collection of rows that belong together for a particular reason
@@ -31,10 +32,11 @@ export type CollectionOptions<T extends Model> = Options & {
  * belonging to this particular author, and so on. Collections maintain
  * indexes of their models, both in order, and for lookup by `id`.
  */
-class Collection<T extends Model = Model> extends EventEmitter(Object) {
-  _url: string = '';
+export class Collection<T extends Model = Model> extends EventEmitterObject {
+  [key: symbol]: () => CollectionIterator<T>;
   _browserStorage?: Storage;
   _comparator?: Comparator<T>;
+  _url: string = '';
   models: T[];
   protected _byId: Record<string, T>;
   protected _model?: new (attributes?: Partial<ModelAttributes>, options?: ModelOptions) => T;
@@ -647,6 +649,12 @@ class Collection<T extends Model = Model> extends EventEmitter(Object) {
     return new CollectionIterator(this, ITERATOR_VALUES);
   }
 
+  /**
+   * @public
+   * Enable for...of iteration over the collection.
+   */
+  [Symbol.iterator] = this.values;
+
   /** Get an iterator of all model IDs in this collection. */
   keys(): CollectionIterator<T> {
     return new CollectionIterator(this, ITERATOR_KEYS);
@@ -777,7 +785,10 @@ const ITERATOR_VALUES = 1;
 const ITERATOR_KEYS = 2;
 const ITERATOR_KEYSVALUES = 3;
 
-class CollectionIterator<T extends Model> {
+/**
+ * @public
+ */
+export class CollectionIterator<T extends Model> {
   private _collection: Collection<T> | undefined;
   private _kind: number;
   private _index: number;
@@ -833,5 +844,3 @@ class CollectionIterator<T extends Model> {
     return this;
   }
 }
-
-export { Collection };

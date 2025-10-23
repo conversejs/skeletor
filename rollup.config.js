@@ -7,10 +7,12 @@ import summary from 'rollup-plugin-summary';
 const plugins = [
   resolve(), // Resolve bare module specifiers to relative paths
   commonjs({
-    requireReturnsDefault: 'auto' // Handle mixed ES/CJS modules
+    requireReturnsDefault: 'auto', // Handle mixed ES/CJS modules
   }),
   typescript({
-    tsconfig: './tsconfig.json'
+    tsconfig: './tsconfig.json',
+    declaration: false,
+    declarationMap: false,
   }),
   summary(), // Print bundle summary
 ];
@@ -23,6 +25,7 @@ export default [
       sourcemap: true,
       file: 'dist/skeletor.js',
       format: 'umd',
+      exports: 'named',
     },
     plugins,
     preserveEntrySignatures: 'strict',
@@ -34,6 +37,7 @@ export default [
       sourcemap: true,
       file: 'dist/skeletor.min.js',
       format: 'umd',
+      exports: 'named',
     },
     plugins: [
       terser({

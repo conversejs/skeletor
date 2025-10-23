@@ -5,7 +5,7 @@
   "type": "module",
   "main": "dist/skeletor.js",
   "module": "src/index.ts",
-  "types": "dist/index.d.ts",
+  "types": "dist/skeletor.d.ts",
   "browser": "dist/skeletor.js",
   "keywords": [
     "model",
@@ -26,6 +26,27 @@
     "type": "git",
     "url": "https://github.com/conversejs/skeletor.git"
   },
+  "scripts": {
+    "clean": "rm -rf dist",
+    "prebuild": "npm run clean && mkdir -p dist/defs",
+    "build": "npm run prebuild && npm run build:declarations && rollup -c",
+    "build:types": "tsc -p tsconfig.declarations.json",
+    "build:declarations": "npm run build:types && api-extractor run --local && rm -rf dist/defs",
+    "check": "npm run check:types && npm run test && npm run lint",
+    "check:types": "tsc --noEmit",
+    "dev": "karma start --single-run=false",
+    "lint": "eslint src/*.ts test/*.ts",
+    "prettier": "prettier --write src/**/*.js test/**/*.js src/**/*.ts test/**/*.ts",
+    "test": "karma start && karma start --mocha-only"
+  },
+  "files": [
+    "LICENSE",
+    "dist/skeletor.js",
+    "dist/skeletor.min.js",
+    "dist/skeletor.d.ts",
+    "dist/skeletor.d.ts.map",
+    "src/"
+  ],
   "dependencies": {
     "@converse/localforage-getitems": "1.4.3",
     "@types/lodash-es": "^4.17.12",
@@ -42,6 +63,7 @@
     "@babel/plugin-proposal-nullish-coalescing-operator": "^7.18.6",
     "@babel/plugin-proposal-optional-chaining": "^7.13.12",
     "@babel/preset-env": "^7.9.5",
+    "@microsoft/api-extractor": "^7.53.2",
     "@rollup/plugin-babel": "^6.0.4",
     "@rollup/plugin-commonjs": "^28.0.3",
     "@rollup/plugin-node-resolve": "^16.0.1",
@@ -74,20 +96,5 @@
     "webpack": "^5.98.0",
     "webpack-cli": "^6.0.1",
     "window-or-global": "^1.0.1"
-  },
-  "scripts": {
-    "build": "npm run build:types && rollup -c",
-    "build:types": "tsc",
-    "check": "npm run check:types && npm run test && npm run lint",
-    "check:types": "tsc --noEmit",
-    "dev": "karma start --single-run=false",
-    "lint": "eslint src/*.ts test/*.ts",
-    "prettier": "prettier --write src/**/*.js test/**/*.js src/**/*.ts test/**/*.ts",
-    "test": "karma start && karma start --mocha-only"
-  },
-  "files": [
-    "LICENSE",
-    "dist/",
-    "src/"
-  ]
+  }
 }

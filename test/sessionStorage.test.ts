@@ -1,10 +1,10 @@
 import root from 'window-or-global';
 import { expect } from 'chai';
 import { clone } from 'lodash';
-import { Model, Options as ModelOptions } from '../src/model';
+import { Model } from '../src/model';
 import { Collection } from '../src/collection';
 import Storage from '../src/storage';
-import { ModelAttributes } from '../src/types';
+import { ModelAttributes, ModelOptions } from '../src/types';
 
 const attributes = {
   string: 'String',

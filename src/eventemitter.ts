@@ -20,6 +20,9 @@ import {
 // A private global variable to share between listeners and listenees.
 let _listening: Listening | undefined;
 
+/**
+ * @public
+ */
 export function EventEmitter<T extends ClassConstructor>(Base: T) {
   return class EventEmitter extends Base implements EventEmitter {
     _events?: EventHandlersMap;
@@ -159,5 +162,11 @@ export function EventEmitter<T extends ClassConstructor>(Base: T) {
     }
   };
 }
+
+/**
+ * @public
+ */
+const EventEmitterObject = EventEmitter(Object);
+export { EventEmitterObject };
 
 export default EventEmitter;

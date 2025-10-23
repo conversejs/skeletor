@@ -5,6 +5,9 @@ import { Collection } from './collection';
 import { Model } from './model';
 import { sync } from './helpers';
 
+/**
+ * @public
+ */
 interface SkeletorType {
   Collection: typeof Collection;
   EventEmitter: typeof EventEmitter;
@@ -14,6 +17,9 @@ interface SkeletorType {
   noConflict?: () => SkeletorType;
 }
 
+/**
+ * @public
+ */
 const skeletor: SkeletorType = {
   Collection,
   EventEmitter,
@@ -36,6 +42,9 @@ const previousSkeletor = root.Skeletor;
 
 // Runs Skeletor.js in *noConflict* mode, returning the `Skeletor` variable
 // to its previous owner. Returns a reference to this Skeletor object.
+/**
+ * @public
+ */
 function noConflict() {
   root.Skeletor = previousSkeletor;
   return this;
@@ -46,3 +55,30 @@ root.Skeletor = skeletor;
 export default skeletor;
 
 export { noConflict, Collection, EventEmitter, Model, Storage, sync };
+
+export type { LocalForageWithExtensions } from './storage';
+export type {
+  ClassConstructor,
+  CollectionOptions,
+  Comparator,
+  EventCallback,
+  EventCallbackMap,
+  EventContext,
+  EventHandlersMap,
+  EventListenerMap,
+  ModelAttributes,
+  ModelOptions,
+  ObjectListenedTo,
+  ObjectWithId,
+  Options,
+  SyncOperation,
+  SyncOptions,
+  EventHandler,
+  ListeningType,
+  IEventEmitter,
+  ListeningMap,
+} from './types';
+
+export type { CollectionIterator } from './collection';
+export type { SkeletorType };
+export type { EventEmitterObject } from './eventemitter';
