@@ -1,12 +1,12 @@
-//     (c) 2010-2019 Jeremy Ashkenas and DocumentCloud
-
+// (c) 2010-2019 Jeremy Ashkenas and DocumentCloud
+// (c) 2018-2025 JC Brand
 import create from 'lodash-es/create';
 import extend from 'lodash-es/extend';
 import has from 'lodash-es/has';
 import result from 'lodash-es/result';
 import { Model } from './model';
 import { Collection } from './collection';
-import { SyncOperation } from './types';
+import { type SyncOptions, SyncOperation } from './types';
 
 /**
  * Custom error for indicating timeouts
@@ -130,15 +130,6 @@ const methodMap: Record<string, string> = {
   read: 'GET',
 };
 
-export interface SyncOptions {
-  url?: string;
-  data?: any;
-  attrs?: any;
-  success?: (data?: any, options?: SyncOptions) => void;
-  error?: (error: any) => void;
-  xhr?: any;
-}
-
 export function getSyncMethod(model: Model | Collection<any>): typeof sync & { __name__?: string } {
   const store = result(model, 'browserStorage') || result((model as Model).collection, 'browserStorage');
   return store ? (store as any).sync() : sync;
@@ -155,6 +146,9 @@ export function getSyncMethod(model: Model | Collection<any>): typeof sync & { _
  * - Use `setTimeout` to batch rapid-fire updates into a single request.
  * - Persist models via WebSockets instead of Ajax.
  * - Persist models to browser storage
+ */
+/**
+ * @public
  */
 export function sync(method: SyncOperation, model: Model | Collection<any>, options: SyncOptions = {}): Promise<any> {
   let data = options.data;

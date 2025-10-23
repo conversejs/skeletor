@@ -1,7 +1,7 @@
 import { eventsApi, onApi, offApi } from './utils/events';
 import type {
   EventCallback,
-  EventEmitter,
+  IEventEmitter,
   EventCallbackMap,
   EventsApiOptions,
   ListeningType,
@@ -13,13 +13,13 @@ import type {
  */
 class Listening implements ListeningType {
   id: string;
-  listener: EventEmitter;
+  listener: IEventEmitter;
   obj: any;
   interop: boolean;
   count: number;
   _events?: EventCallbackMap;
 
-  constructor(listener: EventEmitter, obj: any) {
+  constructor(listener: IEventEmitter, obj: any) {
     this.id = listener._listenId!;
     this.listener = listener;
     this.obj = obj;

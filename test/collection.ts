@@ -1,9 +1,7 @@
 import * as _ from 'lodash-es';
 import * as sinon from 'sinon';
 import * as Skeletor from '../src/index';
-import { ModelOptions } from '../src/model';
-import { ModelAttributes } from '../src/types';
-import { CollectionOptions } from '../src/collection';
+import { CollectionOptions, ModelAttributes, ModelOptions } from '../src/types';
 
 (function (QUnit) {
   let a, b, c, d, e, col, otherCol;

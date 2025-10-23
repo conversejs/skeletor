@@ -14,7 +14,6 @@ node_modules: package.json package-lock.json
 	npm install
 
 build: node_modules
-	npm run types
 	npm run build
 
 dist: build

@@ -11,29 +11,21 @@ import omit from 'lodash-es/omit';
 import pick from 'lodash-es/pick';
 import result from 'lodash-es/result';
 import uniqueId from 'lodash-es/uniqueId';
-import EventEmitter from './eventemitter';
+import { EventEmitterObject } from './eventemitter';
 
 // Import types
 import type { Collection } from './collection';
 import type Storage from './storage';
-import { ModelAttributes, ObjectWithId, SyncOperation } from './types';
-
-export type Options = Record<string, any>;
-export type ModelOptions = Options & {
-  collection?: Collection;
-  parse?: boolean;
-  unset?: boolean;
-  silent?: boolean;
-  validate?: boolean;
-};
+import { ModelAttributes, ObjectWithId, SyncOperation, ModelOptions, Options } from './types';
 
 /**
+ * @public
  * **Models** are the basic data object in the framework --
  * frequently representing a row in a table in a database on your server.
  * A discrete chunk of data and a bunch of useful, related methods for
  * performing computations and transformations on that data.
  */
-export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmitter(Object) {
+export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmitterObject {
   _browserStorage?: Storage;
   _changing = false;
   _pending: boolean | ModelOptions = false;
