@@ -20,9 +20,8 @@ build: node_modules
 dist: build
 
 check: node_modules build eslint
-	npm run types
-	npm run test
+	npm run check
 
 .PHONY: eslint
 eslint: node_modules
-	$(ESLINT) src/*.js
+	npm run lint

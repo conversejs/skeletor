@@ -1476,7 +1476,9 @@ import { CollectionOptions } from '../src/collection';
   QUnit.test('#1894 - Push should not trigger a sort', function (assert) {
     assert.expect(0);
     class Collection extends Skeletor.Collection {
-      comparator: () => 'id';
+      get comparator() {
+        return 'id';
+      }
       sort() {
         assert.ok(false);
         return this;
@@ -1514,7 +1516,9 @@ import { CollectionOptions } from '../src/collection';
   QUnit.test('#1894 - `sort` can optionally be turned off', function (assert) {
     assert.expect(0);
     class Collection extends Skeletor.Collection {
-      comparator: () => 'id';
+      get comparator() {
+        return 'id';
+      }
       sort() {
         assert.ok(false);
         return this;
