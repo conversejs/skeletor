@@ -46,6 +46,9 @@ class Storage {
   store: LocalForageWithExtensions;
   name: string;
 
+  static sessionStorageInitialized: Promise<void>;
+  static localForage: typeof localForage;
+
   constructor(
     id: string,
     type: 'local' | 'session' | 'indexed' | 'in_memory' | LocalForageWithExtensions,
@@ -186,7 +189,7 @@ class Storage {
         }
       }
     }
-    (localSync as any).__name__ = 'localSync';
+    localSync.__name__ = 'localSync';
     return localSync;
   }
 
@@ -285,6 +288,6 @@ class Storage {
   }
 }
 
-(Storage as any).sessionStorageInitialized = localForage.defineDriver(sessionStorageWrapper);
-(Storage as any).localForage = localForage;
+Storage.sessionStorageInitialized = localForage.defineDriver(sessionStorageWrapper);
+Storage.localForage = localForage;
 export default Storage;
