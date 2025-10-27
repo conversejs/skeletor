@@ -69,7 +69,7 @@ import { ModelAttributes, ModelOptions } from 'src/types';
       }
     }
     const model = new Model({}, { one: 1 });
-    assert.equal((model as any).one, 1);
+    assert.equal((model as Model).one, 1);
   });
 
   QUnit.test('initialize with parsed attributes', function (assert) {
@@ -93,7 +93,7 @@ import { ModelAttributes, ModelOptions } from 'src/types';
       }
     }
     const model = new Model({}, { collection: collection });
-    assert.equal((model as any).one, 1);
+    assert.equal((model as Model).one, 1);
     assert.equal(model.collection, collection);
   });
 
@@ -236,7 +236,7 @@ import { ModelAttributes, ModelOptions } from 'src/types';
   });
 
   QUnit.test('matches with predicate', function (assert) {
-    var model = new Skeletor.Model({ a: 0 });
+    const model = new Skeletor.Model({ a: 0 });
 
     assert.strictEqual(
       model.matches(function (attr: any) {
@@ -245,7 +245,7 @@ import { ModelAttributes, ModelOptions } from 'src/types';
       false
     );
 
-    model.set({ a: 3, b: true } as any);
+    model.set({ a: 3, b: true });
 
     assert.strictEqual(
       model.matches(function (attr: any) {
@@ -415,7 +415,7 @@ import { ModelAttributes, ModelOptions } from 'src/types';
 
     class Collection extends Skeletor.Collection {
       get model() {
-        return Model as any;
+        return Model;
       }
     }
     const col = new Collection([{ id: 'c5' }, { id: 'c6' }, { id: 'c7' }]);
@@ -612,7 +612,8 @@ import { ModelAttributes, ModelOptions } from 'src/types';
     assert.expect(3);
     const promise = doc.save({ title: 'Henry V' }, { 'promise': true, 'wait': true });
     assert.equal((promise as any).isResolved, false);
-    const ajaxSettings = (window.fetch as any).getCall((window.fetch as any).callCount - 1).args[1];
+    const ajaxSettings = (window.fetch as sinon.SinonStub).getCall((window.fetch as sinon.SinonStub).callCount - 1)
+      .args[1];
     ajaxSettings.success();
     await promise;
     const syncArgs = syncSpy.lastCall.args;
@@ -691,7 +692,7 @@ import { ModelAttributes, ModelOptions } from 'src/types';
     assert.equal(_.size(syncArgs[2].attrs), 2);
     assert.equal(syncArgs[2].attrs.d, 4);
     assert.equal(syncArgs[2].attrs.a, undefined);
-    const ajaxSettings = (window.fetch as any).getCall((window.fetch as any).callCount - 1).args[1];
+    const ajaxSettings = (window.fetch as sinon.SinonStub).getCall((window.fetch as sinon.SinonStub).callCount - 1).args[1];
     assert.equal(ajaxSettings.body, '{"b":2,"d":4}');
     syncSpy.restore();
   });
@@ -701,7 +702,8 @@ import { ModelAttributes, ModelOptions } from 'src/types';
     doc.clear();
     doc.save({ b: 2, d: 4 }, { patch: true, attrs: { B: 1, D: 3 } });
     const syncArgs = syncSpy.lastCall.args;
-    const ajaxSettings = (window.fetch as any).getCall((window.fetch as any).callCount - 1).args[1];
+    const ajaxSettings = (window.fetch as sinon.SinonStub).getCall((window.fetch as sinon.SinonStub).callCount - 1)
+      .args[1];
     assert.equal(syncArgs[2].attrs.D, 3);
     assert.equal(syncArgs[2].attrs.d, undefined);
     assert.equal(ajaxSettings.body, '{"B":1,"D":3}');
@@ -742,7 +744,7 @@ import { ModelAttributes, ModelOptions } from 'src/types';
     }
     const model = new Model();
     model.save({ id: 42 }, { wait: true });
-    const url = (window.fetch as any).getCall((window.fetch as any).callCount - 1).args[0];
+    const url = (window.fetch as sinon.SinonStub).getCall((window.fetch as sinon.SinonStub).callCount - 1).args[0];
     assert.equal(url, '/collection/42');
   });
 
@@ -760,7 +762,7 @@ import { ModelAttributes, ModelOptions } from 'src/types';
 
     const model = new SpecialSyncModel();
     const onSuccess = function (m, response, options) {
-      assert.ok((options as any).specialSync, 'Options were passed correctly to callback');
+      assert.ok((options).specialSync, 'Options were passed correctly to callback');
     };
     model.save(null, { success: onSuccess });
     const ajaxSettings = (window.fetch as any).getCall((window.fetch as any).callCount - 1).args[1];
