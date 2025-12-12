@@ -41,7 +41,7 @@ export interface LocalForageWithExtensions {
 /**
  * @public
  */
-class Storage {
+class BrowserStorage {
   storeInitialized: Promise<void>;
   store: LocalForageWithExtensions;
   name: string;
@@ -288,6 +288,6 @@ class Storage {
   }
 }
 
-Storage.sessionStorageInitialized = localForage.defineDriver(sessionStorageWrapper);
-Storage.localForage = localForage;
-export default Storage;
+BrowserStorage.sessionStorageInitialized = localForage.defineDriver(sessionStorageWrapper);
+BrowserStorage.localForage = localForage;
+export default BrowserStorage;
