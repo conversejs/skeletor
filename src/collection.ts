@@ -5,10 +5,10 @@ import isFunction from 'lodash-es/isFunction';
 import isString from 'lodash-es/isString';
 import keyBy from 'lodash-es/keyBy';
 import sortBy from 'lodash-es/sortBy';
-import { EventEmitterObject } from './eventemitter';
+import {EventEmitterObject} from './eventemitter';
 import type Storage from './storage';
-import { getResolveablePromise, getSyncMethod, wrapError } from './helpers';
-import { Model } from './model';
+import {getResolveablePromise, getSyncMethod, wrapError} from './helpers';
+import {Model} from './model';
 import {
   CollectionOptions,
   Comparator,
@@ -20,8 +20,8 @@ import {
 } from './types';
 
 // Default options for `Collection#set`.
-const setOptions = { add: true, remove: true, merge: true };
-const addOptions = { add: true, remove: false };
+const setOptions = {add: true, remove: true, merge: true};
+const addOptions = {add: true, remove: false};
 
 /**
  * @public
@@ -54,7 +54,7 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
     if (options.comparator !== undefined) this.comparator = options.comparator;
     this._reset();
     this.initialize.apply(this, arguments as any);
-    if (models) this.reset(models, Object.assign({ silent: true }, options));
+    if (models) this.reset(models, Object.assign({silent: true}, options));
 
     this[Symbol.iterator] = this.values;
   }
@@ -131,7 +131,7 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
    * combination of the two.
    */
   add(models: T[] | T | ModelAttributes | ModelAttributes[], options?: Options): T | T[] {
-    return this.set(models, Object.assign({ merge: false }, options, addOptions));
+    return this.set(models, Object.assign({merge: false}, options, addOptions));
   }
 
   /**
@@ -143,7 +143,7 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
     const modelsArray = singular ? [models] : (models as T[]).slice();
     const removed = this._removeModels(modelsArray, options);
     if (!options.silent && removed.length) {
-      options.changes = { added: [], merged: [], removed: removed };
+      options.changes = {added: [], merged: [], removed: removed};
       this.trigger('update', this, options);
     }
     return singular ? removed[0] : removed;
@@ -246,7 +246,7 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
     }
 
     // Silently sort the collection if appropriate.
-    if (sort) this.sort({ silent: true });
+    if (sort) this.sort({silent: true});
 
     // Unless silenced, it's time to fire all appropriate add/sort/update events.
     if (!options.silent) {
@@ -303,7 +303,7 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
     }
     options.previousModels = this.models;
     this._reset();
-    models = this.add(models, Object.assign({ silent: true }, options));
+    models = this.add(models, Object.assign({silent: true}, options));
     if (!options.silent) this.trigger('reset', this, options);
     return models as T | T[];
   }
@@ -312,7 +312,7 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
    * Add a model to the end of the collection.
    */
   push(model: T | ModelAttributes, options?: Options): T {
-    return this.add(model, Object.assign({ at: this.length }, options)) as T;
+    return this.add(model, Object.assign({at: this.length}, options)) as T;
   }
 
   /**
@@ -327,7 +327,7 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
    * Add a model to the beginning of the collection.
    */
   unshift(model: T | ModelAttributes, options?: Options): T {
-    return this.add(model, Object.assign({ at: 0 }, options)) as T;
+    return this.add(model, Object.assign({at: 0}, options)) as T;
   }
 
   /**
@@ -421,7 +421,7 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
     return countBy(this.models, isFunction(f) ? f : (m) => (isString(f) ? m.get(f) : m.matches(f)));
   }
 
-  groupBy(pred: string | ((model: T) => string)): Record<string, T[]> {
+  groupBy(pred: string | ((model: T) => string | number)): Record<string, T[]> {
     return groupBy(this.models, isFunction(pred) ? pred : (m) => (isString(pred) ? m.get(pred) : m.matches(pred)));
   }
 
@@ -472,11 +472,11 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
     );
   }
 
-  reduce(callback: (accumulator: T, model: T, index: number, array: T[]) => T, initialValue: T): T {
+  reduce(callback: (accumulator: T, model: T, index: number, array: T[]) => T, initialValue?: T): T {
     return this.models.reduce(callback, initialValue || this.models[0]);
   }
 
-  reduceRight(callback: (accumulator: T, model: T, index: number, array: T[]) => T, initialValue: T): T {
+  reduceRight(callback: (accumulator: T, model: T, index: number, array: T[]) => T, initialValue?: T): T {
     return this.models.reduceRight(callback, initialValue || this.models[0]);
   }
 
@@ -571,7 +571,7 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
    * data will be passed through the `reset` method instead of `set`.
    */
   fetch(options?: Options): Promise<any> | any {
-    options = Object.assign({ parse: true }, options);
+    options = Object.assign({parse: true}, options);
     const success = options.success;
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const collection = this;
@@ -621,7 +621,7 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
       return_promise && promise.reject(e);
     };
 
-    preparedModel.save(null, Object.assign(options, { 'promise': false }));
+    preparedModel.save(null, Object.assign(options, {'promise': false}));
     if (return_promise) {
       return promise;
     } else {
@@ -813,7 +813,7 @@ export class CollectionIterator<T extends Model> {
         this._index++;
 
         if (!model) {
-          return { value: undefined, done: true };
+          return {value: undefined, done: true};
         }
 
         // Construct a value depending on what kind of values should be iterated.
@@ -829,7 +829,7 @@ export class CollectionIterator<T extends Model> {
             value = [id, model];
           }
         }
-        return { value, done: false };
+        return {value, done: false};
       }
 
       // Once exhausted, remove the reference to the collection so future
@@ -837,7 +837,7 @@ export class CollectionIterator<T extends Model> {
       this._collection = undefined;
     }
 
-    return { value: undefined, done: true };
+    return {value: undefined, done: true};
   }
 
   [Symbol.iterator](): IterableIterator<any> {

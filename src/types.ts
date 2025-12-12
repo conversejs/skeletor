@@ -1,5 +1,5 @@
-import { Collection } from './collection';
-import { Model } from './model';
+import {Collection} from './collection';
+import {Model} from './model';
 
 /**
  * @public
@@ -9,7 +9,7 @@ export type SyncOperation = 'create' | 'update' | 'patch' | 'delete' | 'read';
 /**
  * @public
  */
-export type ObjectListenedTo = object & { _listenId?: string };
+export type ObjectListenedTo = object & {_listenId?: string};
 
 /**
  * @public
@@ -70,7 +70,7 @@ export type ListeningMap = Record<string, ListeningType>;
 /**
  * @public
  */
-export type ObjectWithId = Record<string, any> & { id: string | number };
+export type ObjectWithId = Record<string, any> & {id: string | number};
 
 /**
  * @public
@@ -135,13 +135,13 @@ export interface EventsApiOptions {
  */
 export interface OffApiOptions {
   context?: any;
-  listeners?: { [key: string]: ListeningType };
+  listeners?: {[key: string]: ListeningType};
 }
 
 /**
  * @public
  */
-export type Comparator<T extends Model = Model> = string | boolean | ((a: T, b: T) => number) | (() => string);
+export type Comparator<T extends Model = Model> = string | boolean | ((a: T, b: T) => number) | ((a?: T) => string);
 
 /**
  * @public
@@ -161,7 +161,7 @@ export type IterateeFunction = (
 /**
  * @public
  */
-export type ModelAttributes = Record<string | number, any> & { id?: string | number };
+export type ModelAttributes = Record<string | number, any> & {id?: string | number};
 
 /**
  * @public
