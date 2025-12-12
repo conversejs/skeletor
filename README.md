@@ -3,9 +3,7 @@
 [![XMPP Chat](https://conference.conversejs.org/muc_badge/discuss@conference.conversejs.org)](https://inverse.chat/#converse/room?jid=discuss@conference.conversejs.org)
 [![CI Tests](https://github.com/conversejs/skeletor/actions/workflows/karma-tests.yml/badge.svg)](https://github.com/conversejs/skeletor/actions/workflows/karma-tests.yml)
 
-Skeletor is a modernization of [Backbone](http://backbonejs.org)'s Models and Collections.
-
-It provides you with a more modern Backbone-like way to manage state.
+Skeletor is a modernization of [Backbone](http://backbonejs.org)'s Models and Collections, which are used for managing state.
 
 ## Installation
 
@@ -15,16 +13,16 @@ npm install @converse/skeletor
 
 ## Changes from Backbone
 
-We've made big, backwards incompatible changes in version 2:
+We've made big, backwards incompatible changes in version 1.0.0:
 
 - Removed the old `View`
 - Removed the old `Events` constructor function and instead added the `EventsEmitter` mixin class.
 - Removed the `Router` and `History` classes.
-- All other types (`Model`, `Collection`) are now ES6 classes.
+- All other types (e.g. `Model`, `Collection`) are now ES6 classes.
 
 ### Sekeletor adds the following changes to Backbone
 
-* Added TypeScript type declarations (generated from typed JSDoc comments)
+* Rewritten in TypeScript
 * Removes the dependency on jQuery
 * Replaces [underscore](http://underscorejs.org) with [lodash](https://lodash.com)
 * Imports lodash methods individually to allow for tree-shaking
