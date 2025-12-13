@@ -193,7 +193,7 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
    * the core primitive operation of a model, updating the data and notifying
    * anyone who needs to know about the change in state. The heart of the beast.
    */
-  set(key: string | Partial<T> | ObjectWithId, val?: any, options?: ModelOptions): boolean | this {
+  set(key: string | Partial<T> | ObjectWithId, val?: any, options?: ModelOptions): this {
     if (key == null) return this;
 
     // Handle both `"key", value` and `{key: value}` -style arguments.
@@ -209,7 +209,7 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
     options = options || {};
 
     // Run validation.
-    if (!this._validate(attrs, options)) return false;
+    if (!this._validate(attrs, options)) return null;
 
     // Extract attributes and options.
     const unset = options.unset;
@@ -250,7 +250,7 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
       }
     }
 
-    if (changing) return true;
+    if (changing) return this;
 
     if (!silent) {
       // You might be wondering why there's a `while` loop here. Changes can
@@ -270,14 +270,14 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
    * Remove an attribute from the model, firing `"change"`. `unset` is a noop
    * if the attribute doesn't exist.
    */
-  unset(attr: keyof T, options?: ModelOptions): boolean | this {
+  unset(attr: keyof T, options?: ModelOptions): this {
     return this.set(attr as string, undefined, Object.assign({}, options, { unset: true }));
   }
 
   /**
    * Clear all attributes on the model, firing `"change"`.
    */
-  clear(options?: ModelOptions): boolean | this {
+  clear(options?: ModelOptions): this {
     const attrs: Partial<T> = {};
     for (const key in this.attributes) attrs[key as keyof T] = undefined;
     return this.set(attrs, Object.assign({}, options, { unset: true }));
