@@ -1,6 +1,6 @@
 /* global global */
 import { EventEmitter } from './eventemitter';
-import Storage from './storage';
+import BrowserStorage from './storage';
 import { Collection } from './collection';
 import { Model } from './model';
 import { sync } from './helpers';
@@ -54,7 +54,7 @@ skeletor.noConflict = noConflict;
 root.Skeletor = skeletor;
 export default skeletor;
 
-export { noConflict, Collection, EventEmitter, Model, Storage, sync };
+export { noConflict, Collection, EventEmitter, Model, BrowserStorage, sync };
 
 export type { LocalForageWithExtensions } from './storage';
 export type {
