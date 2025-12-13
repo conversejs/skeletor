@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.0.0 (Unreleased)
+
+- `Collection.prototype.create` no longer returns a boolean (but `null` instead)
+
 ## 2.0.0 (2025-12-13)
 
 ### Breaking changes

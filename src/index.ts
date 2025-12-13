@@ -64,8 +64,13 @@ export type {
   EventCallback,
   EventCallbackMap,
   EventContext,
+  EventHandler,
   EventHandlersMap,
   EventListenerMap,
+  FetchOrCreateOptions,
+  IEventEmitter,
+  ListeningMap,
+  ListeningType,
   ModelAttributes,
   ModelOptions,
   ObjectListenedTo,
@@ -73,10 +78,6 @@ export type {
   Options,
   SyncOperation,
   SyncOptions,
-  EventHandler,
-  ListeningType,
-  IEventEmitter,
-  ListeningMap,
 } from './types';
 
 export type { CollectionIterator } from './collection';

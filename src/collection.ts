@@ -12,6 +12,7 @@ import {Model} from './model';
 import {
   CollectionOptions,
   Comparator,
+  FetchOrCreateOptions,
   ModelAttributes,
   ModelOptions,
   ObjectWithId,
@@ -592,15 +593,17 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
    * collection immediately, unless `wait: true` is passed, in which case we
    * wait for the server to agree.
    */
-  create(model: T | ModelAttributes, options?: Options): Promise<T> | T | false {
+  create(model: T | ModelAttributes, options?: FetchOrCreateOptions): Promise<T> | T {
     options = options ? clone(options) : {};
     const wait = options.wait;
     const return_promise = options.promise;
     const promise = return_promise && getResolveablePromise();
 
     const preparedModel = this._prepareModel(model, options);
-    if (!preparedModel) return false;
+    if (!preparedModel) return null;
+
     if (!wait) this.add(preparedModel, options);
+
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const collection = this;
     const success = options.success;
