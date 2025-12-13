@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.0.0 (Unreleased)
+
+### Breaking changes
+
+- `Model.prototype.set` no longer returns a boolean when validation fails (but `null` instead)
+- Loosened the `reduce` and `reduceRight` type signatures on the `Collection`
+
 ## 1.0.0 (2025-12-13)
 
 - Rewrite as TypeScript

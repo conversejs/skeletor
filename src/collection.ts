@@ -472,11 +472,11 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
     );
   }
 
-  reduce(callback: (accumulator: T, model: T, index: number, array: T[]) => T, initialValue?: T): T {
+  reduce<U = T>(callback: (accumulator: U, model: T, index: number, array: T[]) => U, initialValue?: U): U | T {
     return this.models.reduce(callback, initialValue || this.models[0]);
   }
 
-  reduceRight(callback: (accumulator: T, model: T, index: number, array: T[]) => T, initialValue?: T): T {
+  reduceRight<U = T>(callback: (accumulator: U, model: T, index: number, array: T[]) => U, initialValue?: U): U | T {
     return this.models.reduceRight(callback, initialValue || this.models[0]);
   }
 
