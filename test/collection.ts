@@ -611,7 +611,7 @@ import {CollectionOptions, ModelAttributes, ModelOptions} from '../src/types';
       assert.equal(error, 'fail');
       assert.equal(options.validationError, 'fail');
     });
-    assert.equal(collection.create({foo: 'bar'}, {validate: true}), false);
+    assert.equal(collection.create({foo: 'bar'}, {validate: true}), null);
   });
 
   QUnit.test('create will pass extra options to success callback', function (assert) {
