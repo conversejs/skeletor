@@ -5,16 +5,16 @@ import commonjs from '@rollup/plugin-commonjs';
 import summary from 'rollup-plugin-summary';
 
 const plugins = [
-  resolve(), // Resolve bare module specifiers to relative paths
+  resolve(),
   commonjs({
-    requireReturnsDefault: 'auto', // Handle mixed ES/CJS modules
+    requireReturnsDefault: 'auto',
   }),
   typescript({
     tsconfig: './tsconfig.json',
     declaration: false,
     declarationMap: false,
   }),
-  summary(), // Print bundle summary
+  summary(),
 ];
 
 export default [
@@ -27,6 +27,7 @@ export default [
       format: 'es',
     },
     plugins,
+    external: ['./drivers/nodeSQLiteStorage'],
     preserveEntrySignatures: 'strict',
   },
   {
@@ -39,6 +40,7 @@ export default [
       exports: 'named',
     },
     plugins,
+    external: ['./drivers/nodeSQLiteStorage'],
     preserveEntrySignatures: 'strict',
   },
   {
@@ -58,5 +60,31 @@ export default [
       }),
       ...plugins,
     ],
+    external: ['./drivers/nodeSQLiteStorage'],
+  },
+  {
+    input: 'src/index.node.ts',
+    output: {
+      name: 'skeletor',
+      sourcemap: true,
+      file: 'dist/skeletor.node.js',
+      format: 'cjs',
+      exports: 'named',
+    },
+    plugins,
+    external: ['node:module', 'node:fs', 'node:path', 'node:sqlite'],
+    preserveEntrySignatures: 'strict',
+  },
+  {
+    input: 'src/index.node.ts',
+    output: {
+      sourcemap: true,
+      file: 'dist/skeletor.node.mjs',
+      format: 'es',
+      exports: 'named',
+    },
+    plugins,
+    external: ['node:module', 'node:fs', 'node:path', 'node:sqlite'],
+    preserveEntrySignatures: 'strict',
   },
 ];

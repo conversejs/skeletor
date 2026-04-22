@@ -9,9 +9,18 @@
   "browser": "dist/skeletor.js",
   "exports": {
     ".": {
-      "import": "./dist/skeletor.esm.js",
-      "require": "./dist/skeletor.js",
-      "default": "./dist/skeletor.js"
+      "node": {
+        "require": "./dist/skeletor.node.js",
+        "import": "./dist/skeletor.node.mjs"
+      },
+      "default": {
+        "import": "./dist/skeletor.esm.js",
+        "require": "./dist/skeletor.js"
+      }
+    },
+    "./node": {
+      "require": "./dist/skeletor.node.js",
+      "import": "./dist/skeletor.node.mjs"
     }
   },
   "keywords": [
@@ -28,6 +37,9 @@
     "JC Brand"
   ],
   "version": "3.0.1",
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -39,12 +51,13 @@
     "build": "npm run prebuild && npm run build:declarations && rollup -c",
     "build:types": "tsc -p tsconfig.declarations.json",
     "build:declarations": "npm run build:types && api-extractor run --local && rm -rf dist/defs",
-    "check": "npm run check:types && npm run test && npm run lint",
+    "check": "npm run check:types && npm run test && npm run test:node && npm run lint",
     "check:types": "tsc --noEmit",
     "dev": "karma start --single-run=false",
     "lint": "eslint src/*.ts test/*.ts",
     "prettier": "prettier --write src/**/*.js test/**/*.js src/**/*.ts test/**/*.ts",
-    "test": "karma start && karma start --mocha-only"
+    "test": "karma start && karma start --mocha-only",
+    "test:node": "tsx node_modules/mocha/bin/mocha.js 'test/nodeStorage.test.ts'"
   },
   "files": [
     "LICENSE",
@@ -53,6 +66,8 @@
     "dist/skeletor.js.map",
     "dist/skeletor.esm.js.map",
     "dist/skeletor.min.js",
+    "dist/skeletor.node.js",
+    "dist/skeletor.node.mjs",
     "dist/skeletor.d.ts",
     "dist/skeletor.d.ts.map",
     "src/"
@@ -102,6 +117,7 @@
     "rollup-plugin-summary": "^3.0.0",
     "sinon": "^9.0.2",
     "ts-loader": "^9.5.4",
+    "tsx": "^4.21.0",
     "typescript": "^5.8.3",
     "webpack": "^5.98.0",
     "webpack-cli": "^6.0.1",
