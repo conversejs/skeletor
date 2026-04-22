@@ -13,6 +13,7 @@ import { guid } from './helpers';
 import type { Model } from './model';
 import type { Collection } from './collection';
 import type { SyncOptions, SyncOperation } from './types';
+import { StorageDriver, StoreType } from './drivers/types';
 
 const IN_MEMORY = memoryDriver._driver;
 localForage.defineDriver(memoryDriver);
@@ -22,45 +23,24 @@ extendPrototypeWithGetItems(localForage);
 /**
  * @public
  */
-export interface LocalForageWithExtensions {
-  setItem(key: string, value: any): Promise<any>;
-  getItem(key: string): Promise<any>;
-  removeItem(key: string): Promise<void>;
-  clear(): Promise<void>;
-  length(): Promise<number>;
-  key(keyIndex: number): Promise<string>;
-  keys(): Promise<string[]>;
-  setItems?(items: Record<string, any>): Promise<void>;
-  getItems?(keys: string[]): Promise<Record<string, any>>;
-  debouncedSetItems?: {
-    (items: Record<string, any>): Promise<void>;
-    flush?: () => void;
-  };
-}
-
-/**
- * @public
- */
-class BrowserStorage {
+class PersistentStorage {
   storeInitialized: Promise<void>;
-  store: LocalForageWithExtensions;
+  store: StorageDriver;
   name: string;
 
   static sessionStorageInitialized: Promise<void>;
   static localForage: typeof localForage;
 
-  constructor(
-    id: string,
-    type: 'local' | 'session' | 'indexed' | 'in_memory' | LocalForageWithExtensions,
-    batchedWrites = false
-  ) {
-    if (type === 'local' && !window.localStorage) {
+  constructor(id: string, type: StoreType | StorageDriver, batchedWrites = false) {
+    this.name = id;
+
+    if (type === 'local' && typeof window !== 'undefined' && !window.localStorage) {
       throw new Error('Skeletor.storage: Environment does not support localStorage.');
-    } else if (type === 'session' && !window.sessionStorage) {
+    } else if (type === 'session' && typeof window !== 'undefined' && !window.sessionStorage) {
       throw new Error('Skeletor.storage: Environment does not support sessionStorage.');
     }
     if (isString(type)) {
-      this.storeInitialized = this.initStore(type as 'local' | 'session' | 'indexed' | 'in_memory', batchedWrites);
+      this.storeInitialized = this.initStore(type as StoreType, batchedWrites);
     } else {
       this.store = type;
       if (batchedWrites) {
@@ -70,24 +50,32 @@ class BrowserStorage {
       }
       this.storeInitialized = Promise.resolve();
     }
-    this.name = id;
   }
 
   /**
-   * @param type - The storage type: 'local', 'session', 'indexed', or 'in_memory'
+   * @param type - The storage type: 'local', 'session', 'indexed', 'node', or 'in_memory'
    * @param batchedWrites - Whether to enable batched writes
    */
-  async initStore(type: 'local' | 'session' | 'indexed' | 'in_memory', batchedWrites: boolean): Promise<void> {
+  async initStore(type: StoreType, batchedWrites: boolean): Promise<void> {
     if (type === 'session') {
       await localForage.setDriver(sessionStorageWrapper._driver);
     } else if (type === 'local') {
       await localForage.config({ 'driver': localForage.LOCALSTORAGE });
     } else if (type === 'in_memory') {
       await localForage.config({ 'driver': IN_MEMORY });
+    } else if (type === 'node') {
+      const { NodeSQLiteStorage } = await import('./drivers/nodeSQLiteStorage');
+      this.store = new NodeSQLiteStorage(this.name);
+      if (batchedWrites) {
+        this.store.debouncedSetItems = mergebounce((items: Record<string, any>) => this.store.setItems!(items), 50, {
+          'promise': true,
+        });
+      }
+      return;
     } else if (type !== 'indexed') {
       throw new Error('Skeletor.storage: No storage type was specified');
     }
-    this.store = localForage as LocalForageWithExtensions;
+    this.store = localForage as StorageDriver;
     if (batchedWrites) {
       this.store.debouncedSetItems = mergebounce((items: Record<string, any>) => this.store.setItems!(items), 50, {
         'promise': true,
@@ -288,6 +276,6 @@ class BrowserStorage {
   }
 }
 
-BrowserStorage.sessionStorageInitialized = localForage.defineDriver(sessionStorageWrapper);
-BrowserStorage.localForage = localForage;
-export default BrowserStorage;
+PersistentStorage.sessionStorageInitialized = localForage.defineDriver(sessionStorageWrapper);
+PersistentStorage.localForage = localForage;
+export default PersistentStorage;

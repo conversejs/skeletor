@@ -24,7 +24,7 @@ export function eventsApi(
   events: EventHandlersMap | EventCallbackMap,
   name: string | EventCallbackMap | null,
   callback: EventCallback | EventHandler | EventContext | null,
-  opts: EventsApiOptions | OffApiOptions | any[]
+  opts: EventsApiOptions | OffApiOptions | any[],
 ): EventHandlersMap | EventCallbackMap {
   let i = 0;
   let names: string[];
@@ -61,7 +61,7 @@ export function onApi(
   events: EventHandlersMap,
   name: string,
   callback: EventCallback | null,
-  options: EventsApiOptions
+  options: EventsApiOptions,
 ): EventHandlersMap {
   if (callback) {
     const handlers = events[name] || (events[name] = []);
@@ -83,7 +83,7 @@ export function tryCatchOn(
   obj: any,
   name: string | EventCallbackMap,
   callback: EventCallback | EventContext,
-  context: EventContext
+  context: EventContext,
 ): any {
   try {
     obj.on(name, callback, context);
@@ -99,7 +99,7 @@ export function offApi(
   events: EventHandlersMap,
   name: string | null,
   callback: EventCallback | null,
-  options: OffApiOptions
+  options: OffApiOptions,
 ): EventHandlersMap | void {
   if (!events) return;
 
@@ -162,7 +162,7 @@ export function onceMap(
   map: EventCallbackMap,
   name: string,
   callback: EventCallback | null,
-  offer: OfferFunction
+  offer: OfferFunction,
 ): { [name: string]: EventCallback } {
   if (callback) {
     const _once = once(function (this: any, ...args: any[]) {
@@ -180,7 +180,7 @@ export function triggerApi(
   objEvents: EventHandlersMap | null,
   name: string,
   _callback: EventCallback | null,
-  args: any[]
+  args: any[],
 ): EventHandlersMap | null {
   if (objEvents) {
     const events = objEvents[name];

@@ -1,6 +1,6 @@
 /* global global */
 import { EventEmitter } from './eventemitter';
-import BrowserStorage from './storage';
+import PersistentStorage from './storage';
 import { Collection } from './collection';
 import { Model } from './model';
 import { sync } from './helpers';
@@ -54,9 +54,9 @@ skeletor.noConflict = noConflict;
 root.Skeletor = skeletor;
 export default skeletor;
 
-export { noConflict, Collection, EventEmitter, Model, BrowserStorage, sync };
+export { noConflict, Collection, EventEmitter, Model, PersistentStorage, sync };
 
-export type { LocalForageWithExtensions } from './storage';
+export type { StorageDriver } from './drivers/types';
 export type {
   ClassConstructor,
   CollectionOptions,

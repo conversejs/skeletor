@@ -14,13 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import executeCallback from 'localforage/src/utils/executeCallback';
-import getCallback from 'localforage/src/utils/getCallback';
-import normalizeKey from 'localforage/src/utils/normalizeKey';
-import serializer from 'localforage/src/utils/serializer';
-
-const serialize = serializer['serialize'];
-const deserialize = serializer['deserialize'];
+import { chainCallback, getCallback, normalizeKey, serialize, deserialize } from './helpers';
 
 interface DbInfo {
   keyPrefix: string;
@@ -92,7 +86,7 @@ function clear(callback?: (err: any) => void): Promise<void> {
     }
   });
 
-  executeCallback(promise, callback);
+  chainCallback(promise, callback);
   return promise;
 }
 
@@ -111,13 +105,13 @@ function getItem<T>(key: string, callback?: (err: any, value: T | null) => void)
     return null;
   });
 
-  executeCallback(promise, callback);
+  chainCallback(promise, callback);
   return promise;
 }
 
 function iterate<T, U>(
   iterator: IteratorCallback<T, U>,
-  callback?: (err: any, result: U | undefined) => void
+  callback?: (err: any, result: U | undefined) => void,
 ): Promise<U | undefined> {
   const self = this;
 
@@ -148,7 +142,7 @@ function iterate<T, U>(
     return;
   });
 
-  executeCallback(promise, callback);
+  chainCallback(promise, callback);
   return promise;
 }
 
@@ -171,7 +165,7 @@ function key(n: number, callback?: (err: any, key: string | null) => void): Prom
     return result;
   });
 
-  executeCallback(promise, callback);
+  chainCallback(promise, callback);
   return promise;
 }
 
@@ -190,7 +184,7 @@ function keys(callback?: (err: any, keys: string[]) => void): Promise<string[]> 
     return keys;
   });
 
-  executeCallback(promise, callback);
+  chainCallback(promise, callback);
   return promise;
 }
 
@@ -201,7 +195,7 @@ function length(callback?: (err: any, numberOfKeys: number) => void): Promise<nu
     return keys.length;
   });
 
-  executeCallback(promise, callback);
+  chainCallback(promise, callback);
   return promise;
 }
 
@@ -210,7 +204,7 @@ function removeItem(key: string, callback?: (err: any) => void): Promise<void> {
   const promise = this.ready().then(function () {
     sessionStorage.removeItem(dbInfo.keyPrefix + key);
   });
-  executeCallback(promise, callback);
+  chainCallback(promise, callback);
   return promise;
 }
 
@@ -225,29 +219,29 @@ async function setItem<T>(key: string, value: T, callback?: (err: any, value: T)
     dbInfo.serializer.serialize(value, (serializedValue: string, error: any) => {
       if (error) {
         reject(error);
-        executeCallback(Promise.reject(error), callback);
+        chainCallback(Promise.reject(error), callback);
         return;
       }
 
       try {
         sessionStorage.setItem(dbInfo.keyPrefix + key, serializedValue);
         resolve(originalValue);
-        executeCallback(Promise.resolve(originalValue), callback);
+        chainCallback(Promise.resolve(originalValue), callback);
       } catch (e: any) {
         if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
           console.error('Your sessionStorage capacity is used up.');
         }
         reject(e);
-        executeCallback(Promise.reject(e), callback);
+        chainCallback(Promise.reject(e), callback);
       }
     });
   });
 }
 
-function dropInstance(options: any, callback?: (err: any) => void): Promise<void> {
-  callback = getCallback.apply(this, arguments as any);
+function dropInstance(this: any, ...args: any[]): Promise<void> {
+  const callback = getCallback(...args);
 
-  options = (typeof options !== 'function' && options) || {};
+  let options = (typeof args[0] !== 'function' && args[0]) || {};
   if (!options.name) {
     const currentConfig = this.config();
     options.name = options.name || currentConfig.name;
@@ -275,7 +269,7 @@ function dropInstance(options: any, callback?: (err: any) => void): Promise<void
     });
   }
 
-  executeCallback(promise, callback);
+  chainCallback(promise, callback);
   return promise;
 }
 

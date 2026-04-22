@@ -39,16 +39,22 @@ export default function (config) {
       devtool: 'inline-source-map',
       resolve: {
         extensions: ['.ts', '.js'],
-        fallback: {
+      fallback: {
           'path': false,
           'fs': false,
           'util': false,
+          'module': false,
+          'node:module': false,
+          'node:fs': false,
+          'node:path': false,
+          'node:sqlite': false,
         },
       },
       externals: isMochaOnly
-        ? {}
+        ? { './drivers/nodeSQLiteStorage': 'nodeSQLiteStorage' }
         : {
             'qunit': 'QUnit',
+            './drivers/nodeSQLiteStorage': 'nodeSQLiteStorage',
           },
       module: {
         rules: [
