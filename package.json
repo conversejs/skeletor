@@ -4,9 +4,16 @@
   "url": "https://github.com/conversejs/skeletor",
   "type": "module",
   "main": "dist/skeletor.js",
-  "module": "src/index.ts",
+  "module": "dist/skeletor.esm.js",
   "types": "dist/skeletor.d.ts",
   "browser": "dist/skeletor.js",
+  "exports": {
+    ".": {
+      "import": "./dist/skeletor.esm.js",
+      "require": "./dist/skeletor.js",
+      "default": "./dist/skeletor.js"
+    }
+  },
   "keywords": [
     "model",
     "view",
@@ -20,7 +27,7 @@
   "contributors": [
     "JC Brand"
   ],
-  "version": "3.0.0",
+  "version": "3.0.1",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -42,6 +49,9 @@
   "files": [
     "LICENSE",
     "dist/skeletor.js",
+    "dist/skeletor.esm.js",
+    "dist/skeletor.js.map",
+    "dist/skeletor.esm.js.map",
     "dist/skeletor.min.js",
     "dist/skeletor.d.ts",
     "dist/skeletor.d.ts.map",

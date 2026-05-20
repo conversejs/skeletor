@@ -23,6 +23,17 @@ export default [
     output: {
       name: 'skeletor',
       sourcemap: true,
+      file: 'dist/skeletor.esm.js',
+      format: 'es',
+    },
+    plugins,
+    preserveEntrySignatures: 'strict',
+  },
+  {
+    input: 'src/index.ts',
+    output: {
+      name: 'skeletor',
+      sourcemap: true,
       file: 'dist/skeletor.js',
       format: 'umd',
       exports: 'named',
