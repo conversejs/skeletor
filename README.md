@@ -3,25 +3,28 @@
 [![XMPP Chat](https://conference.conversejs.org/muc_badge/discuss@conference.conversejs.org)](https://inverse.chat/#converse/room?jid=discuss@conference.conversejs.org)
 [![CI Tests](https://github.com/conversejs/skeletor/actions/workflows/karma-tests.yml/badge.svg)](https://github.com/conversejs/skeletor/actions/workflows/karma-tests.yml)
 
-Skeletor is a modernized, TypeScript-first rewrite of [Backbone](http://backbonejs.org)'s Models and Collections.
+Skeletor is a lightweight, TypeScript-first reactive data library.
 
-The reactive data layer you know, without jQuery, without Underscore, and without the baggage of Views or Routing.
+It lets you define typed models and react to changes with events or subscriptions,
+while persisting to IndexedDB, localStorage, sessionStorage, SQLite (Node) or a REST API.
 
-Useful if you have a Backbone app you want to modernize, or you simply want lightweight reactive data models that work with any UI layer.
+Skeletor is a modernized rewrite of [Backbone](http://backbonejs.org)'s Models and Collections,
+without jQuery, without Underscore, and without Views or Routing. If you know Backbone, everything
+transfers directly. If you don't, there's nothing to unlearn.
+
+Skeletor powers [Converse.js](https://conversejs.org), a full-featured open-source XMPP chat client.
 
 ## Why Skeletor?
 
-- **Backbone-compatible mental model** — `get`, `set`, events, collections: all there. Your existing Backbone knowledge transfers directly.
-- **Piecemeal modernization** — Swap Backbone's data layer for Skeletor without touching your Views or Router. Modernize at your own pace.
-- **Works with any UI** — Skeletor only manages data. Pair it with React, Vue, Lit, web components, or plain DOM.
-- **TypeScript-first** — Full type definitions included.
-- **No jQuery, no Underscore** — Uses native browser APIs and [lodash-es](https://lodash.com), individually imported for tree-shaking.
-- **Built-in browser storage** — Persist models to IndexedDB, localStorage, or sessionStorage with zero extra setup.
-- **Promises everywhere** — All async operations (`fetch`, `save`, `destroy`) return Promises.
-- **ESM + CJS builds** — Works in modern bundlers and Node.js out of the box.
-- **Works in NodeJS** — Persists to SQLite, available from Node 22
-
-Skeletor powers [Converse.js](https://conversejs.org), a full-featured open-source XMPP chat client.
+- **Reactive models** — set an attribute, get a `change` event. Subscribe with a callback and an unsubscribe function. Works with any UI layer.
+- **Direct attribute access** — `model.attrs.name = 'Bob'` fires change events, no boilerplate needed.
+- **Computed properties** — declare derived values with explicit dependencies; they cache, recalculate, and fire `change` events automatically.
+- **Store-style subscriptions** — `subscribe()` returns an unsubscribe function, compatible with React's `useSyncExternalStore` and similar APIs.
+- **Built-in persistence** — IndexedDB, localStorage, sessionStorage, SQLite (Node), and REST out of the box.
+- **TypeScript-first** — full type definitions, generic model attributes, typed computed properties.
+- **No jQuery, no Underscore** — native browser APIs and [lodash-es](https://lodash.com) with individual imports for tree-shaking.
+- **Works anywhere** — browser, Node.js (22+), Web Workers. ESM + CJS builds included.
+- **Backbone-compatible** — `get`, `set`, events, collections: all there. Drop-in replacement for Backbone's data layer.
 
 ## Installation
 
@@ -36,29 +39,48 @@ npm install @converse/skeletor
 ```ts
 import { Model } from '@converse/skeletor';
 
-class User extends Model {
+interface UserAttrs {
+  firstName: string;
+  lastName: string;
+  active: boolean;
+}
+
+class User extends Model<UserAttrs> {
   get defaults() {
-    return { name: '', active: false };
+    return { firstName: '', lastName: '', active: false };
   }
 
-  validate(attrs) {
-    if (!attrs.name) return 'Name is required';
+  get computed() {
+    return {
+      fullName: {
+        deps: ['firstName', 'lastName'],
+        fn: (model: User) => `${model.get('firstName')} ${model.get('lastName')}`,
+      },
+    };
   }
 }
 
-const user = new User({ name: 'Alice' });
+const user = new User({ firstName: 'Alice', lastName: 'Smith' });
 
-user.on('change:name', (model, value) => {
-  console.log('Name changed to', value);
+// Read — three equivalent ways
+user.get('firstName');     // → 'Alice'
+user.attrs.firstName;      // → 'Alice'
+user.get('fullName');      // → 'Alice Smith'  (computed — cached, never persisted)
+
+// Write — fires change events
+user.attrs.firstName = 'Bob';   // triggers 'change:firstName' and 'change:fullName'
+user.set('active', true);       // triggers 'change:active'
+
+// React to changes
+user.on('change:fullName', (model, value) => {
+  console.log('Name is now', value);
 });
 
-user.set('name', 'Bob'); // → "Name changed to Bob"
-console.log(user.get('name')); // → "Bob"
-console.log(user.hasChanged('name')); // → true
-
-// Or use attrs for direct reactive access
-user.attrs.name = 'Carol'; // → "Name changed to Carol"
-console.log(user.attrs.name); // → "Carol"
+// Store-style subscription (returns unsubscribe function)
+const unsub = user.subscribe((model, changed) => {
+  console.log('Changed attrs:', changed);
+});
+unsub(); // clean up
 ```
 
 ### Collection
@@ -78,11 +100,15 @@ const users = new Users([
   { id: 2, name: 'Bob',   active: false },
 ]);
 
-users.on('add', (model) => console.log('Added:', model.get('name')));
 users.add({ id: 3, name: 'Carol', active: true });
 
 const active = users.filter(u => u.get('active'));
 const names  = users.pluck('name'); // → ['Alice', 'Bob', 'Carol']
+
+// Subscribe to structural changes (fires once per operation, not per model)
+const unsub = users.subscribe((collection) => {
+  console.log('collection changed, length:', collection.length);
+});
 
 // Load from the server
 await users.fetch();
@@ -103,10 +129,10 @@ class Settings extends Model {
 }
 
 const settings = new Settings();
-await settings.fetch();          // loads from localStorage
+await settings.fetch();       // loads from localStorage
 
 settings.set('theme', 'dark');
-await settings.save();           // persists to localStorage
+await settings.save();        // persists to localStorage
 ```
 
 Supported backends: `'local'` (localStorage), `'session'` (sessionStorage), `'indexed'` (IndexedDB), `'memory'`.
@@ -126,38 +152,25 @@ store.trigger('update', { key: 'value' });
 const view = new EventEmitter();
 view.listenTo(store, 'update', (data) => console.log('View saw:', data));
 view.stopListening(); // removes all listeners set up via listenTo
+
+// subscribe() returns an unsubscribe function
+const unsub = store.subscribe('update', (data) => console.log(data));
+unsub();
 ```
 
-### Store-style subscriptions
+### Integration with React
 
-`subscribe()` is a modern alternative to `on()` that returns an unsubscribe function, making it compatible with React's `useSyncExternalStore` and other store-style APIs.
+`subscribe()` is directly compatible with React's `useSyncExternalStore`:
 
 ```ts
-// Model — subscribe to all attribute changes
-const unsub = user.subscribe((model, changed) => {
-  console.log('changed:', changed); // { name: 'Bob' }
-});
-unsub(); // unsubscribe
-
-// Model — subscribe to a specific event
-const unsub = user.subscribe('change:name', (model, value) => {
-  console.log('name is now', value);
-});
-
-// Collection — fires once per operation (add/remove/reset/sort) — not per individual model
-const unsub = users.subscribe((collection) => {
-  console.log('collection changed, length:', collection.length);
-});
-
-// React — useSyncExternalStore
 import { useSyncExternalStore } from 'react';
 
 function UserName({ user }) {
   const attrs = useSyncExternalStore(
-    (cb) => user.subscribe(cb),  // subscribe (returns unsub)
+    (cb) => user.subscribe(cb),  // subscribe — returns unsub
     () => user.toJSON()          // getSnapshot
   );
-  return <span>{attrs.name}</span>;
+  return <span>{attrs.firstName}</span>;
 }
 ```
 
@@ -165,9 +178,9 @@ function UserName({ user }) {
 
 | Export | What it provides |
 |---|---|
-| `Model` | `get`/`set`, change tracking, validation, server sync via `fetch`; `attrs` proxy for direct reactive access |
+| `Model` | `get`/`set`, `attrs` proxy, `computed` properties, change tracking, validation, server sync |
 | `Collection` | Full array API plus `where`, `findWhere`, `pluck`, `groupBy`, `keyBy`, `countBy`, `sortBy` |
-| `EventEmitter` | `on`/`off`/`trigger`/`once` plus `listenTo`/`stopListening` for safe memory management, and `subscribe()` returning an unsubscribe function |
+| `EventEmitter` | `on`/`off`/`trigger`/`once`, `listenTo`/`stopListening`, `subscribe()` returning an unsubscribe function |
 | `BrowserStorage` | IndexedDB, localStorage, sessionStorage, and in-memory backends |
 | `sync` | Low-level Fetch-based HTTP function (override for custom transports) |
 
@@ -196,6 +209,9 @@ Your Views and Router don't need to change at all. Skeletor models and collectio
 - Adds `EventEmitter` mixin class (replaces the old `Events` constructor function)
 - Async operations return Promises
 - ESM build available alongside CJS
+- `attrs` proxy for direct reactive attribute access
+- `computed` properties with caching and automatic change events
+- `subscribe()` returning an unsubscribe function on all reactive objects
 
 ### What was removed
 

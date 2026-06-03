@@ -3,6 +3,9 @@
 ## 3.1.0 (Unreleased)
 
 - Add an ESM build
+- Add computed properties to `Model`. Declare a `computed` getter returning `{ key: { deps, fn } }` definitions.
+  Values are cached, recalculated when deps change, and fire `change:key` events.
+  Accessible via `model.get('key')` and `model.attrs.key`.
 - Add `attrs` proxy property on `Model` for ergonomic reactive attribute access:
   `model.attrs.name` reads, `model.attrs.name = 'Bob'` writes (fires change events).
 - Add `subscribe()` method to `EventEmitter`, `Model`, and `Collection`, returning an unsubscribe function.

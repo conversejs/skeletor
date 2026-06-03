@@ -1,5 +1,5 @@
-import {Collection} from './collection';
-import {Model} from './model';
+import { Collection } from './collection';
+import { Model } from './model';
 
 /**
  * @public
@@ -9,7 +9,7 @@ export type SyncOperation = 'create' | 'update' | 'patch' | 'delete' | 'read';
 /**
  * @public
  */
-export type ObjectListenedTo = object & {_listenId?: string};
+export type ObjectListenedTo = object & { _listenId?: string };
 
 /**
  * @public
@@ -70,7 +70,7 @@ export type ListeningMap = Record<string, ListeningType>;
 /**
  * @public
  */
-export type ObjectWithId = Record<string, any> & {id: string | number};
+export type ObjectWithId = Record<string, any> & { id: string | number };
 
 /**
  * @public
@@ -85,7 +85,7 @@ export interface IEventEmitter {
   off(
     name?: string | EventCallbackMap | null,
     callback?: EventCallback | EventContext | null,
-    context?: EventContext
+    context?: EventContext,
   ): this;
   trigger(name: string, ...args: any[]): this;
   stopListening(obj?: any, name?: string | EventCallbackMap, callback?: EventCallback): this;
@@ -135,7 +135,7 @@ export interface EventsApiOptions {
  */
 export interface OffApiOptions {
   context?: any;
-  listeners?: {[key: string]: ListeningType};
+  listeners?: { [key: string]: ListeningType };
 }
 
 /**
@@ -155,13 +155,26 @@ export type IterateeFunction = (
   eventsOrMap: EventCallbackMap | EventHandlersMap,
   name: string | null,
   callback: EventCallback | EventHandler | null,
-  options: EventsApiOptions | OffApiOptions | OfferFunction | any[]
+  options: EventsApiOptions | OffApiOptions | OfferFunction | any[],
 ) => EventCallbackMap | EventHandlersMap | void;
 
 /**
  * @public
  */
-export type ModelAttributes = Record<string | number, any> & {id?: string | number};
+export type ComputedProperty<M> = {
+  deps: string[];
+  fn: (model: M) => any;
+};
+
+/**
+ * @public
+ */
+export type ComputedProperties<M> = Record<string, ComputedProperty<M>>;
+
+/**
+ * @public
+ */
+export type ModelAttributes = Record<string | number, any> & { id?: string | number };
 
 /**
  * @public
@@ -169,7 +182,7 @@ export type ModelAttributes = Record<string | number, any> & {id?: string | numb
 export type Options = Record<string, any>;
 
 export type FetchOrCreateOptions = Options & {
-  promise?: boolean,
+  promise?: boolean;
   success?: (m: Model, resp: any, callbackOpts: Options) => void;
 };
 

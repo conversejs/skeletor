@@ -147,8 +147,12 @@ import { ModelAttributes, ModelOptions } from 'src/types';
     const model = new Skeletor.Model({ name: 'Alice' });
     let changeCount = 0;
     let attrChangeValue: string;
-    model.on('change', () => { changeCount++; });
-    model.on('change:name', (_m, value) => { attrChangeValue = value; });
+    model.on('change', () => {
+      changeCount++;
+    });
+    model.on('change:name', (_m, value) => {
+      attrChangeValue = value;
+    });
     model.attrs.name = 'Bob';
     assert.equal(changeCount, 1, 'fires change event');
     assert.equal(attrChangeValue, 'Bob', 'fires change:name event with new value');
@@ -174,7 +178,9 @@ import { ModelAttributes, ModelOptions } from 'src/types';
     assert.expect(2);
     const model = new Skeletor.Model({ name: 'Alice' });
     let fired = false;
-    model.on('change:name', () => { fired = true; });
+    model.on('change:name', () => {
+      fired = true;
+    });
     const { attrs } = model;
     attrs.name = 'Bob';
     assert.ok(fired, 'change event fired via destructured attrs');
@@ -183,9 +189,103 @@ import { ModelAttributes, ModelOptions } from 'src/types';
 
   QUnit.test('attrs write for new key adds attribute', function (assert) {
     assert.expect(1);
-    const model = new Skeletor.Model({ name: 'Alice' });
+    const model = new Skeletor.Model<Skeletor.ModelAttributes>({ name: 'Alice' });
     model.attrs.extra = 'value';
     assert.equal(model.get('extra'), 'value');
+  });
+
+  QUnit.module('Skeletor.Model computed properties', function () {
+    class FullNameModel extends Skeletor.Model {
+      get computed() {
+        return {
+          fullName: {
+            deps: ['firstName', 'lastName'],
+            fn: (model) => `${model.get('firstName')} ${model.get('lastName')}`,
+          },
+        };
+      }
+    }
+
+    QUnit.test('get() returns computed value on construction', function (assert) {
+      assert.expect(1);
+      const model = new FullNameModel({ firstName: 'Alice', lastName: 'Smith' });
+      assert.equal(model.get('fullName'), 'Alice Smith');
+    });
+
+    QUnit.test('attrs returns computed value', function (assert) {
+      assert.expect(1);
+      const model = new FullNameModel({ firstName: 'Alice', lastName: 'Smith' });
+      assert.equal(model.attrs.fullName, 'Alice Smith');
+    });
+
+    QUnit.test('change:computedKey fires when a dep changes', function (assert) {
+      assert.expect(2);
+      const model = new FullNameModel({ firstName: 'Alice', lastName: 'Smith' });
+      let fired = 0;
+      let receivedValue: string;
+      model.on('change:fullName', (_m, value) => {
+        fired++;
+        receivedValue = value;
+      });
+      model.set('firstName', 'Bob');
+      assert.equal(fired, 1, 'change:fullName fired once');
+      assert.equal(receivedValue, 'Bob Smith', 'received updated computed value');
+    });
+
+    QUnit.test('change:computedKey does not fire when a non-dep changes', function (assert) {
+      assert.expect(1);
+      const model = new FullNameModel({ firstName: 'Alice', lastName: 'Smith', age: 30 });
+      let fired = 0;
+      model.on('change:fullName', () => {
+        fired++;
+      });
+      model.set('age', 31);
+      assert.equal(fired, 0, 'change:fullName did not fire');
+    });
+
+    QUnit.test('model.changed includes the computed key after its dep changes', function (assert) {
+      assert.expect(1);
+      const model = new FullNameModel({ firstName: 'Alice', lastName: 'Smith' });
+      model.on('change', () => {
+        assert.equal((model.changed as any).fullName, 'Bob Smith');
+      });
+      model.set('firstName', 'Bob');
+    });
+
+    QUnit.test('silent set updates cache but does not fire change:computedKey', function (assert) {
+      assert.expect(2);
+      const model = new FullNameModel({ firstName: 'Alice', lastName: 'Smith' });
+      let fired = 0;
+      model.on('change:fullName', () => {
+        fired++;
+      });
+      model.set('firstName', 'Bob', { silent: true });
+      assert.equal(fired, 0, 'no event fired');
+      assert.equal(model.get('fullName'), 'Bob Smith', 'cache was updated silently');
+    });
+
+    QUnit.test('two computed properties with overlapping deps both recalculate', function (assert) {
+      assert.expect(2);
+      class MultiModel extends Skeletor.Model {
+        get computed() {
+          return {
+            full: { deps: ['first', 'last'], fn: (m) => `${m.get('first')} ${m.get('last')}` },
+            initials: { deps: ['first', 'last'], fn: (m) => `${m.get('first')[0]}${m.get('last')[0]}` },
+          };
+        }
+      }
+      const model = new MultiModel({ first: 'Alice', last: 'Smith' });
+      model.set('first', 'Bob');
+      assert.equal(model.get('full'), 'Bob Smith');
+      assert.equal(model.get('initials'), 'BS');
+    });
+
+    QUnit.test('model with no computed getter is unaffected', function (assert) {
+      assert.expect(1);
+      const model = new Skeletor.Model({ name: 'Alice' });
+      model.set('name', 'Bob');
+      assert.equal(model.get('name'), 'Bob');
+    });
   });
 
   QUnit.test('subscribe(callback) fires on any attribute change', function (assert) {
@@ -212,7 +312,9 @@ import { ModelAttributes, ModelOptions } from 'src/types';
 
     const model = new Skeletor.Model({ name: 'Alice' });
     let fired = 0;
-    const unsub = model.subscribe('change:name', () => { fired += 1; });
+    const unsub = model.subscribe('change:name', () => {
+      fired += 1;
+    });
 
     model.set('name', 'Bob');
     assert.equal(fired, 1, 'fires on change:name');
@@ -227,7 +329,9 @@ import { ModelAttributes, ModelOptions } from 'src/types';
 
     const model = new Skeletor.Model({ a: 1, b: 2, c: 3 });
     let lastChanged: object;
-    const unsub = model.subscribe((_m, changed) => { lastChanged = changed; });
+    const unsub = model.subscribe((_m, changed) => {
+      lastChanged = changed;
+    });
 
     model.set({ a: 10, c: 30 });
     assert.deepEqual(lastChanged, { a: 10, c: 30 }, 'changed reflects all changed attributes');
@@ -341,7 +445,7 @@ import { ModelAttributes, ModelOptions } from 'src/types';
       model.matches(function (attr: any) {
         return attr.a > 1 && attr.b != null;
       } as any),
-      false
+      false,
     );
 
     model.set({ a: 3, b: true });
@@ -350,7 +454,7 @@ import { ModelAttributes, ModelOptions } from 'src/types';
       model.matches(function (attr: any) {
         return attr.a > 1 && attr.b != null;
       } as any),
-      true
+      true,
     );
   });
 
@@ -791,7 +895,8 @@ import { ModelAttributes, ModelOptions } from 'src/types';
     assert.equal(_.size(syncArgs[2].attrs), 2);
     assert.equal(syncArgs[2].attrs.d, 4);
     assert.equal(syncArgs[2].attrs.a, undefined);
-    const ajaxSettings = (window.fetch as sinon.SinonStub).getCall((window.fetch as sinon.SinonStub).callCount - 1).args[1];
+    const ajaxSettings = (window.fetch as sinon.SinonStub).getCall((window.fetch as sinon.SinonStub).callCount - 1)
+      .args[1];
     assert.equal(ajaxSettings.body, '{"b":2,"d":4}');
     syncSpy.restore();
   });
@@ -831,7 +936,7 @@ import { ModelAttributes, ModelOptions } from 'src/types';
         success(m) {
           assert.deepEqual(m.attributes, { testing: 'empty' });
         },
-      }
+      },
     );
   });
 
@@ -861,7 +966,7 @@ import { ModelAttributes, ModelOptions } from 'src/types';
 
     const model = new SpecialSyncModel();
     const onSuccess = function (m, response, options) {
-      assert.ok((options).specialSync, 'Options were passed correctly to callback');
+      assert.ok(options.specialSync, 'Options were passed correctly to callback');
     };
     model.save(null, { success: onSuccess });
     const ajaxSettings = (window.fetch as any).getCall((window.fetch as any).callCount - 1).args[1];
@@ -1232,7 +1337,7 @@ import { ModelAttributes, ModelOptions } from 'src/types';
       });
       model.save({ x: 3 }, { wait: true });
       assert.equal(model.get('x'), 3);
-    }
+    },
   );
 
   QUnit.test('save with wait validates attributes', function (assert) {
@@ -1548,7 +1653,7 @@ import { ModelAttributes, ModelOptions } from 'src/types';
       model.set({ x: 2 }, { silent: true });
       model.set({ x: 3 }, { silent: true });
       model.set({ x: 1 });
-    }
+    },
   );
 
   QUnit.test('#1664 - multiple silent changes nested inside a change event', function (assert) {
@@ -1642,7 +1747,7 @@ import { ModelAttributes, ModelOptions } from 'src/types';
       }
       const model = new Model({ id: 1 }, { validate: true });
       assert.equal(model.validationError, "This shouldn't happen");
-    }
+    },
   );
 
   QUnit.test('toJSON receives attrs during save(..., {wait: true})', function (assert) {

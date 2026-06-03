@@ -16,7 +16,16 @@ import { EventEmitterObject } from './eventemitter';
 // Import types
 import type { Collection } from './collection';
 import type Storage from './storage';
-import { EventCallback, ModelAttributes, ObjectWithId, SyncOperation, ModelOptions, Options } from './types';
+import {
+  ComputedProperties,
+  ComputedProperty,
+  EventCallback,
+  ModelAttributes,
+  ObjectWithId,
+  SyncOperation,
+  ModelOptions,
+  Options,
+} from './types';
 
 /**
  * @public
@@ -26,6 +35,8 @@ import { EventCallback, ModelAttributes, ObjectWithId, SyncOperation, ModelOptio
  * performing computations and transformations on that data.
  */
 export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmitterObject {
+  #computedCache?: Record<string, any>;
+  #computedDefs?: Record<string, ComputedProperty<this>>;
   _browserStorage?: Storage;
   _changing = false;
   _pending: boolean | ModelOptions = false;
@@ -61,7 +72,15 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
 
     this.set(attrs, options);
 
+    this.#initComputed();
+
     this.attrs = new Proxy(this.attributes as T, {
+      get: (_target, key) => {
+        if (typeof key !== 'symbol' && this.#computedCache && (key as string) in this.#computedCache) {
+          return this.#computedCache[key as string];
+        }
+        return (this.attributes as any)[key];
+      },
       set: (_target, key, value) => {
         this.set(key as string, value);
         return true;
@@ -123,6 +142,39 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
   }
 
   /**
+   * Declare computed properties. Override in subclasses to define properties
+   * that derive their value from other attributes. Each entry specifies the
+   * attribute keys it depends on (`deps`) and a function (`fn`) that receives
+   * the model and returns the computed value. The value is cached and
+   * recalculated automatically when any dep changes, firing a `change:key`
+   * event.
+   */
+  get computed(): ComputedProperties<this> {
+    return {};
+  }
+
+  #updateComputed(key: string, def: ComputedProperty<this>, silent: boolean, options: ModelOptions): void {
+    const newVal = def.fn(this);
+    if (!isEqual(this.#computedCache[key], newVal)) {
+      this.#computedCache[key] = newVal;
+      if (!silent) {
+        (this.changed as any)[key] = newVal;
+        this.trigger('change:' + key, this, newVal, options);
+      }
+    }
+  }
+
+  #initComputed(): void {
+    const defs = result(this, 'computed') as ComputedProperties<this>;
+    if (!defs || isEmpty(defs)) return;
+    this.#computedDefs = defs;
+    this.#computedCache = {};
+    for (const [key, def] of Object.entries(defs)) {
+      this.#computedCache[key] = def.fn(this);
+    }
+  }
+
+  /**
    * Return a copy of the model's `attributes` object.
    */
   toJSON(): T {
@@ -137,9 +189,12 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
   }
 
   /**
-   * Get the value of an attribute.
+   * Get the value of an attribute, or a computed property.
    */
   get<K extends keyof T>(attr: K): T[K] {
+    if (this.#computedCache && (attr as string) in this.#computedCache) {
+      return this.#computedCache[attr as string];
+    }
     return this.attributes[attr];
   }
 
@@ -255,6 +310,15 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
       if (changes.length) this._pending = options;
       for (let i = 0; i < changes.length; i++) {
         this.trigger('change:' + changes[i], this, current[changes[i]], options);
+      }
+    }
+
+    // Recalculate computed properties whose deps changed.
+    if (changes.length && this.#computedDefs) {
+      for (const [key, def] of Object.entries(this.#computedDefs)) {
+        if (def.deps.some((dep) => changes.includes(dep))) {
+          this.#updateComputed(key, def, silent, options);
+        }
       }
     }
 
@@ -526,7 +590,7 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
   subscribe(
     eventOrCallback: string | ((model: this, changed: Partial<T>) => void),
     callback?: EventCallback,
-    context?: unknown
+    context?: unknown,
   ): () => void {
     if (typeof eventOrCallback === 'function') {
       const cb = (model: this) => (eventOrCallback as (model: this, changed: Partial<T>) => void)(model, this.changed);

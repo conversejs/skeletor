@@ -60,6 +60,8 @@ export type { StorageDriver } from './drivers/types';
 export type {
   ClassConstructor,
   CollectionOptions,
+  ComputedProperties,
+  ComputedProperty,
   Comparator,
   EventCallback,
   EventCallbackMap,
