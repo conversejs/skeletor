@@ -135,6 +135,52 @@ import { ModelAttributes, ModelOptions } from 'src/types';
     doc.collection = collection;
   });
 
+  QUnit.test('subscribe(callback) fires on any attribute change', function (assert) {
+    assert.expect(4);
+
+    const model = new Skeletor.Model({ name: 'Alice', age: 30 });
+    const calls: Array<{ changed: object }> = [];
+    const unsub = model.subscribe((m, changed) => {
+      assert.equal(m, model, 'receives the model');
+      calls.push({ changed });
+    });
+
+    model.set('name', 'Bob');
+    assert.equal(calls.length, 1, 'fires once on set');
+    assert.deepEqual(calls[0].changed, { name: 'Bob' }, 'changed contains only the changed attribute');
+
+    unsub();
+    model.set('name', 'Carol');
+    assert.equal(calls.length, 1, 'does not fire after unsubscribe');
+  });
+
+  QUnit.test('subscribe(event, callback) delegates to EventEmitter subscribe', function (assert) {
+    assert.expect(2);
+
+    const model = new Skeletor.Model({ name: 'Alice' });
+    let fired = 0;
+    const unsub = model.subscribe('change:name', () => { fired += 1; });
+
+    model.set('name', 'Bob');
+    assert.equal(fired, 1, 'fires on change:name');
+
+    unsub();
+    model.set('name', 'Carol');
+    assert.equal(fired, 1, 'does not fire after unsubscribe');
+  });
+
+  QUnit.test('subscribe(callback) receives correct changed map for batch set', function (assert) {
+    assert.expect(1);
+
+    const model = new Skeletor.Model({ a: 1, b: 2, c: 3 });
+    let lastChanged: object;
+    const unsub = model.subscribe((_m, changed) => { lastChanged = changed; });
+
+    model.set({ a: 10, c: 30 });
+    assert.deepEqual(lastChanged, { a: 10, c: 30 }, 'changed reflects all changed attributes');
+    unsub();
+  });
+
   QUnit.test('url when using urlRoot, and uri encoding', function (assert) {
     assert.expect(2);
     class Model extends Skeletor.Model {

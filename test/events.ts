@@ -106,6 +106,37 @@ import { EventCallbackMap } from '../src/types';
     assert.equal(foo.counter, 5);
   });
 
+  QUnit.test('subscribe returns an unsubscribe function', function (assert) {
+    assert.expect(3);
+
+    const foo = new Foo();
+    const unsub = foo.subscribe('event', () => { foo.counter += 1; });
+    foo.trigger('event');
+    assert.equal(foo.counter, 1, 'callback fires after subscribe');
+
+    foo.trigger('event');
+    assert.equal(foo.counter, 2, 'callback fires again');
+
+    unsub();
+    foo.trigger('event');
+    assert.equal(foo.counter, 2, 'callback does not fire after unsubscribe');
+  });
+
+  QUnit.test('subscribe supports space-separated events', function (assert) {
+    assert.expect(2);
+
+    const foo = new Foo();
+    const unsub = foo.subscribe('a b', () => { foo.counter += 1; });
+    foo.trigger('a');
+    foo.trigger('b');
+    assert.equal(foo.counter, 2, 'fires for both events');
+
+    unsub();
+    foo.trigger('a');
+    foo.trigger('b');
+    assert.equal(foo.counter, 2, 'does not fire after unsubscribe');
+  });
+
   QUnit.test('binding and triggering multiple event names with event maps', function (assert) {
     class Foo extends Skeletor.EventEmitter(Object) {
       counter: number;

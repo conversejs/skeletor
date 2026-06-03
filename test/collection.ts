@@ -49,6 +49,64 @@ import {CollectionOptions, ModelAttributes, ModelOptions} from '../src/types';
     assert.deepEqual(collection.pluck('id'), [1, 2, 3]);
   });
 
+  QUnit.test('subscribe(callback) fires once on add', function (assert) {
+    assert.expect(2);
+
+    const collection = new Skeletor.Collection([a, b]);
+    let calls = 0;
+    const unsub = collection.subscribe((coll) => {
+      assert.equal(coll, collection, 'receives the collection');
+      calls += 1;
+    });
+
+    collection.add(c);
+    assert.equal(calls, 1, 'fires exactly once on add (not per-model)');
+    unsub();
+  });
+
+  QUnit.test('subscribe(callback) fires on remove', function (assert) {
+    assert.expect(1);
+
+    let calls = 0;
+    const unsub = col.subscribe(() => { calls += 1; });
+    col.remove(a);
+    assert.equal(calls, 1, 'fires exactly once on remove (not per-model)');
+    unsub();
+  });
+
+  QUnit.test('subscribe(callback) fires on reset', function (assert) {
+    assert.expect(1);
+
+    let calls = 0;
+    const unsub = col.subscribe(() => { calls += 1; });
+    col.reset([]);
+    assert.equal(calls, 1, 'fires once on reset');
+    unsub();
+  });
+
+  QUnit.test('subscribe(callback) does not fire after unsubscribe', function (assert) {
+    assert.expect(1);
+
+    let calls = 0;
+    const unsub = col.subscribe(() => { calls += 1; });
+    unsub();
+    col.add(new Skeletor.Model({ id: 99 }));
+    assert.equal(calls, 0, 'does not fire after unsubscribe');
+  });
+
+  QUnit.test('subscribe(event, callback) delegates to EventEmitter subscribe', function (assert) {
+    assert.expect(2);
+
+    let fired = 0;
+    const unsub = col.subscribe('sort', () => { fired += 1; });
+    col.comparator = 'id';
+    col.sort();
+    assert.equal(fired, 1, 'fires on sort event');
+    unsub();
+    col.sort();
+    assert.equal(fired, 1, 'does not fire after unsubscribe');
+  });
+
   QUnit.test('new and parse', function (assert) {
     assert.expect(3);
     class Collection extends Skeletor.Collection {

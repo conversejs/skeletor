@@ -12,6 +12,7 @@ import {Model} from './model';
 import {
   CollectionOptions,
   Comparator,
+  EventCallback,
   FetchOrCreateOptions,
   ModelAttributes,
   ModelOptions,
@@ -630,6 +631,26 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
     } else {
       return preparedModel;
     }
+  }
+
+  /**
+   * Subscribe to collection changes (add, remove, reset, sort, update).
+   * Returns an unsubscribe function.
+   *
+   * `collection.subscribe(callback)` — fires once per operation on add/remove/reset/sort (via `update`, `reset`, `sort` events).
+   * `collection.subscribe(event, callback)` — subscribe to a specific event (base EventEmitter form).
+   *
+   * Compatible with React's `useSyncExternalStore` and other store-style APIs.
+   */
+  subscribe(event: string, callback: EventCallback, context?: unknown): () => void;
+  subscribe(callback: (collection: this) => void): () => void;
+  subscribe(eventOrCallback: string | ((collection: this) => void), callback?: EventCallback, context?: unknown): () => void {
+    if (typeof eventOrCallback === 'function') {
+      const cb = () => (eventOrCallback as (collection: this) => void)(this);
+      this.on('update reset sort', cb);
+      return () => this.off('update reset sort', cb);
+    }
+    return super.subscribe(eventOrCallback, callback, context);
   }
 
   /**

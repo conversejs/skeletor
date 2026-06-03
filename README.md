@@ -124,13 +124,46 @@ view.listenTo(store, 'update', (data) => console.log('View saw:', data));
 view.stopListening(); // removes all listeners set up via listenTo
 ```
 
+### Store-style subscriptions
+
+`subscribe()` is a modern alternative to `on()` that returns an unsubscribe function, making it compatible with React's `useSyncExternalStore` and other store-style APIs.
+
+```ts
+// Model — subscribe to all attribute changes
+const unsub = user.subscribe((model, changed) => {
+  console.log('changed:', changed); // { name: 'Bob' }
+});
+unsub(); // unsubscribe
+
+// Model — subscribe to a specific event
+const unsub = user.subscribe('change:name', (model, value) => {
+  console.log('name is now', value);
+});
+
+// Collection — fires once per operation (add/remove/reset/sort) — not per individual model
+const unsub = users.subscribe((collection) => {
+  console.log('collection changed, length:', collection.length);
+});
+
+// React — useSyncExternalStore
+import { useSyncExternalStore } from 'react';
+
+function UserName({ user }) {
+  const attrs = useSyncExternalStore(
+    (cb) => user.subscribe(cb),  // subscribe (returns unsub)
+    () => user.toJSON()          // getSnapshot
+  );
+  return <span>{attrs.name}</span>;
+}
+```
+
 ## Features at a Glance
 
 | Export | What it provides |
 |---|---|
 | `Model` | `get`/`set`, change tracking, validation, server sync via `fetch` |
 | `Collection` | Full array API plus `where`, `findWhere`, `pluck`, `groupBy`, `keyBy`, `countBy`, `sortBy` |
-| `EventEmitter` | `on`/`off`/`trigger`/`once` plus `listenTo`/`stopListening` for safe memory management |
+| `EventEmitter` | `on`/`off`/`trigger`/`once` plus `listenTo`/`stopListening` for safe memory management, and `subscribe()` returning an unsubscribe function |
 | `BrowserStorage` | IndexedDB, localStorage, sessionStorage, and in-memory backends |
 | `sync` | Low-level Fetch-based HTTP function (override for custom transports) |
 

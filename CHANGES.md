@@ -3,6 +3,10 @@
 ## 3.0.1 (Unreleased)
 
 - Add an ESM build
+- Add `subscribe()` method to `EventEmitter`, `Model`, and `Collection`, returning an unsubscribe function.
+  Compatible with React's `useSyncExternalStore` and other store-style APIs.
+  `Model.subscribe(callback)` receives `(model, changed)` on any attribute change.
+  `Collection.subscribe(callback)` fires once per operation (on `update`, `reset`, or `sort` events).
 
 ## 3.0.0 (2025-12-13)
 

@@ -160,6 +160,15 @@ export function EventEmitter<T extends ClassConstructor>(Base: T) {
       eventsApi(triggerApi, this._events, name, undefined, args);
       return this;
     }
+
+    /**
+     * Subscribe to an event. Returns an unsubscribe function.
+     * Compatible with `useSyncExternalStore` and other store-style APIs.
+     */
+    subscribe(event: string, callback: EventCallback, context?: EventContext): () => void {
+      this.on(event, callback, context);
+      return () => this.off(event, callback, context);
+    }
   };
 }
 

@@ -16,7 +16,7 @@ import { EventEmitterObject } from './eventemitter';
 // Import types
 import type { Collection } from './collection';
 import type Storage from './storage';
-import { ModelAttributes, ObjectWithId, SyncOperation, ModelOptions, Options } from './types';
+import { EventCallback, ModelAttributes, ObjectWithId, SyncOperation, ModelOptions, Options } from './types';
 
 /**
  * @public
@@ -503,6 +503,29 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
    */
   isValid(options?: ModelOptions): boolean {
     return this._validate({}, Object.assign({}, options, { validate: true }));
+  }
+
+  /**
+   * Subscribe to model changes. Returns an unsubscribe function.
+   *
+   * `model.subscribe(callback)` — fires on any attribute change, receives `(model, changed)`.
+   * `model.subscribe(event, callback)` — subscribe to a specific event (base EventEmitter form).
+   *
+   * Compatible with React's `useSyncExternalStore` and other store-style APIs.
+   */
+  subscribe(event: string, callback: EventCallback, context?: unknown): () => void;
+  subscribe(callback: (model: this, changed: Partial<T>) => void): () => void;
+  subscribe(
+    eventOrCallback: string | ((model: this, changed: Partial<T>) => void),
+    callback?: EventCallback,
+    context?: unknown
+  ): () => void {
+    if (typeof eventOrCallback === 'function') {
+      const cb = (model: this) => (eventOrCallback as (model: this, changed: Partial<T>) => void)(model, this.changed);
+      this.on('change', cb);
+      return () => this.off('change', cb);
+    }
+    return super.subscribe(eventOrCallback, callback, context);
   }
 
   /**
