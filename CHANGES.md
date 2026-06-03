@@ -1,8 +1,10 @@
 # Changelog
 
-## 3.0.1 (Unreleased)
+## 3.1.0 (Unreleased)
 
 - Add an ESM build
+- Add `attrs` proxy property on `Model` for ergonomic reactive attribute access:
+  `model.attrs.name` reads, `model.attrs.name = 'Bob'` writes (fires change events).
 - Add `subscribe()` method to `EventEmitter`, `Model`, and `Collection`, returning an unsubscribe function.
   Compatible with React's `useSyncExternalStore` and other store-style APIs.
   `Model.subscribe(callback)` receives `(model, changed)` on any attribute change.

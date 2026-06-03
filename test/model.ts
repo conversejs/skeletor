@@ -135,6 +135,59 @@ import { ModelAttributes, ModelOptions } from 'src/types';
     doc.collection = collection;
   });
 
+  QUnit.test('attrs reads attribute values', function (assert) {
+    assert.expect(2);
+    const model = new Skeletor.Model({ name: 'Alice', age: 30 });
+    assert.equal(model.attrs.name, 'Alice');
+    assert.equal(model.attrs.age, 30);
+  });
+
+  QUnit.test('attrs write fires change events', function (assert) {
+    assert.expect(3);
+    const model = new Skeletor.Model({ name: 'Alice' });
+    let changeCount = 0;
+    let attrChangeValue: string;
+    model.on('change', () => { changeCount++; });
+    model.on('change:name', (_m, value) => { attrChangeValue = value; });
+    model.attrs.name = 'Bob';
+    assert.equal(changeCount, 1, 'fires change event');
+    assert.equal(attrChangeValue, 'Bob', 'fires change:name event with new value');
+    assert.equal(model.get('name'), 'Bob', 'model.get() reflects the update');
+  });
+
+  QUnit.test('attrs write is reflected in model.get() and model.attributes', function (assert) {
+    assert.expect(2);
+    const model = new Skeletor.Model({ name: 'Alice' });
+    model.attrs.name = 'Bob';
+    assert.equal(model.get('name'), 'Bob');
+    assert.equal(model.attributes.name, 'Bob');
+  });
+
+  QUnit.test('model.set() is reflected in attrs', function (assert) {
+    assert.expect(1);
+    const model = new Skeletor.Model({ name: 'Alice' });
+    model.set('name', 'Bob');
+    assert.equal(model.attrs.name, 'Bob');
+  });
+
+  QUnit.test('attrs is reactive when destructured', function (assert) {
+    assert.expect(2);
+    const model = new Skeletor.Model({ name: 'Alice' });
+    let fired = false;
+    model.on('change:name', () => { fired = true; });
+    const { attrs } = model;
+    attrs.name = 'Bob';
+    assert.ok(fired, 'change event fired via destructured attrs');
+    assert.equal(model.get('name'), 'Bob', 'model reflects the change');
+  });
+
+  QUnit.test('attrs write for new key adds attribute', function (assert) {
+    assert.expect(1);
+    const model = new Skeletor.Model({ name: 'Alice' });
+    model.attrs.extra = 'value';
+    assert.equal(model.get('extra'), 'value');
+  });
+
   QUnit.test('subscribe(callback) fires on any attribute change', function (assert) {
     assert.expect(4);
 

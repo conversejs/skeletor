@@ -55,6 +55,10 @@ user.on('change:name', (model, value) => {
 user.set('name', 'Bob'); // → "Name changed to Bob"
 console.log(user.get('name')); // → "Bob"
 console.log(user.hasChanged('name')); // → true
+
+// Or use attrs for direct reactive access
+user.attrs.name = 'Carol'; // → "Name changed to Carol"
+console.log(user.attrs.name); // → "Carol"
 ```
 
 ### Collection
@@ -161,7 +165,7 @@ function UserName({ user }) {
 
 | Export | What it provides |
 |---|---|
-| `Model` | `get`/`set`, change tracking, validation, server sync via `fetch` |
+| `Model` | `get`/`set`, change tracking, validation, server sync via `fetch`; `attrs` proxy for direct reactive access |
 | `Collection` | Full array API plus `where`, `findWhere`, `pluck`, `groupBy`, `keyBy`, `countBy`, `sortBy` |
 | `EventEmitter` | `on`/`off`/`trigger`/`once` plus `listenTo`/`stopListening` for safe memory management, and `subscribe()` returning an unsubscribe function |
 | `BrowserStorage` | IndexedDB, localStorage, sessionStorage, and in-memory backends |

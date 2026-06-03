@@ -32,6 +32,7 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
   _previousAttributes?: T;
   _url: string = '';
   _urlRoot: string;
+  attrs: T;
   attributes: T;
   changed: Partial<T> = {};
   cid: string;
@@ -59,6 +60,13 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
     attrs = defaults(Object.assign({}, default_attrs, attrs), default_attrs);
 
     this.set(attrs, options);
+
+    this.attrs = new Proxy(this.attributes as T, {
+      set: (_target, key, value) => {
+        this.set(key as string, value);
+        return true;
+      },
+    });
 
     this.initialize.apply(this, arguments as any);
 
