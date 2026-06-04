@@ -19,4 +19,7 @@ export interface StorageDriver {
   };
 }
 
+/**
+ * @public
+ */
 export type StoreType = 'local' | 'session' | 'indexed' | 'in_memory' | 'node';

@@ -181,6 +181,9 @@ export type ModelAttributes = Record<string | number, any> & { id?: string | num
  */
 export type Options = Record<string, any>;
 
+/**
+ * @public
+ */
 export type FetchOrCreateOptions = Options & {
   promise?: boolean;
   success?: (m: Model, resp: any, callbackOpts: Options) => void;

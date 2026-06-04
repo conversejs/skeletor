@@ -56,7 +56,7 @@ export default skeletor;
 
 export { noConflict, Collection, EventEmitter, Model, PersistentStorage, sync };
 
-export type { StorageDriver } from './drivers/types';
+export type { StorageDriver, StoreType } from './drivers/types';
 export type {
   ClassConstructor,
   CollectionOptions,
