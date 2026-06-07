@@ -135,6 +135,34 @@ import { ModelAttributes, ModelOptions } from 'src/types';
     doc.collection = collection;
   });
 
+  QUnit.test('initialized resolves immediately when autoSync is off', async function (assert) {
+    assert.expect(1);
+    const model = new Skeletor.Model({ name: 'Alice' });
+    await model.initialized;
+    assert.ok(true, 'initialized resolved');
+  });
+
+  QUnit.test('storage and browserStorage accessors share the same backing field', function (assert) {
+    assert.expect(4);
+    const model = new Skeletor.Model();
+    assert.equal(model.storage, undefined, 'storage starts undefined');
+    assert.equal(model.browserStorage, undefined, 'browserStorage starts undefined');
+
+    const store = new Skeletor.PersistentStorage('test', 'in_memory');
+    model.storage = store;
+    assert.equal(model.storage, store, 'storage setter works');
+    assert.equal(model.browserStorage, store, 'browserStorage alias reflects storage');
+  });
+
+  QUnit.test('browserStorage setter also sets storage', function (assert) {
+    assert.expect(2);
+    const model = new Skeletor.Model();
+    const store = new Skeletor.PersistentStorage('test2', 'in_memory');
+    model.browserStorage = store;
+    assert.equal(model.storage, store, 'storage reflects browserStorage set');
+    assert.equal(model.browserStorage, store);
+  });
+
   QUnit.test('attrs reads attribute values', function (assert) {
     assert.expect(2);
     const model = new Skeletor.Model({ name: 'Alice', age: 30 });

@@ -5,10 +5,11 @@ import isFunction from 'lodash-es/isFunction';
 import isString from 'lodash-es/isString';
 import keyBy from 'lodash-es/keyBy';
 import sortBy from 'lodash-es/sortBy';
-import {EventEmitterObject} from './eventemitter';
-import type Storage from './storage';
-import {getResolveablePromise, getSyncMethod, wrapError} from './helpers';
-import {Model} from './model';
+import { EventEmitterObject } from './eventemitter';
+import PersistentStorage from './storage';
+import { getResolveablePromise, getStorage, getSyncMethod, wrapError } from './helpers';
+import { ensureUnloadListener } from './autosync';
+import { Model } from './model';
 import {
   CollectionOptions,
   Comparator,
@@ -22,8 +23,8 @@ import {
 } from './types';
 
 // Default options for `Collection#set`.
-const setOptions = {add: true, remove: true, merge: true};
-const addOptions = {add: true, remove: false};
+const setOptions = { add: true, remove: true, merge: true };
+const addOptions = { add: true, remove: false };
 
 /**
  * @public
@@ -36,9 +37,10 @@ const addOptions = {add: true, remove: false};
  */
 export class Collection<T extends Model = Model> extends EventEmitterObject {
   [key: symbol]: () => CollectionIterator<T>;
-  _browserStorage?: Storage;
+  _storage?: PersistentStorage;
   _comparator?: Comparator<T>;
   _url: string = '';
+  initialized: Promise<void>;
   models: T[];
   protected _byId: Record<string, T>;
   protected _model?: new (attributes?: Partial<ModelAttributes>, options?: ModelOptions) => T;
@@ -56,9 +58,10 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
     if (options.comparator !== undefined) this.comparator = options.comparator;
     this._reset();
     this.initialize.apply(this, arguments as any);
-    if (models) this.reset(models, Object.assign({silent: true}, options));
+    if (models) this.reset(models, Object.assign({ silent: true }, options));
 
     this[Symbol.iterator] = this.values;
+    this.initialized = this.#hydrate();
   }
 
   get comparator(): Comparator<T> {
@@ -69,12 +72,56 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
     this._comparator = c;
   }
 
-  set browserStorage(storage: Storage) {
-    this._browserStorage = storage;
+  /**
+   * The canonical storage accessor. Set to a `PersistentStorage` instance
+   * to enable local persistence for this collection.
+   */
+  get storage(): PersistentStorage | undefined {
+    return this._storage;
   }
 
-  get browserStorage(): Storage | undefined {
-    return this._browserStorage;
+  set storage(s: PersistentStorage) {
+    this._storage = s;
+    // WeakRef: the collection's storage is GC-eligible once all models are
+    // removed (clearing model.collection), at which point there are no pending
+    // writes through it. See storage.ts for the full rationale.
+    PersistentStorage.registerWeak(s);
+  }
+
+  /**
+   * @deprecated Use `storage` instead.
+   */
+  get browserStorage(): PersistentStorage | undefined {
+    return this._storage;
+  }
+
+  set browserStorage(s: PersistentStorage) {
+    this.storage = s;
+  }
+
+  /**
+   * Override to return `true` to automatically load the collection from
+   * storage on construction. Await `initialized` to know when hydration
+   * is complete.
+   */
+  get autoSync(): boolean {
+    return false;
+  }
+
+  async #hydrate(): Promise<void> {
+    const store = getStorage(this);
+    if (!this.autoSync || !store) return;
+    ensureUnloadListener(PersistentStorage);
+    await new Promise<void>((resolve) => {
+      this.fetch({
+        fromStorage: true,
+        success: () => resolve(),
+        error: (_c: any, e: any) => {
+          console.error('Skeletor autoSync collection hydration error:', e);
+          resolve();
+        },
+      });
+    });
   }
 
   /**
@@ -133,7 +180,7 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
    * combination of the two.
    */
   add(models: T[] | T | ModelAttributes | ModelAttributes[], options?: Options): T | T[] {
-    return this.set(models, Object.assign({merge: false}, options, addOptions));
+    return this.set(models, Object.assign({ merge: false }, options, addOptions));
   }
 
   /**
@@ -145,7 +192,7 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
     const modelsArray = singular ? [models] : (models as T[]).slice();
     const removed = this._removeModels(modelsArray, options);
     if (!options.silent && removed.length) {
-      options.changes = {added: [], merged: [], removed: removed};
+      options.changes = { added: [], merged: [], removed: removed };
       this.trigger('update', this, options);
     }
     return singular ? removed[0] : removed;
@@ -248,7 +295,7 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
     }
 
     // Silently sort the collection if appropriate.
-    if (sort) this.sort({silent: true});
+    if (sort) this.sort({ silent: true });
 
     // Unless silenced, it's time to fire all appropriate add/sort/update events.
     if (!options.silent) {
@@ -283,12 +330,12 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
                 console.error(e);
                 resolve();
               },
-            })
+            }),
           );
         });
-      })
+      }),
     );
-    await this.browserStorage?.clear();
+    await this.storage?.clear();
     this.reset();
   }
 
@@ -305,7 +352,7 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
     }
     options.previousModels = this.models;
     this._reset();
-    models = this.add(models, Object.assign({silent: true}, options));
+    models = this.add(models, Object.assign({ silent: true }, options));
     if (!options.silent) this.trigger('reset', this, options);
     return models as T | T[];
   }
@@ -314,7 +361,7 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
    * Add a model to the end of the collection.
    */
   push(model: T | ModelAttributes, options?: Options): T {
-    return this.add(model, Object.assign({at: this.length}, options)) as T;
+    return this.add(model, Object.assign({ at: this.length }, options)) as T;
   }
 
   /**
@@ -329,7 +376,7 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
    * Add a model to the beginning of the collection.
    */
   unshift(model: T | ModelAttributes, options?: Options): T {
-    return this.add(model, Object.assign({at: 0}, options)) as T;
+    return this.add(model, Object.assign({ at: 0 }, options)) as T;
   }
 
   /**
@@ -350,7 +397,7 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
       isFunction(callback)
         ? (callback as (model: T) => boolean)
         : (m) => m.matches(callback as Partial<ModelAttributes>),
-      thisArg
+      thisArg,
     );
   }
 
@@ -391,7 +438,7 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
       this.models,
       isFunction(iteratee)
         ? iteratee
-        : (m: T) => (isString(iteratee) ? m.get(iteratee as string) : m.matches(iteratee as Partial<ModelAttributes>))
+        : (m: T) => (isString(iteratee) ? m.get(iteratee as string) : m.matches(iteratee as Partial<ModelAttributes>)),
     );
   }
 
@@ -436,7 +483,7 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
       isFunction(pred)
         ? (pred as (model: T) => boolean)
         : (m) => (isString(pred) ? m.get(pred as string) : m.matches(pred as Partial<ModelAttributes>)),
-      fromIndex
+      fromIndex,
     );
   }
 
@@ -448,7 +495,7 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
     return this.models.findIndex(
       isFunction(pred)
         ? (pred as (model: T) => boolean)
-        : (m) => (isString(pred) ? m.get(pred as string) : m.matches(pred as Partial<ModelAttributes>))
+        : (m) => (isString(pred) ? m.get(pred as string) : m.matches(pred as Partial<ModelAttributes>)),
     );
   }
 
@@ -470,7 +517,7 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
       isFunction(cb)
         ? (cb as (model: T) => U)
         : (m) => (isString(cb) ? m.get(cb as string) : m.matches(cb as Partial<ModelAttributes>)),
-      thisArg
+      thisArg,
     );
   }
 
@@ -573,14 +620,15 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
    * data will be passed through the `reset` method instead of `set`.
    */
   fetch(options?: Options): Promise<any> | any {
-    options = Object.assign({parse: true}, options);
+    options = Object.assign({ parse: true }, options);
     const success = options.success;
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const collection = this;
     const promise = options.promise && getResolveablePromise();
     options.success = function (resp: any) {
       const method = options.reset ? 'reset' : 'set';
-      collection[method](resp, options);
+      // fromStorage prevents individual model set() calls from triggering auto-save on reads
+      collection[method](resp, Object.assign({}, options, { fromStorage: true }));
       if (success) success.call(options.context, collection, resp, options);
       promise && promise.resolve();
       collection.trigger('sync', collection, resp, options);
@@ -625,7 +673,7 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
       return_promise && promise.reject(e);
     };
 
-    preparedModel.save(null, Object.assign(options, {'promise': false}));
+    preparedModel.save(null, Object.assign(options, { 'promise': false }));
     if (return_promise) {
       return promise;
     } else {
@@ -644,7 +692,11 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
    */
   subscribe(event: string, callback: EventCallback, context?: unknown): () => void;
   subscribe(callback: (collection: this) => void): () => void;
-  subscribe(eventOrCallback: string | ((collection: this) => void), callback?: EventCallback, context?: unknown): () => void {
+  subscribe(
+    eventOrCallback: string | ((collection: this) => void),
+    callback?: EventCallback,
+    context?: unknown,
+  ): () => void {
     if (typeof eventOrCallback === 'function') {
       const cb = () => (eventOrCallback as (collection: this) => void)(this);
       this.on('update reset sort', cb);
@@ -837,7 +889,7 @@ export class CollectionIterator<T extends Model> {
         this._index++;
 
         if (!model) {
-          return {value: undefined, done: true};
+          return { value: undefined, done: true };
         }
 
         // Construct a value depending on what kind of values should be iterated.
@@ -853,7 +905,7 @@ export class CollectionIterator<T extends Model> {
             value = [id, model];
           }
         }
-        return {value, done: false};
+        return { value, done: false };
       }
 
       // Once exhausted, remove the reference to the collection so future
@@ -861,7 +913,7 @@ export class CollectionIterator<T extends Model> {
       this._collection = undefined;
     }
 
-    return {value: undefined, done: true};
+    return { value: undefined, done: true };
   }
 
   [Symbol.iterator](): IterableIterator<any> {
