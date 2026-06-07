@@ -207,4 +207,8 @@ export type ModelOptions = Options & {
   unset?: boolean;
   silent?: boolean;
   validate?: boolean;
+  /** Suppress the auto-save triggered by set() on autoSync models. */
+  noAutoSave?: boolean;
+  /** Mark a set() call as originating from a storage read; suppresses auto-save. */
+  fromStorage?: boolean;
 };

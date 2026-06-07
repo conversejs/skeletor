@@ -54,7 +54,13 @@ skeletor.noConflict = noConflict;
 root.Skeletor = skeletor;
 export default skeletor;
 
-export { noConflict, Collection, EventEmitter, Model, PersistentStorage, sync };
+/**
+ * @deprecated Use `PersistentStorage` instead.
+ * @public
+ */
+const BrowserStorage = PersistentStorage;
+export { noConflict, Collection, EventEmitter, Model, PersistentStorage, BrowserStorage, sync };
+export { getStorage } from './helpers';
 
 export type { StorageDriver, StoreType } from './drivers/types';
 export type {
