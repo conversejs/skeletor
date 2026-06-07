@@ -3,6 +3,16 @@
 ## 3.1.0 (Unreleased)
 
 - Add an ESM build
+- **Rename `browserStorage` → `storage`** on `Model` and `Collection` (platform-neutral; Node/SQLite is also supported). `browserStorage` is kept as a deprecated alias — it still works but will be removed in a future major version.
+- Add `BrowserStorage` as a deprecated export alias for `PersistentStorage` (the README incorrectly advertised this export; it now exists).
+- Add `autoSync` opt-in for transparent local persistence:
+  - Declare `get autoSync() { return true; }` on a model or collection to enable.
+  - **Auto-hydrate**: the model/collection loads its stored state on construction. `await model.initialized` resolves when done. When `autoSync` is off, `initialized` is `undefined`, but awaiting it is still safe (awaiting `undefined` is a no-op), so callers can always `await` it uniformly.
+  - **Auto-save** (models only): any `set()` (including `attrs.x = y`) that produces changes schedules a debounced save. Pass `{ noAutoSave: true }` to opt out per-call. Collection `autoSync` is hydrate-only — it does not auto-save on `add`/`remove`/`reset`; persisting members is each contained model's responsibility via its own `autoSync`.
+  - **Flush on unload**: when `autoSync` is used in a browser, Skeletor lazily registers `pagehide`/`visibilitychange` listeners that flush pending writes before the tab closes.
+  - Override `get autoSyncDelay()` to tune the debounce window (default: 100 ms).
+- Add `PersistentStorage.flushAll()` static method to flush all registered storage instances.
+- Add `getStorage(obj)` helper export — returns the configured storage for a model/collection, checking both `storage` and `browserStorage` (preserves compat with subclasses that still override `get browserStorage()`).
 - Add computed properties to `Model`. Declare a `computed` getter returning `{ key: { deps, fn } }` definitions.
   Values are cached, recalculated when deps change, and fire `change:key` events.
   Accessible via `model.get('key')` and `model.attrs.key`.

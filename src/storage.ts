@@ -20,6 +20,18 @@ localForage.defineDriver(memoryDriver);
 extendPrototypeWithSetItems(localForage);
 extendPrototypeWithGetItems(localForage);
 
+// Every storage instance is registered with a WeakRef so that flushAll() can
+// reach pending writes without keeping instances alive. There's no leak and no
+// lifecycle hook to maintain: an instance is collected once its owning model or
+// collection is gone, at which point nothing is writing through it anyway.
+// Models with a pending debounced save stay reachable via the autosync `pending`
+// map until the timer fires, so flushAll() always reaches in-flight writes.
+const weakInstances = new Set<WeakRef<PersistentStorage>>();
+// Tracks which instances already have a WeakRef in `weakInstances`, so repeated
+// `storage =` assignments (or a store shared across models) don't register the
+// same instance twice and make flushAll() flush it more than once.
+const registered = new WeakSet<PersistentStorage>();
+
 /**
  * @public
  */
@@ -30,6 +42,30 @@ class PersistentStorage {
 
   static sessionStorageInitialized: Promise<void>;
   static localForage: typeof localForage;
+
+  /** Register a storage instance with a weak reference. @public */
+  static register(instance: PersistentStorage): void {
+    if (registered.has(instance)) return;
+    registered.add(instance);
+    weakInstances.add(new WeakRef(instance));
+  }
+
+  /**
+   * Flush the debounced write buffer of every registered PersistentStorage
+   * instance. Called automatically on pagehide/visibilitychange when autoSync
+   * is in use; can also be called manually.
+   * @public
+   */
+  static flushAll(): void {
+    for (const ref of weakInstances) {
+      const instance = ref.deref();
+      if (!instance) {
+        weakInstances.delete(ref);
+      } else {
+        instance.flush();
+      }
+    }
+  }
 
   constructor(id: string, type: StoreType | StorageDriver, batchedWrites = false) {
     this.name = id;

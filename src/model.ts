@@ -1,4 +1,5 @@
-import { getResolveablePromise, getSyncMethod, urlError, wrapError } from './helpers';
+import { getResolveablePromise, getStorage, getSyncMethod, urlError, wrapError } from './helpers';
+import { scheduleAutoSave, cancelAutoSave, ensureUnloadListener } from './autosync';
 import clone from 'lodash-es/clone';
 import defaults from 'lodash-es/defaults';
 import defer from 'lodash-es/defer';
@@ -12,10 +13,10 @@ import pick from 'lodash-es/pick';
 import result from 'lodash-es/result';
 import uniqueId from 'lodash-es/uniqueId';
 import { EventEmitterObject } from './eventemitter';
+import PersistentStorage from './storage';
 
 // Import types
 import type { Collection } from './collection';
-import type Storage from './storage';
 import {
   ComputedProperties,
   ComputedProperty,
@@ -37,7 +38,8 @@ import {
 export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmitterObject {
   #computedCache?: Record<string, any>;
   #computedDefs?: Record<string, ComputedProperty<this>>;
-  _browserStorage?: Storage;
+  #state: 'constructing' | 'hydrating' | 'ready' = 'constructing';
+  _storage?: PersistentStorage;
   _changing = false;
   _pending: boolean | ModelOptions = false;
   _previousAttributes?: T;
@@ -49,6 +51,7 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
   cid: string;
   collection?: Collection;
   id: string | number;
+  initialized?: Promise<void>;
   validationError: string | number | null = null;
 
   /**
@@ -91,14 +94,90 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
 
     // Reset changed after initial set
     this.changed = {};
+
+    // When autoSync is on, `initialized` is always a Promise so callers can
+    // uniformly `await model.initialized`. It only hydrates from storage when
+    // there's something to load (storage configured and the model isn't new);
+    // otherwise it's already ready and resolves immediately.
+    if (this.autoSync) {
+      if (getStorage(this) && !this.isNew()) {
+        this.#state = 'hydrating';
+        this.initialized = this.#hydrate();
+      } else {
+        this.#state = 'ready';
+        this.initialized = Promise.resolve();
+      }
+    } else {
+      this.#state = 'ready';
+    }
   }
 
-  set browserStorage(storage: Storage) {
-    this._browserStorage = storage;
+  /**
+   * The canonical storage accessor. Set to a `PersistentStorage` instance
+   * to enable local persistence for this model.
+   */
+  get storage(): PersistentStorage | undefined {
+    return this._storage;
   }
 
-  get browserStorage(): Storage | undefined {
-    return this._browserStorage;
+  set storage(s: PersistentStorage) {
+    this._storage = s;
+    PersistentStorage.register(s);
+  }
+
+  /**
+   * @deprecated Use `storage` instead.
+   */
+  get browserStorage(): PersistentStorage | undefined {
+    return this._storage;
+  }
+
+  set browserStorage(s: PersistentStorage) {
+    this.storage = s;
+  }
+
+  /**
+   * Override to enable automatic persistence. When true, any `set()` call
+   * that changes attributes will schedule a debounced save to `storage`, and
+   * the model will auto-hydrate from storage on construction.
+   */
+  get autoSync(): boolean {
+    return false;
+  }
+
+  /**
+   * Debounce delay (ms) for auto-save writes. Override to tune.
+   */
+  get autoSyncDelay(): number {
+    return 100;
+  }
+
+  async #hydrate(): Promise<void> {
+    ensureUnloadListener(PersistentStorage);
+    try {
+      await new Promise<void>((resolve, reject) => {
+        // Also catch a rejected sync Promise (e.g. storeInitialized failed):
+        // without this, neither callback fires and initialized hangs forever.
+        Promise.resolve(
+          this.fetch({
+            fromStorage: true,
+            success: () => resolve(),
+            error: (_m: any, e: any) => {
+              // 'Record Not Found' is a normal first-run state (nothing stored
+              // yet); keep the initial attributes and resolve.
+              if (e === 'Record Not Found') resolve();
+              else reject(e);
+            },
+          })
+        ).catch(reject);
+      });
+    } finally {
+      this.#state = 'ready';
+    }
+  }
+
+  #doAutoSave(): unknown {
+    return this.save(null, { noAutoSave: true });
   }
 
   /**
@@ -271,6 +350,14 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
 
     options = options || {};
 
+    // Guard must come after arg normalization: when called as set(obj, opts),
+    // fromStorage lives in `val` (second arg), not `options` (third arg).
+    if (this.autoSync && this.#state === 'hydrating' && !options.fromStorage) {
+      throw new Error(
+        `Skeletor: set() called on an autoSync model before initialized resolved. Await model.initialized first.`
+      );
+    }
+
     // Run validation.
     if (!this._validate(attrs, options)) return null;
 
@@ -335,6 +422,21 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
     }
     this._pending = false;
     this._changing = false;
+
+    // Auto-save: schedule a debounced write when autoSync is on and there
+    // were actual changes that originated from application code (not a
+    // storage read or an explicit noAutoSave call).
+    if (
+      this.#state === 'ready' &&
+      this.autoSync &&
+      getStorage(this) &&
+      changes.length &&
+      !options.fromStorage &&
+      !options.noAutoSave
+    ) {
+      scheduleAutoSave(this, () => this.#doAutoSave(), this.autoSyncDelay);
+    }
+
     return this;
   }
 
@@ -417,7 +519,8 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
 
     options.success = (resp: any) => {
       const serverAttrs = options.parse ? this.parse(resp, options) : resp;
-      if (!this.set(serverAttrs, options)) return false;
+      // fromStorage prevents the set() from triggering auto-save on reads
+      if (!this.set(serverAttrs, Object.assign({}, options, { fromStorage: true }))) return false;
       if (success) success.call(options.context, this, resp, options);
       this.trigger('sync', this, resp, options);
     };
@@ -503,6 +606,7 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
    * If `wait: true` is passed, waits for the server to respond before removal.
    */
   destroy(options?: ModelOptions): any {
+    cancelAutoSave(this);
     options = options ? clone(options) : {};
     const success = options.success;
     const wait = options.wait;

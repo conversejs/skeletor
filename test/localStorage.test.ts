@@ -2,7 +2,8 @@ import { assert } from 'chai';
 import root from 'window-or-global';
 import { clone, extend, range } from 'lodash';
 import { Collection } from '../src/collection';
-import { getSyncMethod, sync } from '../src/helpers';
+import { getStorage, getSyncMethod, sync } from '../src/helpers';
+import { resetForTesting, flushPending } from '../src/autosync';
 import { Model } from '../src/model';
 import Storage from '../src/storage';
 import { ModelAttributes } from 'src/types';
@@ -282,5 +283,180 @@ describe('Without browserStorage', function () {
       const method = getSyncMethod(model);
       assert.equal(method, sync);
     });
+  });
+});
+
+describe('autoSync', function () {
+  beforeEach(() => localStorage.clear());
+  afterEach(() => resetForTesting());
+
+  class AutoModel extends Model {
+    get autoSync() { return true; }
+    get autoSyncDelay() { return 0; }
+    initialize() {
+      this.storage = new Storage('autoModel', 'local');
+    }
+  }
+
+  it('auto-saves on set() without explicit save()', async function () {
+    const model = new AutoModel({ id: 'auto-1', name: 'Alice' });
+    await model.initialized;
+    model.set('name', 'Bob');
+    // wait for debounce (delay=0) + tick
+    await flushPending({ wait: true });
+    const raw = root.localStorage.getItem('localforage/autoModel-auto-1');
+    assert.isNotNull(raw, 'item should be stored');
+    const stored = JSON.parse(raw);
+    assert.equal(stored.name, 'Bob');
+  });
+
+  it('auto-saves via attrs proxy', async function () {
+    const model = new AutoModel({ id: 'auto-2', name: 'Alice' });
+    await model.initialized;
+    model.attrs.name = 'Carol';
+    await flushPending({ wait: true });
+    const raw = root.localStorage.getItem('localforage/autoModel-auto-2');
+    assert.isNotNull(raw);
+    const stored = JSON.parse(raw);
+    assert.equal(stored.name, 'Carol');
+  });
+
+  it('does not auto-save when noAutoSave option is passed', async function () {
+    const model = new AutoModel({ id: 'auto-3', name: 'Alice' });
+    await model.initialized;
+    model.set('name', 'Suppressed', { noAutoSave: true });
+    await flushPending({ wait: true });
+    const raw = root.localStorage.getItem('localforage/autoModel-auto-3');
+    assert.isNull(raw, 'should not have been persisted');
+  });
+
+  it('auto-hydrates on construction', async function () {
+    // Seed storage via the auto-save mechanism (same path as the other auto-save tests)
+    const seed = new AutoModel({ id: 'auto-4' });
+    await seed.initialized;
+    seed.set('name', 'Seeded');
+    await flushPending({ wait: true });
+
+    // Construct a new instance with the same id — should hydrate from storage
+    const loaded = new AutoModel({ id: 'auto-4' });
+    await loaded.initialized;
+    assert.equal(loaded.get('name'), 'Seeded');
+  });
+
+  it('set() throws when called on an autoSync model during hydration', async function () {
+    // Storage configured + a non-new id puts the model into the 'hydrating'
+    // state synchronously on construction, before `initialized` resolves.
+    // Mutating now would clobber whatever is still being read from storage.
+    const model = new AutoModel({ id: 'guard-1' });
+    assert.throws(
+      () => model.set('name', 'Mallory'),
+      /before initialized resolved/,
+      'mutating during hydration must throw to avoid clobbering the stored state',
+    );
+    await model.initialized; // let hydration settle so it doesn't leak into the next test
+  });
+
+  it('set(attrs, { fromStorage: true }) is allowed during hydration (arg-order regression)', async function () {
+    // The guard runs *after* argument normalization on purpose: in the
+    // set(object, options) form, `fromStorage` arrives as the second argument,
+    // not the third. A guard placed before normalization would read the (empty)
+    // third argument and wrongly throw here. This pins that ordering — it's the
+    // path hydration itself uses to merge the stored attributes back in.
+    const model = new AutoModel({ id: 'guard-2' });
+    assert.doesNotThrow(() => model.set({ name: 'Storage' }, { fromStorage: true }));
+    assert.equal(model.get('name'), 'Storage', 'the fromStorage set ran to completion');
+    await model.initialized;
+  });
+
+  it('getStorage() sees storage set via deprecated browserStorage accessor', function () {
+    const model = new Model();
+    const store = new Storage('alias-test', 'in_memory');
+    model.browserStorage = store;
+    assert.equal(getStorage(model), store, 'getStorage finds storage set via browserStorage');
+    assert.equal(model.storage, store, 'storage reflects browserStorage set');
+  });
+
+  it('initialized is undefined when autoSync is off', function () {
+    const model = new Model({ id: 'no-auto', name: 'Alice' });
+    assert.isUndefined(model.initialized, 'initialized should be undefined for non-autoSync models');
+  });
+
+  it('initialized rejects when hydration fails', async function () {
+    class BrokenModel extends Model {
+      get autoSync() { return true; }
+      get autoSyncDelay() { return 0; }
+      initialize() {
+        this.storage = new Storage('brokenModel', 'local');
+      }
+      sync(_method: any, _model: any, options: any) {
+        options.error('simulated failure');
+      }
+    }
+    const model = new BrokenModel({ id: 'fail-1' });
+    try {
+      await model.initialized;
+      assert.fail('initialized should have rejected');
+    } catch (e) {
+      assert.equal(e, 'simulated failure');
+    }
+    // Model should still be usable after failed hydration
+    model.set('name', 'recovered');
+    assert.equal(model.get('name'), 'recovered');
+  });
+
+  class CollModel extends Model {
+    defaults() {
+      return {};
+    }
+  }
+
+  class AutoCollection extends Collection {
+    get autoSync() {
+      return true;
+    }
+    get model() {
+      return CollModel;
+    }
+    initialize() {
+      this.storage = new Storage('autoColl', 'local');
+    }
+  }
+
+  it('collection auto-hydrates its stored models on construction', async function () {
+    // Seed: create models through a collection sharing the same store. `create`
+    // adds each model to the collection and persists it (plus the id-list under
+    // the collection key) so a fresh instance can read them back.
+    const seed = new AutoCollection();
+    await seed.initialized;
+    await new Promise((resolve) => seed.create({ id: 'c1', name: 'Alice' }, { success: resolve }));
+    await new Promise((resolve) => seed.create({ id: 'c2', name: 'Bob' }, { success: resolve }));
+    await seed.storage.storeInitialized;
+
+    // A brand-new collection on the same store should hydrate both models.
+    const loaded = new AutoCollection();
+    await loaded.initialized;
+    assert.equal(loaded.length, 2, 'both models should be hydrated');
+    assert.equal(loaded.get('c1').get('name'), 'Alice');
+    assert.equal(loaded.get('c2').get('name'), 'Bob');
+  });
+
+  it('collection initialized resolves on an empty store (first run)', async function () {
+    const coll = new AutoCollection();
+    // findAll() returns [] for an unseeded store, so hydration succeeds rather
+    // than rejecting the way a model fetch-by-id would ('Record Not Found').
+    await coll.initialized;
+    assert.equal(coll.length, 0);
+  });
+
+  it('collection initialized is a resolved promise when autoSync is on but no storage is set', async function () {
+    class NoStorageCollection extends Collection {
+      get autoSync() {
+        return true;
+      }
+    }
+    const coll = new NoStorageCollection();
+    assert.instanceOf(coll.initialized, Promise, 'initialized should be a Promise when autoSync is on');
+    await coll.initialized; // resolves immediately, nothing to hydrate
+    assert.equal(coll.length, 0);
   });
 });
