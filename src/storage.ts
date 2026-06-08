@@ -20,6 +20,14 @@ localForage.defineDriver(memoryDriver);
 extendPrototypeWithSetItems(localForage);
 extendPrototypeWithGetItems(localForage);
 
+// Models register with a strong reference (removed explicitly in model.destroy())
+// so flushAll() always reaches pending writes. Collections use a WeakRef because
+// they have no destroy() lifecycle hook. The GC risk is acceptable: a collection's
+// storage can only be collected once all its models have been removed (clearing
+// model.collection), at which point nothing is writing through it anyway.
+const strongInstances = new Set<PersistentStorage>();
+const weakInstances = new Set<WeakRef<PersistentStorage>>();
+
 /**
  * @public
  */
@@ -30,6 +38,41 @@ class PersistentStorage {
 
   static sessionStorageInitialized: Promise<void>;
   static localForage: typeof localForage;
+
+  /** Register a model's storage instance with a strong reference. @public */
+  static register(instance: PersistentStorage): void {
+    strongInstances.add(instance);
+  }
+
+  /** Deregister a model's storage instance. Call from model.destroy(). @public */
+  static deregister(instance: PersistentStorage): void {
+    strongInstances.delete(instance);
+  }
+
+  /** Register a collection's storage instance with a weak reference. @public */
+  static registerWeak(instance: PersistentStorage): void {
+    weakInstances.add(new WeakRef(instance));
+  }
+
+  /**
+   * Flush the debounced write buffer of every registered PersistentStorage
+   * instance. Called automatically on pagehide/visibilitychange when autoSync
+   * is in use; can also be called manually.
+   * @public
+   */
+  static flushAll(): void {
+    for (const instance of strongInstances) {
+      instance.flush();
+    }
+    for (const ref of weakInstances) {
+      const instance = ref.deref();
+      if (!instance) {
+        weakInstances.delete(ref);
+      } else {
+        instance.flush();
+      }
+    }
+  }
 
   constructor(id: string, type: StoreType | StorageDriver, batchedWrites = false) {
     this.name = id;

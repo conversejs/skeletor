@@ -7,6 +7,7 @@ import result from 'lodash-es/result';
 import { Model } from './model';
 import { Collection } from './collection';
 import { type SyncOptions, SyncOperation } from './types';
+import type PersistentStorage from './storage';
 
 /**
  * Custom error for indicating timeouts
@@ -33,7 +34,7 @@ export function guid(): string {
 //
 export function inherits<T extends new (...args: any[]) => any>(
   protoProps: Record<string, any> | null,
-  staticProps?: Record<string, any>
+  staticProps?: Record<string, any>,
 ): T {
   // eslint-disable-next-line @typescript-eslint/no-this-alias
   const parent = this;
@@ -102,7 +103,7 @@ export function getResolveablePromise(): ResolveablePromise {
       promise.isPending = false;
       promise.isRejected = true;
       throw e;
-    }
+    },
   );
   return promise;
 }
@@ -130,9 +131,20 @@ const methodMap: Record<string, string> = {
   read: 'GET',
 };
 
+/**
+ * Return the PersistentStorage instance configured on `obj`, checking both
+ * the canonical `storage` accessor and the deprecated `browserStorage` alias
+ * so that subclasses that still override `get browserStorage()` continue to work.
+ * @public
+ */
+export function getStorage(obj: Model<any> | Collection<any> | null | undefined): PersistentStorage | undefined {
+  if (!obj) return undefined;
+  return result(obj, 'storage') ?? result(obj, 'browserStorage');
+}
+
 export function getSyncMethod(model: Model | Collection<any>): typeof sync & { __name__?: string } {
-  const store = result(model, 'browserStorage') || result((model as Model).collection, 'browserStorage');
-  return store ? (store as any).sync() : sync;
+  const store = getStorage(model) || getStorage((model as Model).collection);
+  return store ? store.sync() : sync;
 }
 
 /**

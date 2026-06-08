@@ -2,7 +2,8 @@ import { assert } from 'chai';
 import root from 'window-or-global';
 import { clone, extend, range } from 'lodash';
 import { Collection } from '../src/collection';
-import { getSyncMethod, sync } from '../src/helpers';
+import { getStorage, getSyncMethod, sync } from '../src/helpers';
+import { resetForTesting, drainAutoSaves } from '../src/autosync';
 import { Model } from '../src/model';
 import Storage from '../src/storage';
 import { ModelAttributes } from 'src/types';
@@ -282,5 +283,70 @@ describe('Without browserStorage', function () {
       const method = getSyncMethod(model);
       assert.equal(method, sync);
     });
+  });
+});
+
+describe('autoSync', function () {
+  beforeEach(() => localStorage.clear());
+  afterEach(() => resetForTesting());
+
+  class AutoModel extends Model {
+    get autoSync() { return true; }
+    get autoSyncDelay() { return 0; }
+    initialize() {
+      this.storage = new Storage('autoModel', 'local');
+    }
+  }
+
+  it('auto-saves on set() without explicit save()', async function () {
+    const model = new AutoModel({ id: 'auto-1', name: 'Alice' });
+    await model.initialized;
+    model.set('name', 'Bob');
+    // wait for debounce (delay=0) + tick
+    await drainAutoSaves();
+    const raw = root.localStorage.getItem('localforage/autoModel-auto-1');
+    assert.isNotNull(raw, 'item should be stored');
+    const stored = JSON.parse(raw);
+    assert.equal(stored.name, 'Bob');
+  });
+
+  it('auto-saves via attrs proxy', async function () {
+    const model = new AutoModel({ id: 'auto-2', name: 'Alice' });
+    await model.initialized;
+    model.attrs.name = 'Carol';
+    await drainAutoSaves();
+    const raw = root.localStorage.getItem('localforage/autoModel-auto-2');
+    assert.isNotNull(raw);
+    const stored = JSON.parse(raw);
+    assert.equal(stored.name, 'Carol');
+  });
+
+  it('does not auto-save when noAutoSave option is passed', async function () {
+    const model = new AutoModel({ id: 'auto-3', name: 'Alice' });
+    await model.initialized;
+    model.set('name', 'Suppressed', { noAutoSave: true });
+    await drainAutoSaves();
+    const raw = root.localStorage.getItem('localforage/autoModel-auto-3');
+    assert.isNull(raw, 'should not have been persisted');
+  });
+
+  it('auto-hydrates on construction', async function () {
+    // Pre-seed storage
+    const seed = new AutoModel({ id: 'auto-4', name: 'Seeded' });
+    await seed.initialized;
+    await new Promise(r => seed.save(null, { success: r }));
+
+    // Construct a new instance with the same id — should hydrate
+    const loaded = new AutoModel({ id: 'auto-4' });
+    await loaded.initialized;
+    assert.equal(loaded.get('name'), 'Seeded');
+  });
+
+  it('getStorage() sees storage set via deprecated browserStorage accessor', function () {
+    const model = new Model();
+    const store = new Storage('alias-test', 'in_memory');
+    model.browserStorage = store;
+    assert.equal(getStorage(model), store, 'getStorage finds storage set via browserStorage');
+    assert.equal(model.storage, store, 'storage reflects browserStorage set');
   });
 });

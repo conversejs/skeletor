@@ -114,28 +114,59 @@ const unsub = users.subscribe((collection) => {
 await users.fetch();
 ```
 
-### Browser Storage
+### Local Persistence
 
-Persist models locally without a server — no extra packages needed.
+Skeletor can persist models and collections to IndexedDB, localStorage, sessionStorage, or SQLite (Node.js) with no extra packages.
+
+#### Manual persistence
+
+The traditional Backbone-style API: set storage once, call `save()`/`fetch()` explicitly.
 
 ```ts
-import { Model, BrowserStorage } from '@converse/skeletor';
+import { Model, PersistentStorage } from '@converse/skeletor';
 
 class Settings extends Model {
-  constructor(...args) {
-    super(...args);
-    this.browserStorage = new BrowserStorage('app-settings', 'local');
+  initialize() {
+    this.storage = new PersistentStorage('app-settings', 'local');
   }
 }
 
-const settings = new Settings();
-await settings.fetch();       // loads from localStorage
-
+const settings = new Settings({ id: 'main' });
+await settings.fetch();        // load from localStorage
 settings.set('theme', 'dark');
-await settings.save();        // persists to localStorage
+await settings.save();         // write to localStorage
 ```
 
-Supported backends: `'local'` (localStorage), `'session'` (sessionStorage), `'indexed'` (IndexedDB), `'memory'`.
+#### Automatic persistence (`autoSync`)
+
+Opt in once, then every write persists automatically — no `save()` calls needed.
+
+```ts
+import { Model, PersistentStorage } from '@converse/skeletor';
+
+class Settings extends Model {
+  get autoSync() { return true; }
+
+  initialize() {
+    this.storage = new PersistentStorage('app-settings', 'local');
+  }
+}
+
+const settings = new Settings({ id: 'main' });
+await settings.initialized;      // resolves when prior data has been loaded
+
+settings.attrs.theme = 'dark';   // persisted automatically (debounced)
+settings.set('lang', 'en');      // also auto-saved
+
+// Pass { noAutoSave: true } to suppress persistence for a specific set() call
+settings.set('transient', true, { noAutoSave: true });
+```
+
+Pending writes are automatically flushed when the page is hidden or unloaded — no data loss on tab close.
+
+`await model.initialized` always resolves immediately when `autoSync` is off, so code can uniformly await it.
+
+Supported backends: `'local'` (localStorage), `'session'` (sessionStorage), `'indexed'` (IndexedDB), `'memory'`, `'node'` (SQLite, Node 22+).
 
 ### Events
 
@@ -181,7 +212,7 @@ function UserName({ user }) {
 | `Model` | `get`/`set`, `attrs` proxy, `computed` properties, change tracking, validation, server sync |
 | `Collection` | Full array API plus `where`, `findWhere`, `pluck`, `groupBy`, `keyBy`, `countBy`, `sortBy` |
 | `EventEmitter` | `on`/`off`/`trigger`/`once`, `listenTo`/`stopListening`, `subscribe()` returning an unsubscribe function |
-| `BrowserStorage` | IndexedDB, localStorage, sessionStorage, and in-memory backends |
+| `PersistentStorage` | IndexedDB, localStorage, sessionStorage, SQLite (Node), and in-memory backends. `autoSync` for transparent auto-save and auto-hydrate. |
 | `sync` | Low-level Fetch-based HTTP function (override for custom transports) |
 
 ## Migrating from Backbone

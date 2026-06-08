@@ -1,4 +1,5 @@
-import { getResolveablePromise, getSyncMethod, urlError, wrapError } from './helpers';
+import { getResolveablePromise, getStorage, getSyncMethod, urlError, wrapError } from './helpers';
+import { scheduleAutoSave, cancelAutoSave, ensureUnloadListener } from './autosync';
 import clone from 'lodash-es/clone';
 import defaults from 'lodash-es/defaults';
 import defer from 'lodash-es/defer';
@@ -12,10 +13,10 @@ import pick from 'lodash-es/pick';
 import result from 'lodash-es/result';
 import uniqueId from 'lodash-es/uniqueId';
 import { EventEmitterObject } from './eventemitter';
+import PersistentStorage from './storage';
 
 // Import types
 import type { Collection } from './collection';
-import type Storage from './storage';
 import {
   ComputedProperties,
   ComputedProperty,
@@ -37,7 +38,9 @@ import {
 export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmitterObject {
   #computedCache?: Record<string, any>;
   #computedDefs?: Record<string, ComputedProperty<this>>;
-  _browserStorage?: Storage;
+  #constructing = true;
+  #ready = false;
+  _storage?: PersistentStorage;
   _changing = false;
   _pending: boolean | ModelOptions = false;
   _previousAttributes?: T;
@@ -49,6 +52,7 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
   cid: string;
   collection?: Collection;
   id: string | number;
+  initialized: Promise<void>;
   validationError: string | number | null = null;
 
   /**
@@ -91,14 +95,77 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
 
     // Reset changed after initial set
     this.changed = {};
+
+    this.#constructing = false;
+    this.initialized = this.#hydrate();
   }
 
-  set browserStorage(storage: Storage) {
-    this._browserStorage = storage;
+  /**
+   * The canonical storage accessor. Set to a `PersistentStorage` instance
+   * to enable local persistence for this model.
+   */
+  get storage(): PersistentStorage | undefined {
+    return this._storage;
   }
 
-  get browserStorage(): Storage | undefined {
-    return this._browserStorage;
+  set storage(s: PersistentStorage) {
+    if (this._storage) PersistentStorage.deregister(this._storage);
+    this._storage = s;
+    PersistentStorage.register(s);
+  }
+
+  /**
+   * @deprecated Use `storage` instead.
+   */
+  get browserStorage(): PersistentStorage | undefined {
+    return this._storage;
+  }
+
+  set browserStorage(s: PersistentStorage) {
+    this.storage = s;
+  }
+
+  /**
+   * Override to enable automatic persistence. When true, any `set()` call
+   * that changes attributes will schedule a debounced save to `storage`, and
+   * the model will auto-hydrate from storage on construction.
+   */
+  get autoSync(): boolean {
+    return false;
+  }
+
+  /**
+   * Debounce delay (ms) for auto-save writes. Override to tune.
+   */
+  get autoSyncDelay(): number {
+    return 100;
+  }
+
+  async #hydrate(): Promise<void> {
+    const store = getStorage(this);
+    if (!this.autoSync || !store || this.isNew()) {
+      this.#ready = true;
+      return;
+    }
+    ensureUnloadListener(PersistentStorage);
+    try {
+      await new Promise<void>((resolve) => {
+        this.fetch({
+          fromStorage: true,
+          success: () => resolve(),
+          error: (_m: any, e: any) => {
+            console.error('Skeletor autoSync hydration error:', e);
+            resolve();
+          },
+        });
+      });
+    } finally {
+      this.#ready = true;
+    }
+  }
+
+  #doAutoSave(): unknown {
+    return this.save(null, { noAutoSave: true });
   }
 
   /**
@@ -259,6 +326,12 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
   set(key: string | Partial<T> | ObjectWithId, val?: any, options?: ModelOptions): this {
     if (key == null) return this;
 
+    if (this.autoSync && !this.#constructing && !this.#ready && !options?.fromStorage) {
+      throw new Error(
+        `Skeletor: set() called on an autoSync model before initialized resolved. Await model.initialized first.`
+      );
+    }
+
     // Handle both `"key", value` and `{key: value}` -style arguments.
     let attrs: Partial<T> | ObjectWithId;
     if (typeof key === 'object') {
@@ -335,6 +408,21 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
     }
     this._pending = false;
     this._changing = false;
+
+    // Auto-save: schedule a debounced write when autoSync is on and there
+    // were actual changes that originated from application code (not a
+    // storage read or an explicit noAutoSave call).
+    if (
+      this.#ready &&
+      this.autoSync &&
+      getStorage(this) &&
+      changes.length &&
+      !options.fromStorage &&
+      !options.noAutoSave
+    ) {
+      scheduleAutoSave(this, () => this.#doAutoSave(), this.autoSyncDelay);
+    }
+
     return this;
   }
 
@@ -417,7 +505,8 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
 
     options.success = (resp: any) => {
       const serverAttrs = options.parse ? this.parse(resp, options) : resp;
-      if (!this.set(serverAttrs, options)) return false;
+      // fromStorage prevents the set() from triggering auto-save on reads
+      if (!this.set(serverAttrs, Object.assign({}, options, { fromStorage: true }))) return false;
       if (success) success.call(options.context, this, resp, options);
       this.trigger('sync', this, resp, options);
     };
@@ -503,6 +592,8 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
    * If `wait: true` is passed, waits for the server to respond before removal.
    */
   destroy(options?: ModelOptions): any {
+    cancelAutoSave(this);
+    if (this._storage) PersistentStorage.deregister(this._storage);
     options = options ? clone(options) : {};
     const success = options.success;
     const wait = options.wait;
