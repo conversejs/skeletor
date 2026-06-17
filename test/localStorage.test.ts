@@ -460,3 +460,71 @@ describe('autoSync', function () {
     assert.equal(coll.length, 0);
   });
 });
+
+describe('fetch promise contract', function () {
+  beforeEach(() => localStorage.clear());
+  afterEach(() => resetForTesting());
+
+  it('Model fetch({ promise: true }) resolves on a successful read', async function () {
+    // Seed a record, then read it back with a fresh model.
+    const seed = new Model({ id: 'fp-1', name: 'Alice' });
+    seed.storage = new Storage('fetchProm', 'local');
+    await new Promise((resolve) => seed.save(null, { success: resolve }));
+
+    const model = new Model<ModelAttributes>({ id: 'fp-1' });
+    model.storage = new Storage('fetchProm', 'local');
+    const ret = model.fetch({ promise: true });
+    assert.instanceOf(ret, Promise, 'fetch returns a Promise when promise:true');
+    await ret;
+    assert.equal(model.get('name'), 'Alice');
+  });
+
+  it('Model fetch({ promise: true }) rejects with the error value on failure', async function () {
+    class FailModel extends Model {
+      sync(_method: any, _model: any, options: any) {
+        options.error('boom');
+      }
+    }
+    const model = new FailModel({ id: 'fp-2' });
+    try {
+      await model.fetch({ promise: true });
+      assert.fail('fetch promise should have rejected');
+    } catch (e) {
+      assert.equal(e, 'boom');
+    }
+  });
+
+  it('Collection fetch({ promise: true }) rejects on error (previously hung forever)', async function () {
+    class FailCollection extends Collection {
+      sync(_method: any, _c: any, options: any) {
+        options.error('kaput');
+      }
+    }
+    const coll = new FailCollection();
+    try {
+      await coll.fetch({ promise: true });
+      assert.fail('fetch promise should have rejected');
+    } catch (e) {
+      assert.equal(e, 'kaput');
+    }
+  });
+
+  it('Model autoSync hydration tolerates an empty store (first run)', async function () {
+    class AutoM extends Model {
+      get autoSync() {
+        return true;
+      }
+      get autoSyncDelay() {
+        return 0;
+      }
+      initialize() {
+        this.storage = new Storage('firstRun', 'local');
+      }
+    }
+    // id present but nothing stored → fetch produces 'Record Not Found', which
+    // hydration must swallow rather than reject, keeping the initial attributes.
+    const model = new AutoM({ id: 'never-saved', name: 'Initial' });
+    await model.initialized;
+    assert.equal(model.get('name'), 'Initial', 'initial attributes preserved on first run');
+  });
+});

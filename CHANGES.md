@@ -11,6 +11,7 @@
   - **Auto-save** (models only): any `set()` (including `attrs.x = y`) that produces changes schedules a debounced save. Pass `{ noAutoSave: true }` to opt out per-call. Collection `autoSync` is hydrate-only — it does not auto-save on `add`/`remove`/`reset`; persisting members is each contained model's responsibility via its own `autoSync`.
   - **Flush on unload**: when `autoSync` is used in a browser, Skeletor lazily registers `pagehide`/`visibilitychange` listeners that flush pending writes before the tab closes.
   - Override `get autoSyncDelay()` to tune the debounce window (default: 100 ms).
+- Complete the `fetch({ promise: true })` contract: `Model.fetch` now supports the `promise` option (previously ignored), and the promise returned by both `Model.fetch` and `Collection.fetch` now **rejects** on error instead of hanging forever. The returned promise also rejects if the underlying `sync` implementation rejects without invoking the error callback.
 - Add `PersistentStorage.flushAll()` static method to flush all registered storage instances.
 - Add `getStorage(obj)` helper export — returns the configured storage for a model/collection, checking both `storage` and `browserStorage` (preserves compat with subclasses that still override `get browserStorage()`).
 - Add computed properties to `Model`. Declare a `computed` getter returning `{ key: { deps, fn } }` definitions.
