@@ -118,17 +118,9 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
 
   async #hydrate(): Promise<void> {
     ensureUnloadListener(PersistentStorage);
-    await new Promise<void>((resolve, reject) => {
-      Promise.resolve(
-        this.fetch({
-          fromStorage: true,
-          success: () => resolve(),
-          error: (_c: any, e: any) => {
-            reject(e);
-          },
-        })
-      ).catch(reject);
-    });
+    // findAll() returns [] for an empty store, so a first-run collection
+    // resolves rather than erroring the way a model fetch-by-id would.
+    await this.fetch({ fromStorage: true, promise: true });
   }
 
   /**
@@ -631,7 +623,7 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
     const success = options.success;
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const collection = this;
-    const promise = options.promise && getResolveablePromise();
+    const promise = options.promise ? getResolveablePromise() : undefined;
     options.success = function (resp: any) {
       const method = options.reset ? 'reset' : 'set';
       // fromStorage prevents individual model set() calls from triggering auto-save on reads
@@ -640,8 +632,15 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
       promise && promise.resolve();
       collection.trigger('sync', collection, resp, options);
     };
-    wrapError(this, options);
-    return promise ? promise : this.sync('read', this, options);
+    wrapError(this, options, promise);
+    const result = this.sync('read', this, options);
+    if (promise) {
+      // Cover sync implementations that reject their promise instead of
+      // invoking options.error; settling twice is a harmless no-op.
+      Promise.resolve(result).catch((e) => promise.reject(e));
+      return promise;
+    }
+    return result;
   }
 
   /**

@@ -155,22 +155,11 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
   async #hydrate(): Promise<void> {
     ensureUnloadListener(PersistentStorage);
     try {
-      await new Promise<void>((resolve, reject) => {
-        // Also catch a rejected sync Promise (e.g. storeInitialized failed):
-        // without this, neither callback fires and initialized hangs forever.
-        Promise.resolve(
-          this.fetch({
-            fromStorage: true,
-            success: () => resolve(),
-            error: (_m: any, e: any) => {
-              // 'Record Not Found' is a normal first-run state (nothing stored
-              // yet); keep the initial attributes and resolve.
-              if (e === 'Record Not Found') resolve();
-              else reject(e);
-            },
-          })
-        ).catch(reject);
-      });
+      await this.fetch({ fromStorage: true, promise: true });
+    } catch (e) {
+      // 'Record Not Found' is a normal first-run state (nothing stored yet);
+      // keep the initial attributes and resolve. Re-throw anything else.
+      if (e !== 'Record Not Found') throw e;
     } finally {
       this.#state = 'ready';
     }
@@ -516,6 +505,7 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
     options = Object.assign({ parse: true }, options);
 
     const success = options.success;
+    const promise = options.promise ? getResolveablePromise() : undefined;
 
     options.success = (resp: any) => {
       const serverAttrs = options.parse ? this.parse(resp, options) : resp;
@@ -523,10 +513,18 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
       if (!this.set(serverAttrs, Object.assign({}, options, { fromStorage: true }))) return false;
       if (success) success.call(options.context, this, resp, options);
       this.trigger('sync', this, resp, options);
+      promise && promise.resolve(resp);
     };
 
-    wrapError(this, options);
-    return this.sync('read', this, options);
+    wrapError(this, options, promise);
+    const result = this.sync('read', this, options);
+    if (promise) {
+      // Cover sync implementations that reject their promise instead of
+      // invoking options.error; settling twice is a harmless no-op.
+      Promise.resolve(result).catch((e) => promise.reject(e));
+      return promise;
+    }
+    return result;
   }
 
   /**

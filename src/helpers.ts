@@ -91,18 +91,20 @@ export function getResolveablePromise(): ResolveablePromise {
   }) as ResolveablePromise;
 
   Object.assign(promise, wrapper);
+  // This `then` only mirrors settlement into the state flags. It must NOT
+  // rethrow on rejection: the derived promise is discarded, so rethrowing would
+  // surface as an unhandled rejection whenever the promise is rejected. The real
+  // consumer still awaits `promise` itself, which rejects normally.
   promise.then(
-    function (v) {
+    function () {
       promise.isResolved = true;
       promise.isPending = false;
       promise.isRejected = false;
-      return v;
     },
-    function (e) {
+    function () {
       promise.isResolved = false;
       promise.isPending = false;
       promise.isRejected = true;
-      throw e;
     },
   );
   return promise;
@@ -113,12 +115,19 @@ export function urlError(): never {
   throw new Error('A "url" property or function must be specified');
 }
 
-// Wrap an optional error callback with a fallback error event.
-export function wrapError(model: Model<any> | Collection<any>, options: any): void {
+// Wrap an optional error callback with a fallback error event. When a
+// `promise` is supplied (the `{ promise: true }` fetch/save path), the error is
+// also forwarded to `promise.reject` so the returned promise settles on failure.
+export function wrapError(
+  model: Model<any> | Collection<any>,
+  options: any,
+  promise?: ResolveablePromise,
+): void {
   const error = options.error;
   options.error = function (resp: any) {
     if (error) error.call(options.context, model, resp, options);
     model.trigger('error', model, resp, options);
+    promise && promise.reject && promise.reject(resp);
   };
 }
 
