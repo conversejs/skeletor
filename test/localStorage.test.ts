@@ -3,7 +3,7 @@ import root from 'window-or-global';
 import { clone, extend, range } from 'lodash';
 import { Collection } from '../src/collection';
 import { getStorage, getSyncMethod, sync } from '../src/helpers';
-import { resetForTesting, flushPending } from '../src/autosync';
+import { resetForTesting, flushPending, scheduleAutoSave } from '../src/autosync';
 import { Model } from '../src/model';
 import Storage from '../src/storage';
 import { ModelAttributes } from 'src/types';
@@ -838,5 +838,69 @@ describe('fetch promise contract', function () {
     assert.lengthOf(setItemsCalls, 1, 'the pending write is initiated synchronously by the flush');
     assert.include(setItemsCalls[0], 'batchedFlush-b-1', 'the model item is part of the flushed batch');
     assert.deepEqual(store['batchedFlush-b-1'], { id: 'b-1', name: 'Bob' }, 'the buffered attributes were persisted');
+  });
+
+  it('surfaces an auto-save rejection that bypasses options.error on the model error event', async function () {
+    // localSync routes storage failures through options.error (-> the model's
+    // `error` event) and then resolves, so they never reach fireRun's catch. A
+    // custom sync that *rejects* (or a throwing success handler) does — and it
+    // must still be observable, not merely logged to the console.
+    const model = new Model();
+    const boom = new Error('boom');
+    let captured: any;
+    model.on('error', (_m: any, e: any) => (captured = e));
+
+    scheduleAutoSave(model, () => Promise.reject(boom), 0);
+    flushPending();
+    await new Promise((resolve) => setTimeout(resolve, 0)); // let the rejection settle
+
+    assert.equal(captured, boom, 'the rejected auto-save is emitted on the model error event');
+  });
+
+  it('emits the auto-save error event exactly once for a storage-layer failure', async function () {
+    // A storage failure is handled inside localSync (options.error -> `error`
+    // event) and the save promise resolves, so fireRun's catch must NOT fire a
+    // second `error` event.
+    const driver: any = {
+      getItem(k: string) {
+        return Promise.resolve(k === 'failSave-f-1' ? { id: 'f-1' } : null);
+      },
+      setItem() {
+        return Promise.reject(new Error('quota'));
+      },
+      removeItem() {
+        return Promise.resolve();
+      },
+      keys() {
+        return Promise.resolve(['failSave-f-1']);
+      },
+      length() {
+        return Promise.resolve(1);
+      },
+    };
+
+    class FailingModel extends Model {
+      get autoSync() {
+        return true;
+      }
+      get autoSyncDelay() {
+        return 0;
+      }
+      initialize() {
+        this.storage = new Storage('failSave', driver);
+      }
+    }
+
+    const model = new FailingModel({ id: 'f-1' });
+    await model.initialized;
+
+    let errorCount = 0;
+    model.on('error', () => errorCount++);
+
+    model.set({ name: 'X' });
+    await flushPending({ wait: true });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    assert.equal(errorCount, 1, 'a storage failure surfaces once (via options.error), not twice');
   });
 });

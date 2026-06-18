@@ -3,17 +3,34 @@
  * with autoSync enabled.
  */
 import type PersistentStorage from './storage';
+import { IEventEmitter } from './types';
 
-const pending = new Map<object, { timerId: ReturnType<typeof setTimeout>; run: () => unknown }>();
+const pending = new Map<IEventEmitter, { timerId: ReturnType<typeof setTimeout>; run: () => unknown }>();
 const inFlight = new Set<Promise<unknown>>();
 // Per-object view of `inFlight`, so a caller (notably `Model.destroy`) can
 // await the saves for a single object without blocking on unrelated writes.
-const inFlightByObj = new Map<object, Set<Promise<unknown>>>();
+const inFlightByObj = new Map<IEventEmitter, Set<Promise<unknown>>>();
 let unloadListenerAttached = false;
 
-function fireRun(obj: object | null, run: () => unknown): void {
+/**
+ * Execute a save `run` now and track the resulting promise as in-flight until
+ * it settles, both globally (`inFlight`) and per object (`inFlightByObj`), so
+ * `flushPending({ wait: true })` can await every save and `Model.destroy` can
+ * await just its own.
+ *
+ * @internal
+ * @param obj - The owning model/collection (or `null` when the save isn't tied to one).
+ *    A rejection is logged and re-surfaced on `obj`'s `error` event.
+ *    Called when a debounce timer fires or a flush forces it.
+ */
+function fireRun(obj: IEventEmitter | null, run: () => unknown): void {
   const p = Promise.resolve(run()).catch((e) => {
     console.error('Skeletor autoSync save error:', e);
+    // Surface failures that bypassed `options.error` on the model's `error` event,
+    // the same channel storage-layer failures already use. Storage saves route
+    // errors through `options.error` and then resolve, so they never reach this
+    // catch and won't double-emit.
+    obj?.trigger?.('error', obj, e);
   });
   inFlight.add(p);
   let perObj: Set<Promise<unknown>> | undefined;
@@ -39,7 +56,7 @@ function fireRun(obj: object | null, run: () => unknown): void {
  * for the same object.
  * @internal
  */
-export function scheduleAutoSave(obj: object, run: () => unknown, delay: number): void {
+export function scheduleAutoSave(obj: IEventEmitter, run: () => unknown, delay: number): void {
   const existing = pending.get(obj);
   if (existing) clearTimeout(existing.timerId);
   const timerId = setTimeout(() => {
@@ -57,7 +74,7 @@ export function scheduleAutoSave(obj: object, run: () => unknown, delay: number)
  * against it with {@link awaitInFlightSaves} instead.
  * @internal
  */
-export function cancelAutoSave(obj: object): void {
+export function cancelAutoSave(obj: IEventEmitter): void {
   const existing = pending.get(obj);
   if (existing) {
     clearTimeout(existing.timerId);
@@ -72,7 +89,7 @@ export function cancelAutoSave(obj: object): void {
  * cannot land after the delete and resurrect the record.
  * @internal
  */
-export function awaitInFlightSaves(obj: object): Promise<void> | null {
+export function awaitInFlightSaves(obj: IEventEmitter): Promise<void> | null {
   const set = inFlightByObj.get(obj);
   if (!set || set.size === 0) return null;
   return Promise.all([...set]).then(() => undefined);
