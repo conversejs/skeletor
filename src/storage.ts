@@ -144,8 +144,10 @@ class PersistentStorage {
       // We get the collection (and if necessary the model attribute.
       // Waiting for storeInitialized will cause another iteration of
       // the event loop, after which the collection reference will
-      // be removed from the model.
-      const collection = model.collection;
+      // be removed from the model. `options.collection` lets a deferred
+      // delete (sequenced behind an in-flight auto-save by Model.destroy)
+      // supply the collection captured before its optimistic removal.
+      const collection = options.collection ?? model.collection;
       if (['patch', 'update'].includes(method)) {
         new_attributes = cloneDeep(model.attributes);
       }

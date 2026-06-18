@@ -6,14 +6,32 @@ import type PersistentStorage from './storage';
 
 const pending = new Map<object, { timerId: ReturnType<typeof setTimeout>; run: () => unknown }>();
 const inFlight = new Set<Promise<unknown>>();
+// Per-object view of `inFlight`, so a caller (notably `Model.destroy`) can
+// await the saves for a single object without blocking on unrelated writes.
+const inFlightByObj = new Map<object, Set<Promise<unknown>>>();
 let unloadListenerAttached = false;
 
-function fireRun(run: () => unknown): void {
+function fireRun(obj: object | null, run: () => unknown): void {
   const p = Promise.resolve(run()).catch((e) => {
     console.error('Skeletor autoSync save error:', e);
   });
   inFlight.add(p);
-  p.finally(() => inFlight.delete(p));
+  let perObj: Set<Promise<unknown>> | undefined;
+  if (obj) {
+    perObj = inFlightByObj.get(obj);
+    if (!perObj) {
+      perObj = new Set();
+      inFlightByObj.set(obj, perObj);
+    }
+    perObj.add(p);
+  }
+  p.finally(() => {
+    inFlight.delete(p);
+    if (perObj) {
+      perObj.delete(p);
+      if (perObj.size === 0) inFlightByObj.delete(obj!);
+    }
+  });
 }
 
 /**
@@ -26,13 +44,17 @@ export function scheduleAutoSave(obj: object, run: () => unknown, delay: number)
   if (existing) clearTimeout(existing.timerId);
   const timerId = setTimeout(() => {
     pending.delete(obj);
-    fireRun(run);
+    fireRun(obj, run);
   }, delay);
   pending.set(obj, { timerId, run });
 }
 
 /**
  * Cancel any pending auto-save for `obj`.
+ *
+ * This only stops a *pending* (not-yet-fired) debounce timer. A save whose
+ * timer has already fired is in flight and beyond cancellation — sequence
+ * against it with {@link awaitInFlightSaves} instead.
  * @internal
  */
 export function cancelAutoSave(obj: object): void {
@@ -41,6 +63,19 @@ export function cancelAutoSave(obj: object): void {
     clearTimeout(existing.timerId);
     pending.delete(obj);
   }
+}
+
+/**
+ * Return a promise that settles once every in-flight auto-save for `obj` has
+ * completed, or `null` when none are in flight. `Model.destroy` uses this to
+ * sequence its delete after a save that has already fired, so a late write
+ * cannot land after the delete and resurrect the record.
+ * @internal
+ */
+export function awaitInFlightSaves(obj: object): Promise<void> | null {
+  const set = inFlightByObj.get(obj);
+  if (!set || set.size === 0) return null;
+  return Promise.all([...set]).then(() => undefined);
 }
 
 /**
@@ -59,9 +94,9 @@ export function flushPending({
   storage,
   wait = false,
 }: { storage?: typeof PersistentStorage; wait?: boolean } = {}): void | Promise<void> {
-  for (const { timerId, run } of pending.values()) {
+  for (const [obj, { timerId, run }] of pending.entries()) {
     clearTimeout(timerId);
-    fireRun(run);
+    fireRun(obj, run);
   }
   pending.clear();
   if (storage) storage.flushAll();
@@ -76,6 +111,7 @@ export function resetForTesting(): void {
   for (const { timerId } of pending.values()) clearTimeout(timerId);
   pending.clear();
   inFlight.clear();
+  inFlightByObj.clear();
   unloadListenerAttached = false;
 }
 
