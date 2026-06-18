@@ -334,7 +334,7 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
         });
       }),
     );
-    await this.storage?.clear();
+    await getStorage(this)?.clear();
     this.reset();
   }
 

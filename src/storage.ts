@@ -126,6 +126,7 @@ class PersistentStorage {
   }
 
   async clear(): Promise<void> {
+    await this.storeInitialized;
     await this.store.removeItem(this.name).catch((e) => console.error(e));
     const re = new RegExp(`^${this.name}-`);
     const keys = await this.store.keys();
