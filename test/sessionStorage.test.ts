@@ -239,6 +239,24 @@ describe('browserStorage Collection using sessionStorage', function () {
     expect(JSON.parse(localItem).id).to.equal(5);
   });
 
+  it('clearStore() clears the store of a collection using the deprecated browserStorage override', async function () {
+    const mySavedCollection = new SavedCollection();
+    await new Promise((resolve) => mySavedCollection.create({ string: 'one' }, { 'success': resolve }));
+    await new Promise((resolve) => mySavedCollection.create({ string: 'two' }, { 'success': resolve }));
+
+    // A fresh collection hasn't hydrated, so it holds no in-memory models and
+    // the per-model destroy loop in clearStore() is a no-op. Only the final
+    // storage.clear() sweep can remove the persisted records — which exercises
+    // the browserStorage compatibility path that clearStore() must honour.
+    const orphanedCollection = new SavedCollection();
+    expect(orphanedCollection.length).to.equal(0);
+    await orphanedCollection.clearStore();
+
+    const newCollection = new SavedCollection();
+    await new Promise((resolve) => newCollection.fetch({ 'success': resolve }));
+    expect(newCollection.length).to.equal(0);
+  });
+
   describe('pulling from sessionStorage', function () {
     beforeEach(() => sessionStorage.clear());
 
