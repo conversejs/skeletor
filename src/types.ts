@@ -22,6 +22,11 @@ export interface SyncOptions {
   error?: (error: any) => void;
   xhr?: any;
   wait?: boolean;
+  // Lets `Model.destroy` pass the collection captured before its optimistic
+  // (synchronous) in-memory removal nulled `model.collection`, so the storage
+  // layer can still drop the id from the collection's persisted index even
+  // when the delete is deferred behind an in-flight auto-save.
+  collection?: Collection;
 }
 
 /**

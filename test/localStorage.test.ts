@@ -609,4 +609,168 @@ describe('fetch promise contract', function () {
     await model.initialized;
     assert.equal(model.get('name'), 'Initial', 'initial attributes preserved on first run');
   });
+
+  it('destroy() awaits an in-flight auto-save so a late write cannot resurrect the record', async function () {
+    // A custom driver that pauses inside setItem lets us hold an auto-save
+    // mid-write, then destroy the model, and observe the operation ordering.
+    const store: Record<string, any> = {};
+    const order: string[] = [];
+    let releaseSave: () => void;
+    const savePaused = new Promise<void>((resolve) => (releaseSave = resolve));
+    let saveEntered: () => void;
+    const saveStarted = new Promise<void>((resolve) => (saveEntered = resolve));
+
+    const driver: any = {
+      getItem(k: string) {
+        return Promise.resolve(k in store ? store[k] : null);
+      },
+      async setItem(k: string, v: any) {
+        order.push('set');
+        saveEntered();
+        await savePaused; // keep the auto-save in-flight until released
+        store[k] = v;
+        order.push('set:done');
+        return v;
+      },
+      removeItem(k: string) {
+        order.push('remove');
+        delete store[k];
+        return Promise.resolve();
+      },
+      keys() {
+        return Promise.resolve(Object.keys(store));
+      },
+      length() {
+        return Promise.resolve(Object.keys(store).length);
+      },
+    };
+
+    class AutoSaveModel extends Model {
+      get autoSync() {
+        return true;
+      }
+      get autoSyncDelay() {
+        return 0;
+      }
+      initialize() {
+        this.storage = new Storage('destroyRace', driver);
+      }
+    }
+
+    const model = new AutoSaveModel({ id: 'race-1' });
+    await model.initialized;
+
+    // Mutate to schedule an auto-save, then force its debounce timer to fire so
+    // the write is genuinely in-flight (paused inside setItem).
+    model.set({ name: 'Bob' });
+    flushPending();
+    await saveStarted;
+    assert.deepEqual(order, ['set'], 'the auto-save write is in-flight');
+
+    // Destroy while the save is still in-flight. The delete must NOT run until
+    // the save settles, otherwise the late write resurrects the record.
+    const destroyed = model.destroy();
+    await new Promise((resolve) => setTimeout(resolve, 0)); // let an un-sequenced delete run
+    assert.notInclude(order, 'remove', 'delete must wait for the in-flight save');
+
+    releaseSave();
+    await destroyed;
+
+    assert.deepEqual(order, ['set', 'set:done', 'remove'], 'delete is sequenced after the in-flight save');
+    assert.notProperty(store, 'destroyRace-race-1', 'the in-flight save must not resurrect the record');
+  });
+
+  it('destroy() drops a collected model from the persisted collection index even when the delete is deferred', async function () {
+    // Same in-flight-save race as above, but with the model in a collection.
+    // The optimistic removal nulls `model.collection` before the deferred
+    // delete runs, so `destroy()` must hand the captured collection to the
+    // storage layer; otherwise the destroyed id is left dangling in the
+    // persisted index.
+    const store: Record<string, any> = {};
+    const order: string[] = [];
+    let pauseNext = false; // arm the single racing write
+    let releaseSave: () => void;
+    const savePaused = new Promise<void>((resolve) => (releaseSave = resolve));
+    let saveEntered: () => void;
+    const saveStarted = new Promise<void>((resolve) => (saveEntered = resolve));
+
+    const driver: any = {
+      getItem(k: string) {
+        return Promise.resolve(k in store ? store[k] : null);
+      },
+      async setItem(k: string, v: any) {
+        if (pauseNext) {
+          pauseNext = false; // one-shot: only the racing item write pauses
+          order.push('set');
+          saveEntered();
+          await savePaused; // keep the auto-save in-flight until released
+          order.push('set:done');
+        }
+        store[k] = v;
+        return v;
+      },
+      removeItem(k: string) {
+        order.push('remove');
+        delete store[k];
+        return Promise.resolve();
+      },
+      keys() {
+        return Promise.resolve(Object.keys(store));
+      },
+      length() {
+        return Promise.resolve(Object.keys(store).length);
+      },
+    };
+
+    class AutoSaveModel extends Model {
+      get autoSync() {
+        return true;
+      }
+      get autoSyncDelay() {
+        return 0;
+      }
+      initialize() {
+        this.storage = new Storage('destroyRace', driver);
+      }
+    }
+
+    const collection = new Collection();
+    const model = new AutoSaveModel({ id: 'race-1' });
+    await model.initialized;
+    collection.add(model);
+
+    // Pre-populate the persisted collection index so a broken (un-threaded)
+    // delete would leave the destroyed id dangling in it.
+    model.set({ name: 'Alice' });
+    await flushPending({ wait: true });
+    assert.include(store['destroyRace'], 'destroyRace-race-1', 'index references the model before the race');
+    assert.property(store, 'destroyRace-race-1', 'item persisted before the race');
+
+    // Arm and start a racing auto-save, held mid-write.
+    pauseNext = true;
+    model.set({ name: 'Bob' });
+    flushPending();
+    await saveStarted;
+    assert.deepEqual(order, ['set'], 'the auto-save write is in-flight');
+
+    // Destroy while the save is in-flight. The optimistic removal nulls
+    // `model.collection`, so only the collection captured by destroy() can
+    // drive the index cleanup.
+    const destroyed = model.destroy();
+    await new Promise((resolve) => setTimeout(resolve, 0)); // let an un-sequenced delete run
+    assert.notInclude(order, 'remove', 'delete must wait for the in-flight save');
+    assert.equal(collection.length, 0, 'model optimistically removed from its collection');
+    assert.notExists(model.collection, 'optimistic removal nulled model.collection');
+
+    releaseSave();
+    await destroyed;
+
+    assert.deepEqual(order, ['set', 'set:done', 'remove'], 'delete is sequenced after the in-flight save');
+    assert.notProperty(store, 'destroyRace-race-1', 'the in-flight save must not resurrect the item');
+    assert.notInclude(
+      store['destroyRace'],
+      'destroyRace-race-1',
+      'the destroyed id is dropped from the persisted collection index',
+    );
+  });
 });

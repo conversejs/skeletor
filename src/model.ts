@@ -6,7 +6,7 @@ import {
   warnBrowserStorageDeprecation,
   wrapError,
 } from './helpers';
-import { scheduleAutoSave, cancelAutoSave, ensureUnloadListener } from './autosync';
+import { scheduleAutoSave, cancelAutoSave, awaitInFlightSaves, ensureUnloadListener } from './autosync';
 import clone from 'lodash-es/clone';
 import defaults from 'lodash-es/defaults';
 import defer from 'lodash-es/defer';
@@ -351,7 +351,7 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
     // fromStorage lives in `val` (second arg), not `options` (third arg).
     if (this.autoSync && this.#state === 'hydrating' && !options.fromStorage) {
       throw new Error(
-        `Skeletor: set() called on an autoSync model before initialized resolved. Await model.initialized first.`
+        `Skeletor: set() called on an autoSync model before initialized resolved. Await model.initialized first.`,
       );
     }
 
@@ -652,12 +652,24 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
       if (!this.isNew()) this.trigger('sync', this, resp, options);
     };
 
+    // A debounced auto-save may already have fired and be in flight.
+    // cancelAutoSave() above only stops a *pending* timer, so sequence the
+    // delete after any in-flight save; otherwise the late write could land
+    // after the delete and resurrect the record. Capture the collection now,
+    // the optimistic in-memory removal below nulls `model.collection` before
+    // the deferred sync runs, but the storage layer still needs it to drop
+    // this id from the collection's persisted index.
+    const inFlightSave = awaitInFlightSaves(this);
+    if (inFlightSave && this.collection) options.collection = this.collection;
+
     let xhr: any = false;
     if (this.isNew()) {
       defer(options.success);
     } else {
       wrapError(this, options);
-      xhr = this.sync('delete', this, options);
+      xhr = inFlightSave
+        ? inFlightSave.then(() => this.sync('delete', this, options))
+        : this.sync('delete', this, options);
     }
     if (!wait) destroy();
     return xhr;
