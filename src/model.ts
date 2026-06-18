@@ -515,7 +515,15 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
     const success = options.success;
     const promise = options.promise ? getResolveablePromise() : undefined;
 
+    // Tracks whether sync invoked one of the callbacks. A sync may instead
+    // settle its returned promise; the `.then`/`.catch` below bridges that to
+    // the callbacks so the fetch promise never hangs. The flag is set
+    // synchronously inside each callback (before sync's promise resolves), so
+    // it's reliable by the time those handlers run.
+    let settled = false;
+
     options.success = (resp: any) => {
+      settled = true;
       const serverAttrs = options.parse ? this.parse(resp, options) : resp;
       // fromStorage prevents the set() from triggering auto-save on reads
       if (!this.set(serverAttrs, Object.assign({}, options, { fromStorage: true }))) return false;
@@ -525,11 +533,27 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
     };
 
     wrapError(this, options, promise);
+    if (promise) {
+      const onError = options.error;
+      options.error = (resp: any) => {
+        settled = true;
+        onError(resp);
+      };
+    }
+
     const result = this.sync('read', this, options);
     if (promise) {
-      // Cover sync implementations that reject their promise instead of
-      // invoking options.error; settling twice is a harmless no-op.
-      Promise.resolve(result).catch((e) => promise.reject(e));
+      Promise.resolve(result).then(
+        // A sync that resolves its promise without invoking options.success:
+        // treat the resolved value as the response, so the model is still
+        // merged and the promise settles instead of hanging.
+        (value) => {
+          if (!settled) options.success(value);
+        },
+        // A sync that rejects instead of invoking options.error; settling
+        // twice is a harmless no-op.
+        (e) => promise.reject(e),
+      );
       return promise;
     }
     return result;

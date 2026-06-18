@@ -557,6 +557,40 @@ describe('fetch promise contract', function () {
     }
   });
 
+  it('Model fetch({ promise: true }) resolves when sync resolves its promise (no options.success call)', async function () {
+    // A sync that returns a resolved promise instead of invoking
+    // options.success used to leave the fetch promise pending forever.
+    class PromiseSyncModel extends Model {
+      sync(_method: any, _model: any, _options: any) {
+        return Promise.resolve({ name: 'Bob', age: 42 });
+      }
+    }
+    const model = new PromiseSyncModel({ id: 'fp-3' });
+    const ret = model.fetch({ promise: true });
+    assert.instanceOf(ret, Promise, 'fetch returns a Promise when promise:true');
+    const resp = (await ret) as any;
+    assert.equal(model.get('name'), 'Bob', 'the resolved value is merged into the model');
+    assert.equal(model.get('age'), 42);
+    assert.equal(resp.name, 'Bob', 'fetch promise resolves with the response');
+  });
+
+  it('Collection fetch({ promise: true }) resolves when sync resolves its promise (no options.success call)', async function () {
+    class PromiseSyncCollection extends Collection {
+      sync(_method: any, _c: any, _options: any) {
+        return Promise.resolve([
+          { id: 'a', name: 'Ann' },
+          { id: 'b', name: 'Ben' },
+        ]);
+      }
+    }
+    const coll = new PromiseSyncCollection();
+    const ret = coll.fetch({ promise: true });
+    assert.instanceOf(ret, Promise, 'fetch returns a Promise when promise:true');
+    await ret;
+    assert.lengthOf(coll.models, 2, 'the resolved value populates the collection');
+    assert.equal(coll.get('a').get('name'), 'Ann');
+  });
+
   it('Model autoSync hydration tolerates an empty store (first run)', async function () {
     class AutoM extends Model {
       get autoSync() {
