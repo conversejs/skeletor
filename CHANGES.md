@@ -3,7 +3,7 @@
 ## 3.1.0 (Unreleased)
 
 - Add an ESM build
-- **Rename `browserStorage` → `storage`** on `Model` and `Collection` (platform-neutral; Node/SQLite is also supported). `browserStorage` is kept as a deprecated alias — it still works but will be removed in a future major version.
+- **Rename `browserStorage` → `storage`** on `Model` and `Collection` (platform-neutral; Node/SQLite is also supported). `browserStorage` is kept as a deprecated alias — it still works but will be removed in a future major version. Using it (assigning to it, or overriding `get browserStorage()`) now logs a one-time-per-class `console.warn` nudging you to migrate to `storage`.
 - Add `BrowserStorage` as a deprecated export alias for `PersistentStorage` (the README incorrectly advertised this export; it now exists).
 - Add `autoSync` opt-in for transparent local persistence:
   - Declare `get autoSync() { return true; }` on a model or collection to enable.

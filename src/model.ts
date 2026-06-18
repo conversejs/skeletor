@@ -1,4 +1,11 @@
-import { getResolveablePromise, getStorage, getSyncMethod, urlError, wrapError } from './helpers';
+import {
+  getResolveablePromise,
+  getStorage,
+  getSyncMethod,
+  urlError,
+  warnBrowserStorageDeprecation,
+  wrapError,
+} from './helpers';
 import { scheduleAutoSave, cancelAutoSave, ensureUnloadListener } from './autosync';
 import clone from 'lodash-es/clone';
 import defaults from 'lodash-es/defaults';
@@ -133,6 +140,7 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
   }
 
   set browserStorage(s: PersistentStorage) {
+    warnBrowserStorageDeprecation(this);
     this.storage = s;
   }
 

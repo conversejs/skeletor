@@ -7,7 +7,7 @@ import keyBy from 'lodash-es/keyBy';
 import sortBy from 'lodash-es/sortBy';
 import { EventEmitterObject } from './eventemitter';
 import PersistentStorage from './storage';
-import { getResolveablePromise, getStorage, getSyncMethod, wrapError } from './helpers';
+import { getResolveablePromise, getStorage, getSyncMethod, warnBrowserStorageDeprecation, wrapError } from './helpers';
 import { ensureUnloadListener } from './autosync';
 import { Model } from './model';
 import {
@@ -98,6 +98,7 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
   }
 
   set browserStorage(s: PersistentStorage) {
+    warnBrowserStorageDeprecation(this);
     this.storage = s;
   }
 

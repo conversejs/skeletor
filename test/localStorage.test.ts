@@ -461,6 +461,54 @@ describe('autoSync', function () {
   });
 });
 
+describe('browserStorage deprecation warning', function () {
+  let warnings: string[];
+  let originalWarn: typeof console.warn;
+
+  beforeEach(function () {
+    warnings = [];
+    originalWarn = console.warn;
+    console.warn = (...args: unknown[]) => warnings.push(args.join(' '));
+  });
+
+  afterEach(function () {
+    console.warn = originalWarn;
+  });
+
+  it('warns when storage is assigned via the browserStorage setter', function () {
+    // A fresh class so the per-class dedup hasn't been tripped by other tests.
+    class AliasModel extends Model {}
+    const model = new AliasModel();
+    model.browserStorage = new Storage('alias-warn-set', 'in_memory');
+    assert.lengthOf(warnings, 1, 'assignment via browserStorage emits one warning');
+    assert.match(warnings[0], /browserStorage.*deprecated.*storage/);
+  });
+
+  it('warns at most once per class', function () {
+    class AliasModel extends Model {}
+    new AliasModel().browserStorage = new Storage('alias-warn-a', 'in_memory');
+    new AliasModel().browserStorage = new Storage('alias-warn-b', 'in_memory');
+    assert.lengthOf(warnings, 1, 'the warning is deduplicated to once per class');
+  });
+
+  it('warns when getStorage() resolves a browserStorage override', function () {
+    class OverrideCollection extends Collection {
+      get browserStorage() {
+        return new Storage('alias-warn-override', 'in_memory');
+      }
+    }
+    const collection = new OverrideCollection();
+    assert.isOk(getStorage(collection), 'storage resolves via the override');
+    assert.lengthOf(warnings, 1, 'using the override path warns');
+  });
+
+  it('does not warn for a model or collection without storage', function () {
+    class PlainModel extends Model {}
+    assert.isUndefined(getStorage(new PlainModel()), 'no storage configured');
+    assert.lengthOf(warnings, 0, 'storage-less objects must not trip the notice');
+  });
+});
+
 describe('fetch promise contract', function () {
   beforeEach(() => localStorage.clear());
   afterEach(() => resetForTesting());
