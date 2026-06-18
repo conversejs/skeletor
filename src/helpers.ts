@@ -140,6 +140,26 @@ const methodMap: Record<string, string> = {
   read: 'GET',
 };
 
+// Tracks the classes we've already warned about, so the `browserStorage`
+// deprecation notice is logged at most once per class rather than once per
+// instance (a collection can resolve storage once per contained model).
+const warnedBrowserStorage = new WeakSet<object>();
+
+/**
+ * Emit a one-time-per-class deprecation warning nudging downstream code from
+ * the `browserStorage` alias to the canonical `storage` accessor.
+ */
+export function warnBrowserStorageDeprecation(obj: Model<any> | Collection<any>): void {
+  const ctor = obj?.constructor;
+  if (!ctor || warnedBrowserStorage.has(ctor)) return;
+  warnedBrowserStorage.add(ctor);
+  const name = (ctor as { name?: string }).name;
+  console.warn(
+    `Skeletor: \`browserStorage\` is deprecated and will be removed in a future major version; ` +
+      `use \`storage\` instead${name ? ` (on \`${name}\`)` : ''}.`,
+  );
+}
+
 /**
  * Return the PersistentStorage instance configured on `obj`, checking both
  * the canonical `storage` accessor and the deprecated `browserStorage` alias
@@ -148,7 +168,13 @@ const methodMap: Record<string, string> = {
  */
 export function getStorage(obj: Model<any> | Collection<any> | null | undefined): PersistentStorage | undefined {
   if (!obj) return undefined;
-  return result(obj, 'storage') ?? result(obj, 'browserStorage');
+  const storage = result(obj, 'storage') as PersistentStorage | undefined;
+  if (storage != null) return storage;
+  // Fall back to the deprecated alias; warn only when it actually supplies the
+  // store, so storage-less models/collections don't trip the notice.
+  const legacy = result(obj, 'browserStorage') as PersistentStorage | undefined;
+  if (legacy != null) warnBrowserStorageDeprecation(obj);
+  return legacy;
 }
 
 export function getSyncMethod(model: Model | Collection<any>): typeof sync & { __name__?: string } {
