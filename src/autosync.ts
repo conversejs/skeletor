@@ -83,9 +83,13 @@ export function awaitInFlightSaves(obj: object): Promise<void> | null {
  * debounced write buffers.
  *
  * Pass `wait: true` to also await all in-flight saves before resolving — use
- * this in tests instead of arbitrary `setTimeout` sleeps. The default
- * (`wait: false`) is synchronous and is what the unload handler uses, since the
- * browser gives no way to await a write while the page is tearing down.
+ * this in tests instead of arbitrary `setTimeout` sleeps.
+ *
+ * The default (`wait: false`) is synchronous and is what the unload handler
+ * uses, since the browser gives no way to await a write while the page is
+ * tearing down. It *initiates* every pending write synchronously (buffering
+ * into the storage-level batch and flushing it), giving the browser its best
+ * chance to persist them.
  * @internal
  */
 export function flushPending(opts?: { storage?: typeof PersistentStorage; wait?: false }): void;
@@ -117,7 +121,10 @@ export function resetForTesting(): void {
 
 /**
  * Lazily attach pagehide/visibilitychange listeners in browser environments
- * to flush pending writes before the page unloads. Called at most once.
+ * to flush pending writes when the page is hidden/unloading. This is a
+ * best-effort durability measure: the flush initiates writes synchronously but
+ * cannot guarantee an asynchronous backend finishes persisting them before the
+ * page goes away. Called at most once.
  * @internal
  */
 export function ensureUnloadListener(storage: typeof PersistentStorage): void {

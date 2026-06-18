@@ -27,6 +27,7 @@ extendPrototypeWithGetItems(localForage);
 // Models with a pending debounced save stay reachable via the autosync `pending`
 // map until the timer fires, so flushAll() always reaches in-flight writes.
 const weakInstances = new Set<WeakRef<PersistentStorage>>();
+
 // Tracks which instances already have a WeakRef in `weakInstances`, so repeated
 // `storage =` assignments (or a store shared across models) don't register the
 // same instance twice and make flushAll() flush it more than once.
@@ -37,6 +38,11 @@ const registered = new WeakSet<PersistentStorage>();
  */
 class PersistentStorage {
   storeInitialized: Promise<void>;
+  // Set once `storeInitialized` resolves. Lets `sync()` skip awaiting it on the
+  // hot path so a save buffers/issues its write *synchronously*, which is what
+  // makes the synchronous unload flush (`flushPending` -> `flushAll`) able to
+  // push a pending write out before the page is torn down.
+  storeReady = false;
   store: StorageDriver;
   name: string;
 
@@ -86,6 +92,10 @@ class PersistentStorage {
       }
       this.storeInitialized = Promise.resolve();
     }
+    // Flip the synchronous-readiness flag once init settles. Callers that await
+    // `storeInitialized` directly still see any rejection; this branch only
+    // exists to set the flag and must not raise an unhandled rejection.
+    this.storeInitialized.then(() => (this.storeReady = true)).catch(() => {});
   }
 
   /**
@@ -151,7 +161,10 @@ class PersistentStorage {
       if (['patch', 'update'].includes(method)) {
         new_attributes = cloneDeep(model.attributes);
       }
-      await that.storeInitialized;
+
+      // Skip `await` if not necessary to allow for sync flushing
+      if (!that.storeReady) await that.storeInitialized;
+
       try {
         const original_attributes = model.attributes;
         switch (method) {

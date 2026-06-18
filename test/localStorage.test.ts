@@ -773,4 +773,70 @@ describe('fetch promise contract', function () {
       'the destroyed id is dropped from the persisted collection index',
     );
   });
+
+  it('flushPending() initiates a batched write synchronously so the unload flush is not lost', async function () {
+    // With batched writes a save buffers into the storage-level debounce and
+    // only reaches the driver ~50ms later. The synchronous unload flush must
+    // force that write out *now*, which requires the save to have buffered
+    // synchronously within the flush — not after awaiting storeInitialized.
+    const store: Record<string, any> = {};
+    const setItemsCalls: string[][] = [];
+
+    const driver: any = {
+      getItem(k: string) {
+        return Promise.resolve(k in store ? store[k] : null);
+      },
+      getItems(keys: string[]) {
+        const out: Record<string, any> = {};
+        keys.forEach((k) => {
+          if (k in store) out[k] = store[k];
+        });
+        return Promise.resolve(out);
+      },
+      setItems(items: Record<string, any>) {
+        setItemsCalls.push(Object.keys(items));
+        Object.assign(store, items);
+        return Promise.resolve(items);
+      },
+      setItem(k: string, v: any) {
+        store[k] = v;
+        return Promise.resolve(v);
+      },
+      removeItem(k: string) {
+        delete store[k];
+        return Promise.resolve();
+      },
+      keys() {
+        return Promise.resolve(Object.keys(store));
+      },
+      length() {
+        return Promise.resolve(Object.keys(store).length);
+      },
+    };
+
+    class BatchedModel extends Model {
+      get autoSync() {
+        return true;
+      }
+      initialize() {
+        // Third arg enables batched (debounced) writes.
+        this.storage = new Storage('batchedFlush', driver, true);
+      }
+    }
+
+    const model = new BatchedModel({ id: 'b-1' });
+    await model.initialized;
+
+    model.set({ name: 'Bob' });
+    // The autosync debounce timer has not fired, so nothing is written yet.
+    assert.lengthOf(setItemsCalls, 0, 'nothing written before the flush');
+
+    // Synchronous unload-style flush (wait: false). The write must be issued
+    // to the driver before this returns, not parked in the debounce buffer.
+    flushPending({ storage: Storage });
+
+    assert.lengthOf(setItemsCalls, 1, 'the pending write is initiated synchronously by the flush');
+    assert.include(setItemsCalls[0], 'batchedFlush-b-1', 'the model item is part of the flushed batch');
+    assert.deepEqual(store['batchedFlush-b-1'], { id: 'b-1', name: 'Bob' }, 'the buffered attributes were persisted');
+  });
 });
