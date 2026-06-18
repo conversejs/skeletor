@@ -625,7 +625,16 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const collection = this;
     const promise = options.promise ? getResolveablePromise() : undefined;
+
+    // Tracks whether sync invoked one of the callbacks. A sync may instead
+    // settle its returned promise; the `.then`/`.catch` below bridges that to
+    // the callbacks so the fetch promise never hangs. The flag is set
+    // synchronously inside each callback (before sync's promise resolves), so
+    // it's reliable by the time those handlers run.
+    let settled = false;
+
     options.success = function (resp: any) {
+      settled = true;
       const method = options.reset ? 'reset' : 'set';
       // fromStorage prevents individual model set() calls from triggering auto-save on reads
       collection[method](resp, Object.assign({}, options, { fromStorage: true }));
@@ -634,11 +643,27 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
       collection.trigger('sync', collection, resp, options);
     };
     wrapError(this, options, promise);
+    if (promise) {
+      const onError = options.error;
+      options.error = (resp: any) => {
+        settled = true;
+        onError(resp);
+      };
+    }
+
     const result = this.sync('read', this, options);
     if (promise) {
-      // Cover sync implementations that reject their promise instead of
-      // invoking options.error; settling twice is a harmless no-op.
-      Promise.resolve(result).catch((e) => promise.reject(e));
+      Promise.resolve(result).then(
+        // A sync that resolves its promise without invoking options.success:
+        // treat the resolved value as the response, so the collection is still
+        // populated and the promise settles instead of hanging.
+        (value) => {
+          if (!settled) options.success(value);
+        },
+        // A sync that rejects instead of invoking options.error; settling
+        // twice is a harmless no-op.
+        (e) => promise.reject(e),
+      );
       return promise;
     }
     return result;
