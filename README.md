@@ -63,13 +63,13 @@ class User extends Model<UserAttrs> {
 const user = new User({ firstName: 'Alice', lastName: 'Smith' });
 
 // Read — three equivalent ways
-user.get('firstName');     // → 'Alice'
-user.attrs.firstName;      // → 'Alice'
-user.get('fullName');      // → 'Alice Smith'  (computed — cached, never persisted)
+user.get('firstName'); // → 'Alice'
+user.attrs.firstName; // → 'Alice'
+user.get('fullName'); // → 'Alice Smith'  (computed — cached, never persisted)
 
 // Write — fires change events
-user.attrs.firstName = 'Bob';   // triggers 'change:firstName' and 'change:fullName'
-user.set('active', true);       // triggers 'change:active'
+user.attrs.firstName = 'Bob'; // triggers 'change:firstName' and 'change:fullName'
+user.set('active', true); // triggers 'change:active'
 
 // React to changes
 user.on('change:fullName', (model, value) => {
@@ -91,19 +91,23 @@ import { Model, Collection } from '@converse/skeletor';
 class User extends Model {}
 
 class Users extends Collection {
-  get model() { return User; }
-  get url() { return '/api/users'; }
+  get model() {
+    return User;
+  }
+  get url() {
+    return '/api/users';
+  }
 }
 
 const users = new Users([
   { id: 1, name: 'Alice', active: true },
-  { id: 2, name: 'Bob',   active: false },
+  { id: 2, name: 'Bob', active: false },
 ]);
 
 users.add({ id: 3, name: 'Carol', active: true });
 
-const active = users.filter(u => u.get('active'));
-const names  = users.pluck('name'); // → ['Alice', 'Bob', 'Carol']
+const active = users.filter((u) => u.get('active'));
+const names = users.pluck('name'); // → ['Alice', 'Bob', 'Carol']
 
 // Subscribe to structural changes (fires once per operation, not per model)
 const unsub = users.subscribe((collection) => {
@@ -132,9 +136,9 @@ class Settings extends Model {
 }
 
 const settings = new Settings({ id: 'main' });
-await settings.fetch();        // load from localStorage
+await settings.fetch(); // load from localStorage
 settings.set('theme', 'dark');
-await settings.save();         // write to localStorage
+await settings.save(); // write to localStorage
 ```
 
 #### Automatic persistence (`autoSync`)
@@ -145,7 +149,9 @@ Opt in once, then every write persists automatically — no `save()` calls neede
 import { Model, PersistentStorage } from '@converse/skeletor';
 
 class Settings extends Model {
-  get autoSync() { return true; }
+  get autoSync() {
+    return true;
+  }
 
   initialize() {
     this.storage = new PersistentStorage('app-settings', 'local');
@@ -153,10 +159,10 @@ class Settings extends Model {
 }
 
 const settings = new Settings({ id: 'main' });
-await settings.initialized;      // resolves when prior data has been loaded
+await settings.initialized; // resolves when prior data has been loaded
 
-settings.attrs.theme = 'dark';   // persisted automatically (debounced)
-settings.set('lang', 'en');      // also auto-saved
+settings.attrs.theme = 'dark'; // persisted automatically (debounced)
+settings.set('lang', 'en'); // also auto-saved
 
 // Pass { noAutoSave: true } to suppress persistence for a specific set() call
 settings.set('transient', true, { noAutoSave: true });
@@ -180,7 +186,7 @@ Supported backends: `'local'` (localStorage), `'session'` (sessionStorage), `'in
 >
 > - With **synchronous** backends (`'local'`, `'session'`) the flush completes before
 >   the page tears down, so the last write is safe.
-> - With **asynchronous** backends (`'indexed'`) the flush only *starts* the write; the
+> - With **asynchronous** backends (`'indexed'`) the flush only _starts_ the write; the
 >   browser can kill the page before an IndexedDB transaction commits, losing the most
 >   recent debounced change. The browser gives no primitive to await a write during
 >   unload, so this is inherent rather than a bug.
@@ -230,13 +236,54 @@ function UserName({ user }) {
 
 ## Features at a Glance
 
-| Export | What it provides |
-|---|---|
-| `Model` | `get`/`set`, `attrs` proxy, `computed` properties, change tracking, validation, server sync |
-| `Collection` | Full array API plus `where`, `findWhere`, `pluck`, `groupBy`, `keyBy`, `countBy`, `sortBy` |
-| `EventEmitter` | `on`/`off`/`trigger`/`once`, `listenTo`/`stopListening`, `subscribe()` returning an unsubscribe function |
+| Export              | What it provides                                                                                                                       |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `Model`             | `get`/`set`, `attrs` proxy, `computed` properties, change tracking, validation, server sync                                            |
+| `Collection`        | Full array API plus `where`, `findWhere`, `pluck`, `groupBy`, `keyBy`, `countBy`, `sortBy`                                             |
+| `EventEmitter`      | `on`/`off`/`trigger`/`once`, `listenTo`/`stopListening`, `subscribe()` returning an unsubscribe function                               |
 | `PersistentStorage` | IndexedDB, localStorage, sessionStorage, SQLite (Node), and in-memory backends. `autoSync` for transparent auto-save and auto-hydrate. |
-| `sync` | Low-level Fetch-based HTTP function (override for custom transports) |
+| `sync`              | Low-level Fetch-based HTTP function (override for custom transports)                                                                   |
+
+## Design philosophy
+
+Skeletor is a **headless data layer**, not an application-state framework. It owns your _domain model_ (typed models
+and collections, their relationships, persistence, and server sync) and stays out of your view layer.
+Bind it to whatever renders your UI: [Lit](https://lit.dev), React (via [`useSyncExternalStore`](#integration-with-react)), or plain DOM.
+
+That scope is deliberate. Skeletor isn't trying to compete with signal libraries, Zustand, or Redux for general UI state.
+What it's uniquely good at is giving a real, long-lived application a _typed, persistent, promise-capable_ data layer it
+can adopt **incrementally** (above all an existing Backbone codebase that can't afford a rewrite).
+
+Principles that follow from that:
+
+- **Incremental over big-bang.** Every feature is opt-in and backwards-compatible.
+  Adopt `attrs`, `computed`, `subscribe`, or `autoSync` one model or one callsite at a time; nothing forces a migration.
+- **Promise-capable, callback-compatible.** Async operations return promises, while Backbone-style `success`/`error` callbacks and events keep working.
+  New code can `await`, old code doesn't break.
+- **Derive, don't duplicate.** `computed` expresses derived values once, with caching and automatic change events.
+- **Headless and framework-agnostic.** No views, no router, no framework assumptions. The reactive surface is `change` events and `subscribe()`.
+- **Honest about tradeoffs.** Where a guarantee can't be made (e.g. async persistence on page unload)
+  the docs say so plainly rather than implying durability that doesn't exist (see the note under [Local Persistence](#local-persistence)).
+
+### When to use it
+
+- You're modernizing a Backbone-era app and want a typed, promise-capable data layer without a rewrite.
+- You want a headless store with built-in persistence that binds to any UI framework.
+- Your state is genuinely _domain data_ — entities with identity, relationships, and a persisted lifecycle.
+
+### When to reach for something else
+
+- You want reactivity that auto-tracks dependencies and updates individual bindings — that's what signals give you.
+  Skeletor notifies per-attribute (`change:foo`), but you wire each reaction yourself, and it re-renders at component granularity.
+- Your "state" is mostly ephemeral view state (form inputs, toggles, hover) — keep that in your view layer.
+- You need time-travel, structural sharing, or a strict immutable single-store architecture — that's Redux's territory.
+
+### Direction
+
+Skeletor is being modernized from within rather than replaced. The trajectory is a
+**promise-first core with events and callbacks as a compatibility shim**, and a reactivity model that bridges cleanly to signals.
+The aim is that consumers never face a migration. The library modernizes underneath them while the public surface stays stable,
+and the Backbone compatibility that exists today isn't sacrificed to get there.
 
 ## Migrating from Backbone
 
@@ -281,12 +328,12 @@ Your Views and Router don't need to change at all. Skeletor models and collectio
 
 ### Method renames (Underscore → Lodash)
 
-| Old (Underscore) | New (Lodash) |
-|---|---|
-| `rest` | `drop` |
-| `indexBy` | `keyBy` |
-| `invoke` | `invokeMap` (then removed — use `map`) |
-| `contains` | `includes` |
+| Old (Underscore) | New (Lodash)                           |
+| ---------------- | -------------------------------------- |
+| `rest`           | `drop`                                 |
+| `indexBy`        | `keyBy`                                |
+| `invoke`         | `invokeMap` (then removed — use `map`) |
+| `contains`       | `includes`                             |
 
 ### Other behavioural changes
 
