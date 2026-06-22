@@ -3,17 +3,17 @@
 ## 3.1.0 (Unreleased)
 
 - Add an ESM build
-- **Rename `browserStorage` → `storage`** on `Model` and `Collection` (platform-neutral; Node/SQLite is also supported). `browserStorage` is kept as a deprecated alias — it still works but will be removed in a future major version. Using it (assigning to it, or overriding `get browserStorage()`) now logs a one-time-per-class `console.warn` nudging you to migrate to `storage`.
-- Add `BrowserStorage` as a deprecated export alias for `PersistentStorage` (the README incorrectly advertised this export; it now exists).
+- **Rename `browserStorage` → `storage`** on `Model` and `Collection`
+- Add `BrowserStorage` as a deprecated export alias for `PersistentStorage`
 - Add `autoSync` opt-in for transparent local persistence:
   - Declare `get autoSync() { return true; }` on a model or collection to enable.
-  - **Auto-hydrate**: the model/collection loads its stored state on construction. `await model.initialized` resolves when done. When `autoSync` is off, `initialized` is `undefined`, but awaiting it is still safe (awaiting `undefined` is a no-op), so callers can always `await` it uniformly.
-  - **Auto-save** (models only): any `set()` (including `attrs.x = y`) that produces changes schedules a debounced save. Pass `{ noAutoSave: true }` to opt out per-call. Collection `autoSync` is hydrate-only — it does not auto-save on `add`/`remove`/`reset`; persisting members is each contained model's responsibility via its own `autoSync`.
-  - **Flush on unload**: when `autoSync` is used in a browser, Skeletor lazily registers `pagehide`/`visibilitychange` listeners that make a best-effort flush of pending writes when the tab is hidden/closing. The flush initiates each pending write synchronously; for asynchronous storage backends it cannot guarantee the write finishes persisting once teardown has begun.
+  - **Auto-hydrate**: the model/collection loads its stored state on construction. `await model.initialized` resolves when done.
+  - **Auto-save** (models only): any `set()` (including `attrs.x = y`) that produces changes schedules a debounced save. Pass `{ noAutoSave: true }` to opt out per-call
+  - **Flush on unload**: when `autoSync` is used in a browser, Skeletor lazily registers `pagehide`/`visibilitychange` listeners that make a best-effort flush of pending writes when the tab is hidden/closing.
   - **Destroy/save ordering**: `destroy()` now sequences its delete after any auto-save that has already fired and is still in flight, so a late write can no longer land after the delete and resurrect the record.
-  - **Error reporting**: a failed auto-save emits an `error` event on the model — `model.on('error', (model, error) => …)`. Storage-layer failures surface through `sync`'s `error` callback (as before), and rejections that bypass it (a custom `sync` that rejects, or a throwing success handler) are emitted on the same event instead of being only logged.
+  - **Error reporting**: a failed auto-save emits an `error` event on the model. Storage-layer failures surface through `sync`'s `error` callback (as before), and rejections that bypass it are emitted on the same event.
   - Override `get autoSyncDelay()` to tune the debounce window (default: 100 ms).
-- Complete the `fetch({ promise: true })` contract: `Model.fetch` now supports the `promise` option (previously ignored), and the promise returned by both `Model.fetch` and `Collection.fetch` now **rejects** on error instead of hanging forever. The returned promise also settles correctly when the underlying `sync` implementation resolves or rejects its own promise without invoking the success/error callbacks — a resolved value is merged into the model/collection just as a callback response would be.
+- Complete the `fetch({ promise: true })` contract: `Model.fetch` now supports the `promise` option (previously ignored), and the promise returned by both `Model.fetch` and `Collection.fetch` now **rejects** on error instead of hanging forever.
 - Add `PersistentStorage.flushAll()` static method to flush all registered storage instances.
 - Add `getStorage(obj)` helper export — returns the configured storage for a model/collection, checking both `storage` and `browserStorage` (preserves compat with subclasses that still override `get browserStorage()`).
 - Add computed properties to `Model`. Declare a `computed` getter returning `{ key: { deps, fn } }` definitions.
