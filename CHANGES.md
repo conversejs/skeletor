@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.1.2 (2026-06-22)
+
+- Fix the published package missing its `dist/` directory. `dist/` is gitignored and nothing built
+  it during the publish lifecycle, so `npm publish` could ship a tarball without the compiled
+  bundles that `main`/`module`/`exports` point at (3.1.1 was published this way and is unusable).
+  Add a `prepack` script that runs the build, so `npm pack` and `npm publish` always include a
+  freshly built `dist/`.
+
 ## 3.1.1 (2026-06-22)
 
 - Fix browser builds failing to resolve `./drivers/nodeSQLiteStorage`. The node-only SQLite

@@ -36,7 +36,7 @@
   "contributors": [
     "JC Brand"
   ],
-  "version": "3.1.1",
+  "version": "3.1.2",
   "engines": {
     "node": ">=22.0.0"
   },
@@ -55,12 +55,14 @@
     "dev": "karma start --single-run=false",
     "lint": "eslint src/*.ts test/*.ts",
     "prebuild": "npm run clean && mkdir -p dist/defs",
+    "prepack": "npm run build",
     "prettier": "prettier --write src/**/*.js test/**/*.js src/**/*.ts test/**/*.ts",
     "test": "karma start && karma start --mocha-only",
     "test:node": "tsx node_modules/mocha/bin/mocha.js 'test/nodeStorage.test.ts'"
   },
   "files": [
     "LICENSE",
+    "CHANGES.md",
     "dist/skeletor.js",
     "dist/skeletor.esm.js",
     "dist/skeletor.js.map",
@@ -70,7 +72,7 @@
     "dist/skeletor.node.mjs",
     "dist/skeletor.d.ts",
     "dist/skeletor.d.ts.map",
-    "src/"
+    "src/**/*.ts"
   ],
   "dependencies": {
     "@converse/localforage-getitems": "1.4.3",
