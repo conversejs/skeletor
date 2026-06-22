@@ -27,7 +27,6 @@ export default [
       format: 'es',
     },
     plugins,
-    external: ['./drivers/nodeSQLiteStorage'],
     preserveEntrySignatures: 'strict',
   },
   {
@@ -40,7 +39,6 @@ export default [
       exports: 'named',
     },
     plugins,
-    external: ['./drivers/nodeSQLiteStorage'],
     preserveEntrySignatures: 'strict',
   },
   {
@@ -60,7 +58,6 @@ export default [
       }),
       ...plugins,
     ],
-    external: ['./drivers/nodeSQLiteStorage'],
   },
   {
     input: 'src/index.node.ts',

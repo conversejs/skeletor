@@ -1,6 +1,14 @@
 # Changelog
 
-## 3.1.0 (Unreleased)
+## 3.1.1 (2026-06-22)
+
+- Fix browser builds failing to resolve `./drivers/nodeSQLiteStorage`. The node-only SQLite
+  storage driver is now registered by the `@converse/skeletor/node` entry point instead of
+  being pulled in via a dynamic `import()` from the shared storage module. The browser bundles
+  (`skeletor.esm.js`, `skeletor.js`, `skeletor.min.js`) no longer contain a reference to a file
+  that isn't published, which broke downstream bundlers.
+
+## 3.1.0 (2026-06-22)
 
 - Add an ESM build
 - **Rename `browserStorage` → `storage`** on `Model` and `Collection`

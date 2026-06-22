@@ -34,6 +34,12 @@ const weakInstances = new Set<WeakRef<PersistentStorage>>();
 const registered = new WeakSet<PersistentStorage>();
 
 /**
+ * Constructor for a Node.js-only storage driver. Registered by the
+ * `@converse/skeletor/node` entry point via {@link PersistentStorage.nodeStorage}.
+ */
+type NodeStorageConstructor = new (name: string) => StorageDriver;
+
+/**
  * @public
  */
 class PersistentStorage {
@@ -48,6 +54,11 @@ class PersistentStorage {
 
   static sessionStorageInitialized: Promise<void>;
   static localForage: typeof localForage;
+
+  // The Node.js SQLite storage driver. Left null in browser builds so the
+  // node-only driver (and its `node:sqlite` import) never enters the browser
+  // bundle; the `@converse/skeletor/node` entry sets it.
+  static nodeStorage: NodeStorageConstructor | null = null;
 
   /** Register a storage instance with a weak reference. @public */
   static register(instance: PersistentStorage): void {
@@ -110,7 +121,13 @@ class PersistentStorage {
     } else if (type === 'in_memory') {
       await localForage.config({ 'driver': IN_MEMORY });
     } else if (type === 'node') {
-      const { NodeSQLiteStorage } = await import('./drivers/nodeSQLiteStorage');
+      const NodeSQLiteStorage = PersistentStorage.nodeStorage;
+      if (!NodeSQLiteStorage) {
+        throw new Error(
+          "Skeletor.storage: the 'node' storage type is only available in Node.js builds. " +
+            "Import from '@converse/skeletor/node' instead of '@converse/skeletor'."
+        );
+      }
       this.store = new NodeSQLiteStorage(this.name);
       if (batchedWrites) {
         this.store.debouncedSetItems = mergebounce((items: Record<string, any>) => this.store.setItems!(items), 50, {
