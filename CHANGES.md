@@ -1,6 +1,6 @@
 # Changelog
 
-## 3.1.3 (Unreleased)
+## 3.1.3 (2026-06-23)
 
 - Fix a regression (since 3.1.0) where a missing record on a `read` was treated as an error.
   `model.fetch({ promise: true })` rejected with the bare string `'Record Not Found'` on a
