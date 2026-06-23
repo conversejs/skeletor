@@ -125,7 +125,7 @@ class PersistentStorage {
       if (!NodeSQLiteStorage) {
         throw new Error(
           "Skeletor.storage: the 'node' storage type is only available in Node.js builds. " +
-            "Import from '@converse/skeletor/node' instead of '@converse/skeletor'."
+            "Import from '@converse/skeletor/node' instead of '@converse/skeletor'.",
         );
       }
       this.store = new NodeSQLiteStorage(this.name);
@@ -166,7 +166,7 @@ class PersistentStorage {
     const that = this;
 
     async function localSync(method: SyncOperation, model: Model, options: SyncOptions) {
-      let resp: any, errorMessage: string | undefined, promise: Promise<any>, new_attributes: any;
+      let resp: any, caughtError: Error | undefined, promise: Promise<any>, new_attributes: any;
 
       // We get the collection (and if necessary the model attribute.
       // Waiting for storeInitialized will cause another iteration of
@@ -223,9 +223,11 @@ class PersistentStorage {
       } catch (error: any) {
         const storageSize = await that.getStorageSize();
         if (error.code === 22 && storageSize === 0) {
-          errorMessage = 'Private browsing is unsupported';
+          caughtError = new Error('Private browsing is unsupported');
         } else {
-          errorMessage = error.message;
+          // Preserve a real Error (stack/name); wrap anything else so the
+          // error path always surfaces an Error, never a bare string.
+          caughtError = error instanceof Error ? error : new Error(error?.message ?? String(error));
         }
       }
 
@@ -239,10 +241,20 @@ class PersistentStorage {
           const data = method === 'read' ? resp : null;
           options.success(data, options);
         }
+      } else if (method === 'read' && !caughtError) {
+        // A read that finds no record is a normal empty result (first run /
+        // empty storage), not an error. Resolve with `null` so the callback
+        // and promise forms of fetch() agree and a first-run read never
+        // rejects.
+        if (options && options.success) {
+          options.success(null, options);
+        }
       } else {
-        errorMessage = errorMessage ? errorMessage : 'Record Not Found';
+        // A genuine failure (storage threw, or a write produced no result):
+        // surface a real Error so consumers get a stack and `instanceof Error`
+        // holds.
         if (options && options.error) {
-          options.error(errorMessage);
+          options.error(caughtError ?? new Error('Record Not Found'));
         }
       }
     }

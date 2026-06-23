@@ -442,8 +442,8 @@ describe('autoSync', function () {
 
   it('collection initialized resolves on an empty store (first run)', async function () {
     const coll = new AutoCollection();
-    // findAll() returns [] for an unseeded store, so hydration succeeds rather
-    // than rejecting the way a model fetch-by-id would ('Record Not Found').
+    // findAll() returns [] for an unseeded store, so hydration succeeds. A
+    // missing model record likewise resolves (to null) rather than erroring.
     await coll.initialized;
     assert.equal(coll.length, 0);
   });
@@ -557,6 +557,67 @@ describe('fetch promise contract', function () {
     }
   });
 
+  it('Model fetch({ promise: true }) resolves with null on a missing record (read miss)', async function () {
+    // The record was never stored, so the read misses. A miss is a normal
+    // empty state and must resolve (not reject), keeping the initial attributes.
+    class Defaulted extends Model {
+      defaults() {
+        return { name: 'Default' };
+      }
+    }
+    const model = new Defaulted({ id: 'miss-1' });
+    model.storage = new Storage('missRead', 'local');
+    const resp = await model.fetch({ promise: true });
+    assert.isNull(resp, 'a read miss resolves with null rather than rejecting');
+    assert.equal(model.get('name'), 'Default', 'the initial attributes are preserved on a miss');
+  });
+
+  it('Model fetch({ success, error }) calls success (not error) on a missing record', async function () {
+    // Both fetch forms must agree: a read miss fires `success(null)`, never the
+    // `error` callback / `'error'` event.
+    const model = new Model<ModelAttributes>({ id: 'miss-2' });
+    model.storage = new Storage('missReadCb', 'local');
+    let successResp: any = 'unset';
+    let errorCalled = false;
+    let eventErrored = false;
+    model.on('error', () => (eventErrored = true));
+    await new Promise<void>((resolve) => {
+      model.fetch({
+        success: (_m: any, resp: any) => {
+          successResp = resp;
+          resolve();
+        },
+        error: () => {
+          errorCalled = true;
+          resolve();
+        },
+      });
+    });
+    assert.isFalse(errorCalled, 'the error callback must not fire on a read miss');
+    assert.isFalse(eventErrored, "the 'error' event must not fire on a read miss");
+    assert.isNull(successResp, 'success receives null for a missing record');
+  });
+
+  it('Model save({ promise: true }) rejects with an Error (not a string) on a storage failure', async function () {
+    // A genuine storage failure must still reject — and with a real Error.
+    const driver: any = {
+      getItem: () => Promise.resolve(null),
+      setItem: () => Promise.reject(new Error('quota exceeded')),
+      removeItem: () => Promise.resolve(),
+      keys: () => Promise.resolve([]),
+      length: () => Promise.resolve(0),
+    };
+    const model = new Model<ModelAttributes>({ id: 'save-fail-1' });
+    model.storage = new Storage('saveFail', driver);
+    try {
+      await model.save({ name: 'X' }, { promise: true });
+      assert.fail('save promise should have rejected');
+    } catch (e) {
+      assert.instanceOf(e, Error, 'the rejection reason is a real Error, not a string');
+      assert.equal((e as Error).message, 'quota exceeded');
+    }
+  });
+
   it('Model fetch({ promise: true }) resolves when sync resolves its promise (no options.success call)', async function () {
     // A sync that returns a resolved promise instead of invoking
     // options.success used to leave the fetch promise pending forever.
@@ -603,8 +664,8 @@ describe('fetch promise contract', function () {
         this.storage = new Storage('firstRun', 'local');
       }
     }
-    // id present but nothing stored → fetch produces 'Record Not Found', which
-    // hydration must swallow rather than reject, keeping the initial attributes.
+    // id present but nothing stored → the read misses, which now resolves
+    // (rather than erroring), keeping the initial attributes.
     const model = new AutoM({ id: 'never-saved', name: 'Initial' });
     await model.initialized;
     assert.equal(model.get('name'), 'Initial', 'initial attributes preserved on first run');
