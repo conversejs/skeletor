@@ -58,7 +58,7 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
   cid: string;
   collection?: Collection;
   id: string | number;
-  initialized?: Promise<void>;
+  hydrated?: Promise<void>;
   validationError: string | number | null = null;
 
   /**
@@ -102,17 +102,17 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
     // Reset changed after initial set
     this.changed = {};
 
-    // When autoSync is on, `initialized` is always a Promise so callers can
-    // uniformly `await model.initialized`. It only hydrates from storage when
+    // When autoSync is on, `hydrated` is always a Promise so callers can
+    // uniformly `await model.hydrated`. It only hydrates from storage when
     // there's something to load (storage configured and the model isn't new);
     // otherwise it's already ready and resolves immediately.
     if (this.autoSync) {
       if (getStorage(this) && !this.isNew()) {
         this.#state = 'hydrating';
-        this.initialized = this.#hydrate();
+        this.hydrated = this.#hydrate();
       } else {
         this.#state = 'ready';
-        this.initialized = Promise.resolve();
+        this.hydrated = Promise.resolve();
       }
     } else {
       this.#state = 'ready';
@@ -347,7 +347,7 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
     // fromStorage lives in `val` (second arg), not `options` (third arg).
     if (this.autoSync && this.#state === 'hydrating' && !options.fromStorage) {
       throw new Error(
-        `Skeletor: set() called on an autoSync model before initialized resolved. Await model.initialized first.`,
+        `Skeletor: set() called on an autoSync model before hydration resolved. Await model.hydrated first.`,
       );
     }
 

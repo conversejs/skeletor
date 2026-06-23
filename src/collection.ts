@@ -40,7 +40,7 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
   _storage?: PersistentStorage;
   _comparator?: Comparator<T>;
   _url: string = '';
-  initialized?: Promise<void>;
+  hydrated?: Promise<void>;
   models: T[];
   protected _byId: Record<string, T>;
   protected _model?: new (attributes?: Partial<ModelAttributes>, options?: ModelOptions) => T;
@@ -61,11 +61,11 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
     if (models) this.reset(models, Object.assign({ silent: true }, options));
 
     this[Symbol.iterator] = this.values;
-    // When autoSync is on, `initialized` is always a Promise so callers can
-    // uniformly `await collection.initialized`; it resolves immediately when
+    // When autoSync is on, `hydrated` is always a Promise so callers can
+    // uniformly `await collection.hydrated`; it resolves immediately when
     // there's no storage to hydrate from.
     if (this.autoSync) {
-      this.initialized = getStorage(this) ? this.#hydrate() : Promise.resolve();
+      this.hydrated = getStorage(this) ? this.#hydrate() : Promise.resolve();
     }
   }
 
@@ -104,7 +104,7 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
 
   /**
    * Override to return `true` to automatically load the collection from
-   * storage on construction. Await `initialized` to know when hydration
+   * storage on construction. Await `hydrated` to know when hydration
    * is complete.
    *
    * Note: collection `autoSync` is hydrate-only. Unlike `Model`, it does

@@ -159,7 +159,7 @@ class Settings extends Model {
 }
 
 const settings = new Settings({ id: 'main' });
-await settings.initialized; // resolves when prior data has been loaded
+await settings.hydrated; // resolves when prior data has been loaded
 
 settings.attrs.theme = 'dark'; // persisted automatically (debounced)
 settings.set('lang', 'en'); // also auto-saved
@@ -171,7 +171,8 @@ settings.set('transient', true, { noAutoSave: true });
 Pending writes are debounced (see `autoSyncDelay`, default 100ms) and flushed when the
 page is hidden (`visibilitychange`) or unloaded (`pagehide`).
 
-When `autoSync` is off, `initialized` is `undefined`, but `await model.initialized` is still safe (awaiting `undefined` is a no-op), so code can await it uniformly.
+When `autoSync` is off, `hydrated` is `undefined`, but `await model.hydrated` is still safe
+(awaiting `undefined` is a no-op), so code can await it uniformly.
 
 On a `Collection`, `autoSync` is **hydrate-only**: the collection loads its stored
 state on construction but does not auto-save on `add`/`remove`/`reset`. To persist

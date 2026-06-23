@@ -1,5 +1,17 @@
 # Changelog
 
+## 3.1.4 (2026-06-23)
+
+- Fix the `autoSync` hydration promise clobbering a consumer's own `initialized` promise.
+  The promise that resolves once hydration is complete is now exposed as `hydrated` (on both
+  `Model` and `Collection`) instead of `initialized`. The old name collided with the common
+  convention (used by Converse.js) of setting a `model.initialized` promise inside
+  `initialize()` to track a consumer's own async setup.
+
+  Skeletor no longer sets or reads `initialized`. Await `model.hydrated` / `collection.hydrated`
+  to know when hydration is complete. If you used the autoSync `initialized` promise added
+  in 3.1.0, rename those reads to `hydrated`.
+
 ## 3.1.3 (2026-06-23)
 
 - Fix a regression (since 3.1.0) where a missing record on a `read` was treated as an error.

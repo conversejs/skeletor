@@ -135,10 +135,10 @@ import { ModelAttributes, ModelOptions } from 'src/types';
     doc.collection = collection;
   });
 
-  QUnit.test('initialized is undefined when autoSync is off', function (assert) {
+  QUnit.test('hydrated is undefined when autoSync is off', function (assert) {
     assert.expect(1);
     const model = new Skeletor.Model({ name: 'Alice' });
-    assert.strictEqual(model.initialized, undefined, 'initialized is undefined for non-autoSync models');
+    assert.strictEqual(model.hydrated, undefined, 'hydrated is undefined for non-autoSync models');
   });
 
   QUnit.test('storage and browserStorage accessors share the same backing field', function (assert) {
