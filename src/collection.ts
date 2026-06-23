@@ -119,8 +119,9 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
 
   async #hydrate(): Promise<void> {
     ensureUnloadListener(PersistentStorage);
-    // findAll() returns [] for an empty store, so a first-run collection
-    // resolves rather than erroring the way a model fetch-by-id would.
+    // An empty store is a normal first-run state: findAll() returns [] and a
+    // missing model record resolves to null, so hydration resolves rather
+    // than rejecting.
     await this.fetch({ fromStorage: true, promise: true });
   }
 

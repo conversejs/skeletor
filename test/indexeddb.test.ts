@@ -92,10 +92,16 @@ describe('Model using IndexedDB', function () {
       await new Promise((resolve) => model.save({ 'hello': 'world!' }, { 'success': resolve }));
       const fetched_model = await new Promise((resolve) => model.destroy({ 'success': resolve }));
       expect(model).to.deep.equal(fetched_model);
+      // After the record is destroyed, a re-fetch misses. A read miss is a
+      // normal empty result, so it resolves via `success` with a null response
+      // rather than firing `error`.
       const result = await new Promise((resolve) =>
-        model.fetch({ 'success': () => resolve('success'), 'error': () => resolve('error') }),
+        model.fetch({
+          'success': (_m: any, resp: any) => resolve(resp === null ? 'miss' : 'hit'),
+          'error': () => resolve('error'),
+        }),
       );
-      expect(result).to.equal('error');
+      expect(result).to.equal('miss');
     });
   });
 });

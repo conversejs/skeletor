@@ -1,5 +1,20 @@
 # Changelog
 
+## 3.1.3 (Unreleased)
+
+- Fix a regression (since 3.1.0) where a missing record on a `read` was treated as an error.
+  `model.fetch({ promise: true })` rejected with the bare string `'Record Not Found'` on a
+  first-run read of a non-existent record (and the `error` callback / `'error'` event fired),
+  where previously 3.0.x had resolved. A read miss is a normal empty state, so it now
+  resolves with `null` on both the callback (`success`) and promise forms.
+
+  **Behaviour change:** a read miss no longer fires the `error` callback or the `'error'` event,
+  it fires `success(null)` instead.
+
+- Storage-layer `sync` failures now surface a real `Error` (with a stack) through the `error`
+  callback / rejected promise instead of a bare string. The internal `Model#hydrate`
+  `'Record Not Found'` string-match workaround is removed accordingly.
+
 ## 3.1.2 (2026-06-22)
 
 - Fix the published package missing its `dist/` directory. `dist/` is gitignored and nothing built

@@ -164,10 +164,6 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
     ensureUnloadListener(PersistentStorage);
     try {
       await this.fetch({ fromStorage: true, promise: true });
-    } catch (e) {
-      // 'Record Not Found' is a normal first-run state (nothing stored yet);
-      // keep the initial attributes and resolve. Re-throw anything else.
-      if (e !== 'Record Not Found') throw e;
     } finally {
       this.#state = 'ready';
     }
