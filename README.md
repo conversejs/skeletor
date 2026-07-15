@@ -1,7 +1,13 @@
-# Skeletor
+<p align="center">
+  <img src="images/skeletor-logo.svg" alt="Skeletor" width="120" height="120">
+</p>
 
-[![XMPP Chat](https://conference.conversejs.org/muc_badge/discuss@conference.conversejs.org)](https://inverse.chat/#converse/room?jid=discuss@conference.conversejs.org)
-[![CI Tests](https://github.com/conversejs/skeletor/actions/workflows/karma-tests.yml/badge.svg)](https://github.com/conversejs/skeletor/actions/workflows/karma-tests.yml)
+<h1 align="center">Skeletor</h1>
+
+<p align="center">
+  <a href="https://chat.conversejs.org/#converse/room?jid=discuss@conference.conversejs.org"><img alt="XMPP Chat" src="https://conference.conversejs.org/muc_badge/discuss@conference.conversejs.org"></a>
+  <a href="https://github.com/conversejs/skeletor/actions/workflows/karma-tests.yml"><img alt="CI Tests" src="https://github.com/conversejs/skeletor/actions/workflows/karma-tests.yml/badge.svg"></a>
+</p>
 
 Skeletor is a lightweight, TypeScript-first reactive data library.
 

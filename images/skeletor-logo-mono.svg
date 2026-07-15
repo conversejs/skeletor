@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Skeletor">
+  <!-- Single-colour, background-agnostic skull. Uses currentColor, so it
+       adapts to surrounding text colour; eyes/nose/teeth are cut-out holes. -->
+  <path fill="currentColor" fill-rule="evenodd" d="
+    M 128 32
+    C 178 32, 218 70, 218 116
+    C 218 148, 208 158, 192 166
+    C 180 172, 176 180, 174 192
+    Q 172 210, 150 211
+    Q 128 213, 106 211
+    Q 84 210, 82 192
+    C 80 180, 76 172, 64 166
+    C 48 158, 38 148, 38 116
+    C 38 70, 78 32, 128 32
+    Z
+
+    M 94 84
+    a 25 28 0 1 0 0.01 0 Z
+    M 162 84
+    a 25 28 0 1 0 0.01 0 Z
+
+    M 128 166
+    C 119 157, 113 151, 119 146
+    C 124 142, 128 147, 128 150
+    C 128 147, 132 142, 137 146
+    C 143 151, 137 157, 128 166 Z
+
+    M 98 174 H 158 V 180 H 98 Z
+    M 107 180 H 113 V 197 H 107 Z
+    M 125 180 H 131 V 198 H 125 Z
+    M 143 180 H 149 V 197 H 143 Z
+  "/>
+</svg>

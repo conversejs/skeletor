@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Skeletor">
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="256" y2="256" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8B5CF6"/>
+      <stop offset="1" stop-color="#6D28D9"/>
+    </linearGradient>
+  </defs>
+
+  <!-- app-icon tile -->
+  <rect x="0" y="0" width="256" height="256" rx="56" fill="url(#tile)"/>
+
+  <g transform="translate(128 130) scale(0.82) translate(-128 -122.5)">
+    <!-- skull -->
+    <path fill="#F4ECDC" d="
+      M 128 32
+      C 178 32, 218 70, 218 116
+      C 218 148, 208 158, 192 166
+      C 180 172, 176 180, 174 192
+      Q 172 210, 150 211
+      Q 128 213, 106 211
+      Q 84 210, 82 192
+      C 80 180, 76 172, 64 166
+      C 48 158, 38 148, 38 116
+      C 38 70, 78 32, 128 32
+      Z"/>
+
+    <!-- eye sockets -->
+    <ellipse cx="94"  cy="112" rx="25" ry="28" fill="#2E1065"/>
+    <ellipse cx="162" cy="112" rx="25" ry="28" fill="#2E1065"/>
+
+    <!-- nose -->
+    <path fill="#2E1065" d="
+      M 128 166
+      C 119 157, 113 151, 119 146
+      C 124 142, 128 147, 128 150
+      C 128 147, 132 142, 137 146
+      C 143 151, 137 157, 128 166 Z"/>
+
+    <!-- teeth (dark gaps define cream teeth) -->
+    <g stroke="#2E1065" stroke-width="6" stroke-linecap="round">
+      <line x1="98"  y1="177" x2="158" y2="177"/>
+      <line x1="110" y1="178" x2="110" y2="197"/>
+      <line x1="128" y1="178" x2="128" y2="198"/>
+      <line x1="146" y1="178" x2="146" y2="197"/>
+    </g>
+  </g>
+</svg>
