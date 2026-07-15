@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Switch TypeScript `moduleResolution` to `bundler` and add `types` conditions to the `exports` map.
+
 ## 3.1.4 (2026-06-23)
 
 - Fix the `autoSync` hydration promise clobbering a consumer's own `initialized` promise.
