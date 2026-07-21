@@ -231,31 +231,16 @@ class PersistentStorage {
         }
       }
 
-      if (resp) {
-        if (options && options.success) {
-          // When storing, we don't pass back the response (which is
-          // the set attributes returned from localforage because
-          // Skeletor sets them again on the model and due to the async
-          // nature of localforage it can cause stale attributes to be
-          // set on a model after it's been updated in the meantime.
-          const data = method === 'read' ? resp : null;
-          options.success(data, options);
-        }
-      } else if (method === 'read' && !caughtError) {
-        // A read that finds no record is a normal empty result (first run /
-        // empty storage), not an error. Resolve with `null` so the callback
-        // and promise forms of fetch() agree and a first-run read never
-        // rejects.
-        if (options && options.success) {
-          options.success(null, options);
-        }
-      } else {
-        // A genuine failure (storage threw, or a write produced no result):
-        // surface a real Error so consumers get a stack and `instanceof Error`
-        // holds.
-        if (options && options.error) {
-          options.error(caughtError ?? new Error('Record Not Found'));
-        }
+      if (caughtError) {
+        options?.error?.(caughtError);
+      } else if (options?.success) {
+        // When storing, we don't pass back the response (which is the set
+        // attributes returned from localforage) because Skeletor sets them
+        // again on the model and due to the async nature of localforage it can
+        // cause stale attributes to be set on a model after it's been updated
+        // in the meantime.
+        const data = method === 'read' ? (resp ?? null) : null;
+        options.success(data, options);
       }
     }
     localSync.__name__ = 'localSync';
