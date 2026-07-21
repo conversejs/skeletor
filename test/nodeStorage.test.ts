@@ -1,6 +1,9 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { NodeSQLiteStorage } from '../src/drivers/nodeSQLiteStorage';
+import PersistentStorage from '../src/storage';
+import { Model } from '../src/model';
+import type { StorageDriver } from '../src/drivers/types';
 import { expect } from 'chai';
 
 const TEST_DIR = path.join('.skeletor-test-storage');
@@ -96,6 +99,13 @@ describe('Node SQLite Storage', function () {
       await store.setItems({ obj });
 
       expect(await store.getItem('obj')).to.deep.equal(obj);
+    });
+
+    it('should resolve with the items that were written', async function () {
+      const store = createStore('test-setitems-resolves');
+      const items = { a: 1, b: { nested: true } };
+
+      expect(await store.setItems(items)).to.deep.equal(items);
     });
 
     it('should be atomic - partial failure rolls back all writes', async function () {
@@ -436,6 +446,74 @@ describe('Node SQLite Storage', function () {
       expect(final).to.match(/^value-\d+$/);
       const num = parseInt(final.split('-')[1], 10);
       expect(num).to.be.at.least(0).and.at.most(9);
+    });
+  });
+
+  describe('Model persistence', function () {
+    it('saves and fetches a model through the SQLite driver', async function () {
+      const store = createStore('test-model-roundtrip');
+
+      class SQLiteModel extends Model {
+        initialize() {
+          this.storage = new PersistentStorage('roundtrip', store);
+        }
+      }
+
+      const model = new SQLiteModel({ id: 'm-1' });
+      model.on('error', (_m: Model, e: Error) => expect.fail(`save errored: ${e.message}`));
+      await model.save({ name: 'Bob' }, { promise: true });
+
+      expect(await store.getItem('roundtrip-m-1')).to.deep.equal({ id: 'm-1', name: 'Bob' });
+
+      const fetched = new SQLiteModel({ id: 'm-1' });
+      await fetched.fetch({ promise: true });
+      expect(fetched.get('name')).to.equal('Bob');
+    });
+
+    it('treats a write as successful when the driver resolves nothing', async function () {
+      // Drivers aren't obliged to resolve a write with anything. Success is the
+      // absence of a thrown error, so an empty resolve must not be reported as
+      // 'Record Not Found'.
+      const store: Record<string, any> = {};
+      const driver: StorageDriver = {
+        ready: () => Promise.resolve(),
+        getItem: (k: string) => Promise.resolve(k in store ? store[k] : null),
+        getItems: (keys: string[]) => {
+          const out: Record<string, any> = {};
+          keys.forEach((k) => {
+            if (k in store) out[k] = store[k];
+          });
+          return Promise.resolve(out);
+        },
+        setItem: (k: string, v: any) => {
+          store[k] = v;
+          return Promise.resolve(v);
+        },
+        setItems: (items: Record<string, any>) => {
+          Object.assign(store, items);
+          return Promise.resolve();
+        },
+        removeItem: (k: string) => {
+          delete store[k];
+          return Promise.resolve();
+        },
+        clear: () => Promise.resolve(),
+        keys: () => Promise.resolve(Object.keys(store)),
+        key: (n: number) => Promise.resolve(Object.keys(store)[n] ?? null),
+        length: () => Promise.resolve(Object.keys(store).length),
+      };
+
+      class VoidWriteModel extends Model {
+        initialize() {
+          this.storage = new PersistentStorage('voidwrite', driver);
+        }
+      }
+
+      const model = new VoidWriteModel({ id: 'v-1' });
+      model.on('error', (_m: Model, e: Error) => expect.fail(`save errored: ${e.message}`));
+      await model.save({ name: 'Bob' }, { promise: true });
+
+      expect(store['voidwrite-v-1']).to.deep.equal({ id: 'v-1', name: 'Bob' });
     });
   });
 });

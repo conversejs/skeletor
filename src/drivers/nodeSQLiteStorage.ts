@@ -27,11 +27,6 @@ export class NodeSQLiteStorage implements StorageDriver {
     return Promise.resolve();
   }
 
-  debouncedSetItems?: {
-    (items: Record<string, any>): Promise<void>;
-    flush?: () => void;
-  };
-
   constructor(name: string, storageDir?: string, inMemory?: boolean) {
     if (inMemory) {
       this.db = new DatabaseSync(':memory:');
@@ -116,7 +111,7 @@ export class NodeSQLiteStorage implements StorageDriver {
     return Promise.resolve(rows.map((r) => r.key));
   }
 
-  setItems(items: Record<string, any>): Promise<void> {
+  setItems(items: Record<string, any>): Promise<Record<string, any>> {
     this.db.exec('BEGIN IMMEDIATE');
     try {
       for (const [key, value] of Object.entries(items)) {
@@ -137,7 +132,7 @@ export class NodeSQLiteStorage implements StorageDriver {
       }
       throw e;
     }
-    return Promise.resolve();
+    return Promise.resolve(items);
   }
 
   getItems(keys: string[]): Promise<Record<string, any>> {

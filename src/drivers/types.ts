@@ -11,10 +11,16 @@ export interface StorageDriver {
   length(): Promise<number>;
   key(keyIndex: number): Promise<string | null>;
   keys(): Promise<string[]>;
-  setItems?(items: Record<string, any>): Promise<void>;
+  /**
+   * Write several items in one go. A successful write is signalled by the
+   * promise settling, not by what it resolves with: drivers may resolve with
+   * the written items (localForage does) or with nothing, and callers must
+   * treat both as success.
+   */
+  setItems?(items: Record<string, any>): Promise<Record<string, any> | void>;
   getItems?(keys: string[]): Promise<Record<string, any>>;
   debouncedSetItems?: {
-    (items: Record<string, any>): Promise<void>;
+    (items: Record<string, any>): Promise<Record<string, any> | void>;
     flush?: () => void;
   };
 }
