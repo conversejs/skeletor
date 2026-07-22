@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- The `'node'` store type can now be told where to put its database files, via the new
+  `PersistentStorage.nodeStorageDir`. The driver has always taken a `storageDir` argument,
+  but nothing could reach it through the string store type, so `new PersistentStorage(id, 'node')`
+  was stuck with the driver's default. That default is relative, so it resolves against
+  `process.cwd()` and an app started from two directories keeps two separate sets of state.
+  Set an absolute path (`$XDG_STATE_HOME/<app>`, say) to pin it. The default is unchanged.
+
 ## 3.1.5 (2026-07-22)
 
 - Fix every write through the Node.js SQLite driver failing with `Record Not Found` while

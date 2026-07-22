@@ -521,4 +521,54 @@ describe('Node SQLite Storage', function () {
       expect(store['voidwrite-v-1']).to.deep.equal({ id: 'v-1', name: 'Bob' });
     });
   });
+
+  describe("'node' store type", function () {
+    beforeEach(() => {
+      // What `@converse/skeletor/node` does on import. The test imports
+      // `src/storage` directly, so the driver isn't registered for us.
+      PersistentStorage.nodeStorage = NodeSQLiteStorage;
+    });
+
+    afterEach(() => {
+      PersistentStorage.nodeStorage = null;
+      PersistentStorage.nodeStorageDir = null;
+    });
+
+    it('writes to `nodeStorageDir` instead of the cwd-relative default', async function () {
+      PersistentStorage.nodeStorageDir = testDir;
+
+      const storage = new PersistentStorage('bydir', 'node');
+      await storage.storeInitialized;
+      stores.push(storage.store as NodeSQLiteStorage);
+
+      await storage.store.setItem('bydir-1', { id: '1' });
+
+      expect(fs.existsSync(path.join(testDir, 'bydir.db'))).to.be.true;
+      expect(fs.existsSync(path.join('.skeletor-storage', 'bydir.db'))).to.be.false;
+    });
+
+    it('persists a model through the store type into that directory', async function () {
+      PersistentStorage.nodeStorageDir = testDir;
+
+      class DirModel extends Model {
+        initialize() {
+          this.storage = new PersistentStorage('bytype', 'node');
+        }
+      }
+
+      const model = new DirModel({ id: 'd-1' });
+      let syncError: Error | undefined;
+      model.on('error', (_m: Model, e: Error) => (syncError = e));
+      await model.save({ name: 'Bob' }, { promise: true });
+      expect(syncError, `save errored: ${syncError?.message}`).to.be.undefined;
+      stores.push((model.storage as PersistentStorage).store as NodeSQLiteStorage);
+
+      const fetched = new DirModel({ id: 'd-1' });
+      await fetched.fetch({ promise: true });
+      expect(fetched.get('name')).to.equal('Bob');
+      stores.push((fetched.storage as PersistentStorage).store as NodeSQLiteStorage);
+
+      expect(fs.existsSync(path.join(testDir, 'bytype.db'))).to.be.true;
+    });
+  });
 });

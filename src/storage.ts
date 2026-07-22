@@ -37,7 +37,7 @@ const registered = new WeakSet<PersistentStorage>();
  * Constructor for a Node.js-only storage driver. Registered by the
  * `@converse/skeletor/node` entry point via {@link PersistentStorage.nodeStorage}.
  */
-type NodeStorageConstructor = new (name: string) => StorageDriver;
+type NodeStorageConstructor = new (name: string, storageDir?: string) => StorageDriver;
 
 /**
  * @public
@@ -59,6 +59,19 @@ class PersistentStorage {
   // node-only driver (and its `node:sqlite` import) never enters the browser
   // bundle; the `@converse/skeletor/node` entry sets it.
   static nodeStorage: NodeStorageConstructor | null = null;
+
+  /**
+   * Directory the `'node'` store type writes its database files to. The driver's
+   * own default is relative, so it resolves against `process.cwd()` and a process
+   * started from two directories ends up with two separate sets of state. Set an
+   * absolute path (`$XDG_STATE_HOME/<app>`, say) to pin it. Left `null`, the
+   * driver's default applies.
+   *
+   * Only the `'node'` string store type reads this; passing a driver instance to
+   * the constructor means you've already chosen a directory yourself.
+   * @public
+   */
+  static nodeStorageDir: string | null = null;
 
   /** Register a storage instance with a weak reference. @public */
   static register(instance: PersistentStorage): void {
@@ -128,7 +141,7 @@ class PersistentStorage {
             "Import from '@converse/skeletor/node' instead of '@converse/skeletor'.",
         );
       }
-      this.store = new NodeSQLiteStorage(this.name);
+      this.store = new NodeSQLiteStorage(this.name, PersistentStorage.nodeStorageDir ?? undefined);
       if (batchedWrites) {
         this.store.debouncedSetItems = mergebounce((items: Record<string, any>) => this.store.setItems!(items), 50, {
           'promise': true,
@@ -155,9 +168,11 @@ class PersistentStorage {
   async clear(): Promise<void> {
     await this.storeInitialized;
     await this.store.removeItem(this.name).catch((e) => console.error(e));
+
     const re = new RegExp(`^${this.name}-`);
     const keys = await this.store.keys();
     const removed_keys = keys.filter((k) => re.test(k));
+
     await Promise.all(removed_keys.map((k) => this.store.removeItem(k).catch((e) => console.error(e))));
   }
 
