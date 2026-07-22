@@ -1,16 +1,9 @@
 # Changelog
 
-## Unreleased
+## 3.1.5 (2026-07-22)
 
 - Fix every write through the Node.js SQLite driver failing with `Record Not Found` while
-  the data was in fact stored. `localSync` inferred the outcome of a write from the
-  truthiness of the driver's return value, and a driver is free to resolve a successful
-  write with nothing. A write is now successful unless the store throws, so a custom
-  driver has to throw to signal failure. `StorageDriver` documents this: a successful
-  write is signalled by the promise settling, not by what it resolves with.
-  `NodeSQLiteStorage.setItems` also resolves with the items it wrote now, matching
-  localForage.
-
+  the data was in fact stored.
 - Switch TypeScript `moduleResolution` to `bundler` and add `types` conditions to the `exports` map.
 
 ## 3.1.4 (2026-06-23)
