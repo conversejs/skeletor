@@ -9,18 +9,19 @@
   "browser": "dist/skeletor.js",
   "exports": {
     ".": {
-      "types": "./dist/skeletor.d.ts",
       "node": {
+        "types": "./dist/skeletor.node.d.ts",
         "require": "./dist/skeletor.node.js",
         "import": "./dist/skeletor.node.mjs"
       },
       "default": {
+        "types": "./dist/skeletor.d.ts",
         "import": "./dist/skeletor.esm.js",
         "require": "./dist/skeletor.js"
       }
     },
     "./node": {
-      "types": "./dist/skeletor.d.ts",
+      "types": "./dist/skeletor.node.d.ts",
       "require": "./dist/skeletor.node.js",
       "import": "./dist/skeletor.node.mjs"
     }
@@ -49,7 +50,7 @@
   },
   "scripts": {
     "build": "npm run prebuild && npm run build:declarations && rollup -c",
-    "build:declarations": "npm run build:types && api-extractor run --local && rm -rf dist/defs",
+    "build:declarations": "npm run build:types && api-extractor run --local && api-extractor run --local -c api-extractor.node.json && rm -rf dist/defs",
     "build:types": "tsc -p tsconfig.declarations.json",
     "check": "npm run check:types && npm run test && npm run test:node && npm run lint",
     "check:types": "tsc --noEmit",
@@ -74,6 +75,7 @@
     "dist/skeletor.node.mjs",
     "dist/skeletor.d.ts",
     "dist/skeletor.d.ts.map",
+    "dist/skeletor.node.d.ts",
     "src/**/*.ts"
   ],
   "dependencies": {

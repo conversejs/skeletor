@@ -9,6 +9,9 @@
   `process.cwd()` and an app started from two directories keeps two separate sets of state.
   Set an absolute path (`$XDG_STATE_HOME/<app>`, say) to pin it. The default is unchanged.
 
+- Ship a separate `dist/skeletor.node.d.ts` for the `@converse/skeletor/node` entry point.
+  Both entry points pointed their `types` at the browser rollup.
+
 ## 3.1.5 (2026-07-22)
 
 - Fix every write through the Node.js SQLite driver failing with `Record Not Found` while

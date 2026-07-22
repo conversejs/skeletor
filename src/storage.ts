@@ -36,8 +36,13 @@ const registered = new WeakSet<PersistentStorage>();
 /**
  * Constructor for a Node.js-only storage driver. Registered by the
  * `@converse/skeletor/node` entry point via {@link PersistentStorage.nodeStorage}.
+ * @public
  */
-type NodeStorageConstructor = new (name: string, storageDir?: string) => StorageDriver;
+export type NodeStorageConstructor = new (
+  name: string,
+  storageDir?: string,
+  inMemory?: boolean,
+) => StorageDriver;
 
 /**
  * @public

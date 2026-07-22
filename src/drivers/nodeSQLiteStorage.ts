@@ -9,6 +9,7 @@ const DEFAULT_BASE_DIR = '.skeletor-storage';
 /**
  * SQLite-backed implementation of StorageDriver.
  * Uses a single table with key/value columns, storing values as JSON strings.
+ * @public
  */
 export class NodeSQLiteStorage implements StorageDriver {
   private db: DatabaseSync;

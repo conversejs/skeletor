@@ -63,6 +63,7 @@ export { noConflict, Collection, EventEmitter, Model, PersistentStorage, Browser
 export { getStorage } from './helpers';
 
 export type { StorageDriver, StoreType } from './drivers/types';
+export type { NodeStorageConstructor } from './storage';
 export type {
   ClassConstructor,
   CollectionOptions,
