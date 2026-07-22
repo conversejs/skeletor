@@ -8,7 +8,7 @@ import localForage from 'localforage';
 import mergebounce from 'mergebounce';
 import sessionStorageWrapper from './drivers/sessionStorage';
 import { extendPrototype as extendPrototypeWithSetItems } from 'localforage-setitems';
-import { extendPrototype as extendPrototypeWithGetItems } from '@converse/localforage-getitems/dist/localforage-getitems.es6';
+import { extendPrototype as extendPrototypeWithGetItems } from '@converse/localforage-getitems';
 import { guid } from './helpers';
 import type { Model } from './model';
 import type { Collection } from './collection';
