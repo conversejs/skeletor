@@ -460,8 +460,11 @@ describe('Node SQLite Storage', function () {
       }
 
       const model = new SQLiteModel({ id: 'm-1' });
-      model.on('error', (_m: Model, e: Error) => expect.fail(`save errored: ${e.message}`));
+
+      let syncError: Error | undefined;
+      model.on('error', (_m: Model, e: Error) => (syncError = e));
       await model.save({ name: 'Bob' }, { promise: true });
+      expect(syncError, `save errored: ${syncError?.message}`).to.be.undefined;
 
       expect(await store.getItem('roundtrip-m-1')).to.deep.equal({ id: 'm-1', name: 'Bob' });
 
@@ -510,8 +513,10 @@ describe('Node SQLite Storage', function () {
       }
 
       const model = new VoidWriteModel({ id: 'v-1' });
-      model.on('error', (_m: Model, e: Error) => expect.fail(`save errored: ${e.message}`));
+      let syncError: Error | undefined;
+      model.on('error', (_m: Model, e: Error) => (syncError = e));
       await model.save({ name: 'Bob' }, { promise: true });
+      expect(syncError, `save errored: ${syncError?.message}`).to.be.undefined;
 
       expect(store['voidwrite-v-1']).to.deep.equal({ id: 'v-1', name: 'Bob' });
     });
