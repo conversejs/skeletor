@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 3.1.6 (2026-08-06)
 
 - The `'node'` store type can now be told where to put its database files, via the new
   `PersistentStorage.nodeStorageDir`. The driver has always taken a `storageDir` argument,
