@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+- Fix `Model.save({ promise: true })` hanging forever, and leaking an unhandled rejection, when
+  its `sync` settles the returned promise instead of invoking the `success`/`error` callbacks
+  (a rejecting custom `sync`, or a throwing `'sync'`/`'error'` listener). `save` now bridges that
+  promise to the one it hands back, the way `fetch` already did. `Collection.create({ promise: true })`,
+  which delegates to `save`, is fixed the same way.
+- Fix `fetch({ promise: true })` on a Model or Collection settling early when a callback-style `sync`
+  returns a non-thenable (nothing, or an XHR) and invokes `success`/`error` later. The bridge from the
+  `sync` return value to the returned promise now only engages for a thenable, so such a `sync` settles
+  the promise through its callbacks. The same guard applies to `save({ promise: true })`.
+
 ## 3.1.6 (2026-08-06)
 
 - The `'node'` store type can now be told where to put its database files, via the new

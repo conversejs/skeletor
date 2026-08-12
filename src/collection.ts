@@ -7,7 +7,14 @@ import keyBy from 'lodash-es/keyBy';
 import sortBy from 'lodash-es/sortBy';
 import { EventEmitterObject } from './eventemitter';
 import PersistentStorage from './storage';
-import { getResolveablePromise, getStorage, getSyncMethod, warnBrowserStorageDeprecation, wrapError } from './helpers';
+import {
+  getResolveablePromise,
+  getStorage,
+  getSyncMethod,
+  isThenable,
+  warnBrowserStorageDeprecation,
+  wrapError,
+} from './helpers';
 import { ensureUnloadListener } from './autosync';
 import { Model } from './model';
 import {
@@ -654,17 +661,23 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
 
     const result = this.sync('read', this, options);
     if (promise) {
-      Promise.resolve(result).then(
-        // A sync that resolves its promise without invoking options.success:
-        // treat the resolved value as the response, so the collection is still
-        // populated and the promise settles instead of hanging.
-        (value) => {
-          if (!settled) options.success(value);
-        },
-        // A sync that rejects instead of invoking options.error; settling
-        // twice is a harmless no-op.
-        (e) => promise.reject(e),
-      );
+      // Only a thenable is bridged. A callback-style sync that returns nothing
+      // (or an XHR) and invokes the callbacks later must settle the promise
+      // through those callbacks; bridging its return value would fire
+      // `success` on the next microtask, before the sync is done.
+      if (isThenable(result)) {
+        Promise.resolve(result).then(
+          // A sync that resolves its promise without invoking options.success:
+          // treat the resolved value as the response, so the collection is still
+          // populated and the promise settles instead of hanging.
+          (value) => {
+            if (!settled) options.success(value);
+          },
+          // A sync that rejects instead of invoking options.error; settling
+          // twice is a harmless no-op.
+          (e) => promise.reject(e),
+        );
+      }
       return promise;
     }
     return result;
@@ -706,8 +719,15 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
       return_promise && promise.reject(e);
     };
 
-    preparedModel.save(null, Object.assign(options, { 'promise': false }));
+    // `options.promise` is passed through, so `save` installs its own bridge
+    // from the sync's returned promise to its callbacks: a sync that resolves
+    // without calling them still reaches the wired `options.success` above,
+    // which resolves our promise with the model. Only a rejection that bypassed
+    // the callbacks (a rejecting sync, or a throwing `'sync'`/`'error'`
+    // listener) still needs bridging to ours.
+    const result = preparedModel.save(null, options);
     if (return_promise) {
+      Promise.resolve(result).catch((e) => promise.reject(e));
       return promise;
     } else {
       return preparedModel;

@@ -142,7 +142,7 @@ describe('Storage using localStorage', function () {
         it('should remove all items from the collection and its store', async function () {
           const collection = new TestCollection();
           await Promise.all(
-            range(5).map(() => new Promise((resolve) => collection.create({}, { 'success': resolve })))
+            range(5).map(() => new Promise((resolve) => collection.create({}, { 'success': resolve }))),
           );
           assert.equal(collection.length, 5);
           while (collection.length) {
@@ -291,8 +291,12 @@ describe('autoSync', function () {
   afterEach(() => resetForTesting());
 
   class AutoModel extends Model {
-    get autoSync() { return true; }
-    get autoSyncDelay() { return 0; }
+    get autoSync() {
+      return true;
+    }
+    get autoSyncDelay() {
+      return 0;
+    }
     initialize() {
       this.storage = new Storage('autoModel', 'local');
     }
@@ -383,8 +387,12 @@ describe('autoSync', function () {
 
   it('hydrated rejects when hydration fails', async function () {
     class BrokenModel extends Model {
-      get autoSync() { return true; }
-      get autoSyncDelay() { return 0; }
+      get autoSync() {
+        return true;
+      }
+      get autoSyncDelay() {
+        return 0;
+      }
       initialize() {
         this.storage = new Storage('brokenModel', 'local');
       }
@@ -650,6 +658,160 @@ describe('fetch promise contract', function () {
     await ret;
     assert.lengthOf(coll.models, 2, 'the resolved value populates the collection');
     assert.equal(coll.get('a').get('name'), 'Ann');
+  });
+
+  it('Model save({ promise: true }) rejects when sync rejects its promise (previously hung forever)', async function () {
+    // A sync that rejects its promise instead of invoking options.error used to
+    // leave the save promise pending forever (and the rejection unhandled),
+    // where the same override on fetch already rejected. Both now agree.
+    class RejectSyncModel extends Model {
+      sync(_method: any, _model: any, _options: any) {
+        return Promise.reject(new Error('boom'));
+      }
+    }
+    const model = new RejectSyncModel({ id: 'sp-1' });
+    const ret = model.save({ name: 'X' }, { promise: true });
+    assert.instanceOf(ret, Promise, 'save returns a Promise when promise:true');
+    try {
+      await ret;
+      assert.fail('save promise should have rejected');
+    } catch (e) {
+      assert.instanceOf(e, Error);
+      assert.equal((e as Error).message, 'boom');
+    }
+  });
+
+  it('Model save({ promise: true }) resolves when sync resolves its promise (no options.success call)', async function () {
+    class PromiseSyncModel extends Model {
+      sync(_method: any, _model: any, _options: any) {
+        return Promise.resolve({ name: 'Bob' });
+      }
+    }
+    const model = new PromiseSyncModel({ id: 'sp-2' });
+    await model.save({ age: 1 }, { promise: true });
+    assert.equal(model.get('name'), 'Bob', 'the resolved value is merged into the model');
+  });
+
+  it('Model save({ promise: true }) waits for the callback when sync returns a non-thenable', async function () {
+    // A Backbone-style sync that returns nothing and invokes options.success
+    // later must settle the promise through that callback. Bridging the
+    // `undefined` return value would resolve the promise on the next microtask,
+    // commit `wait: true` attrs before the backend agreed, and fire 'sync' twice.
+    let respond: () => void;
+    class CallbackSyncModel extends Model {
+      sync(_method: any, _model: any, options: any) {
+        respond = () => options.success({ name: 'Cal' });
+      }
+    }
+    const model = new CallbackSyncModel({ id: 'sp-3' });
+    let syncCount = 0;
+    model.on('sync', () => syncCount++);
+    const ret = model.save({ age: 2 }, { promise: true, wait: true });
+    let isSettled = false;
+    ret.then(
+      () => (isSettled = true),
+      () => (isSettled = true),
+    );
+    await new Promise((r) => setTimeout(r, 0));
+    assert.isFalse(isSettled, 'the promise must not settle before the callback runs');
+    assert.isUndefined(model.get('age'), 'wait: true must not commit attrs before the callback runs');
+    assert.equal(syncCount, 0, "'sync' must not fire before the callback runs");
+    respond();
+    await ret;
+    assert.equal(model.get('name'), 'Cal');
+    assert.equal(model.get('age'), 2);
+    assert.equal(syncCount, 1, "'sync' fires exactly once");
+  });
+
+  it('Model fetch({ promise: true }) waits for the callback when sync returns a non-thenable', async function () {
+    let respond: () => void;
+    class CallbackSyncModel extends Model {
+      sync(_method: any, _model: any, options: any) {
+        respond = () => options.success({ name: 'Fay' });
+      }
+    }
+    const model = new CallbackSyncModel({ id: 'fp-3' });
+    const ret = model.fetch({ promise: true });
+    let isSettled = false;
+    ret.then(
+      () => (isSettled = true),
+      () => (isSettled = true),
+    );
+    await new Promise((r) => setTimeout(r, 0));
+    assert.isFalse(isSettled, 'the promise must not settle before the callback runs');
+    respond();
+    await ret;
+    assert.equal(model.get('name'), 'Fay');
+  });
+
+  it('Collection fetch({ promise: true }) waits for the callback when sync returns a non-thenable', async function () {
+    let respond: () => void;
+    class CallbackSyncCollection extends Collection {
+      sync(_method: any, _model: any, options: any) {
+        respond = () => options.success([{ id: 'c1', name: 'Col' }]);
+      }
+    }
+    const coll = new CallbackSyncCollection();
+    const ret = coll.fetch({ promise: true });
+    let isSettled = false;
+    ret.then(
+      () => (isSettled = true),
+      () => (isSettled = true),
+    );
+    await new Promise((r) => setTimeout(r, 0));
+    assert.isFalse(isSettled, 'the promise must not settle before the callback runs');
+    respond();
+    await ret;
+    assert.equal(coll.get('c1').get('name'), 'Col');
+  });
+
+  it('Collection create({ promise: true }) rejects when the save sync rejects its promise', async function () {
+    // create() delegates to model.save() and wires its own promise through the
+    // model's callbacks; a rejected sync promise must settle create's promise
+    // rather than go unhandled.
+    class RejectSyncModel extends Model {
+      sync(_method: any, _model: any, _options: any) {
+        return Promise.reject(new Error('nope'));
+      }
+    }
+    class RejectSyncCollection extends Collection {
+      get model() {
+        return RejectSyncModel as any;
+      }
+    }
+    const coll = new RejectSyncCollection();
+    const ret = coll.create({ id: 'cc-1' }, { promise: true, wait: true });
+    assert.instanceOf(ret, Promise, 'create returns a Promise when promise:true');
+    try {
+      await ret;
+      assert.fail('create promise should have rejected');
+    } catch (e) {
+      assert.instanceOf(e, Error);
+      assert.equal((e as Error).message, 'nope');
+    }
+  });
+
+  it('Collection create({ promise: true }) resolves when the save sync resolves its promise (no options.success call)', async function () {
+    // Mirrors the Model save case: create() used to force `promise: false` onto
+    // save(), which disabled save's resolve bridge, so a sync that resolved
+    // without calling options.success left create's promise pending forever.
+    class PromiseSyncModel extends Model {
+      sync(_method: any, _model: any, _options: any) {
+        return Promise.resolve({ name: 'Bob' });
+      }
+    }
+    class PromiseSyncCollection extends Collection {
+      get model() {
+        return PromiseSyncModel as any;
+      }
+    }
+    const coll = new PromiseSyncCollection();
+    const ret = coll.create({ id: 'cc-2' }, { promise: true, wait: true });
+    assert.instanceOf(ret, Promise, 'create returns a Promise when promise:true');
+    const created = await ret;
+    assert.instanceOf(created, PromiseSyncModel, 'the promise resolves with the created model');
+    assert.equal(created.get('name'), 'Bob', 'the resolved value is merged into the model');
+    assert.strictEqual(coll.get('cc-2'), created, 'wait: true adds the model once the sync settles');
   });
 
   it('Model autoSync hydration tolerates an empty store (first run)', async function () {
