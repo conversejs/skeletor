@@ -892,6 +892,45 @@ describe('sync promise contract', function () {
     assert.equal(eventCount, 1, "'error' fired once");
   });
 
+  it('Model save({ promise: true }) rejects with the validation error when the server attributes are invalid', async function () {
+    // success() bails out when set() rejects the server attributes; the promise
+    // used to stay pending for good. It now rejects with `validationError`.
+    class ValidatingModel extends Model {
+      validate(attrs: any) {
+        if (attrs.name === 'bad') return 'name is bad';
+      }
+      sync(_method: any, _model: any, options: any) {
+        options.success({ name: 'bad' });
+      }
+    }
+    const model = new ValidatingModel({ id: 'sp-6', name: 'ok' });
+    let invalidCount = 0;
+    let syncCount = 0;
+    model.on('invalid', () => invalidCount++);
+    model.on('sync', () => syncCount++);
+    const e = await rejectionOf(model.save({ age: 1 }, { promise: true }));
+    assert.equal(e, 'name is bad');
+    assert.equal(model.validationError, 'name is bad');
+    assert.equal(model.get('name'), 'ok', 'the invalid server attributes are not applied');
+    assert.equal(invalidCount, 1, "'invalid' fired once");
+    assert.equal(syncCount, 0, "'sync' must not fire for a rejected response");
+  });
+
+  it('Model fetch({ promise: true, validate: true }) rejects with the validation error when the fetched attributes are invalid', async function () {
+    class ValidatingModel extends Model {
+      validate(attrs: any) {
+        if (attrs.name === 'bad') return 'name is bad';
+      }
+      sync(_method: any, _model: any, options: any) {
+        options.success({ name: 'bad' });
+      }
+    }
+    const model = new ValidatingModel({ id: 'fp-6', name: 'ok' });
+    const e = await rejectionOf(model.fetch({ promise: true, validate: true }));
+    assert.equal(e, 'name is bad');
+    assert.equal(model.get('name'), 'ok', 'the invalid fetched attributes are not applied');
+  });
+
   it('Model autoSync hydration tolerates an empty store (first run)', async function () {
     class AutoM extends Model {
       get autoSync() {

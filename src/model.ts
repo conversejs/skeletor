@@ -515,7 +515,12 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
     options.success = (resp: any) => {
       const serverAttrs = options.parse ? this.parse(resp, options) : resp;
       // fromStorage prevents the set() from triggering auto-save on reads
-      if (!this.set(serverAttrs, Object.assign({}, options, { fromStorage: true }))) return false;
+      if (!this.set(serverAttrs, Object.assign({}, options, { fromStorage: true }))) {
+        // The fetched attributes failed validation (`'invalid'` has fired).
+        // Settle the promise with the error rather than leave it pending.
+        promise && promise.reject(this.validationError);
+        return false;
+      }
       if (success) success.call(options.context, this, resp, options);
       this.trigger('sync', this, resp, options);
       promise && promise.resolve(resp);
@@ -570,7 +575,12 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
       this.attributes = attributes;
       let serverAttrs = options.parse ? this.parse(resp, options) : resp;
       if (wait) serverAttrs = Object.assign({}, attrs, serverAttrs);
-      if (serverAttrs && !this.set(serverAttrs, options)) return false;
+      if (serverAttrs && !this.set(serverAttrs, options)) {
+        // The server attributes failed validation (`'invalid'` has fired).
+        // Settle the promise with the error rather than leave it pending.
+        return_promise && promise.reject(this.validationError);
+        return false;
+      }
       if (success) success.call(options.context, this, resp, options);
       this.trigger('sync', this, resp, options);
       return_promise && promise.resolve();

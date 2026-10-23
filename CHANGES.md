@@ -17,6 +17,9 @@
   `'sync'`/`'error'` listener (or `success`/`error` callback) that throws now rejects the promise
   instead of leaving it pending with an unhandled rejection. `Collection.fetch` fires `'sync'` before
   resolving, as `Model.fetch`/`save` already did, so a throwing listener rejects there too.
+- Fix `save({ promise: true })` and `fetch({ promise: true, validate: true })` leaving the promise
+  pending when the attributes returned by `sync` fail validation. The promise now rejects with
+  `validationError`; the `'invalid'` event fires as before.
 
 ## 3.1.6 (2026-08-06)
 
