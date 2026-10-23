@@ -558,10 +558,14 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
     // If we're not waiting and attributes exist, save acts as
     // `set(attr).save(null, opts)` with validation. Otherwise, check if
     // the model will be valid when the attributes, if any, are set.
-    if (attrs && !wait) {
-      if (!this.set(attrs, options)) return false;
-    } else if (!this._validate(attrs || {}, options)) {
-      return false;
+    const valid = attrs && !wait ? !!this.set(attrs, options) : this._validate(attrs || {}, options);
+    if (!valid) {
+      // Nothing is synced (`'invalid'` has fired). With `promise`, hand back a
+      // rejected promise rather than `false`, so the promise contract holds
+      // for every outcome.
+      if (!promise) return false;
+      promise.reject(this.validationError);
+      return promise;
     }
 
     // After a successful server-side save, the client is (optionally)

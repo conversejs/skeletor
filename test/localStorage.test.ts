@@ -931,6 +931,68 @@ describe('sync promise contract', function () {
     assert.equal(model.get('name'), 'ok', 'the invalid fetched attributes are not applied');
   });
 
+  it('Model save({ promise: true }) returns a rejected promise (not false) when the given attributes are invalid', async function () {
+    // Validation of the attributes passed in happens before any sync. The
+    // callback form returns `false` there; the promise form must still hand
+    // back a promise, rejected with the validation error.
+    let syncCount = 0;
+    class ValidatingModel extends Model {
+      validate(attrs: any) {
+        if (attrs.name === 'bad') return 'name is bad';
+      }
+      sync(_method: any, _model: any, options: any) {
+        syncCount++;
+        options.success({});
+      }
+    }
+    const model = new ValidatingModel({ id: 'sp-7', name: 'ok' });
+    let invalidCount = 0;
+    model.on('invalid', () => invalidCount++);
+
+    const ret = model.save({ name: 'bad' }, { promise: true });
+    assert.instanceOf(ret, Promise, 'save returns a Promise even when the attributes are invalid');
+    assert.equal(await rejectionOf(ret), 'name is bad');
+
+    // The `wait: true` form validates without setting, through the other branch.
+    const waited = model.save({ name: 'bad' }, { promise: true, wait: true });
+    assert.instanceOf(waited, Promise, 'save returns a Promise even when the attributes are invalid (wait)');
+    assert.equal(await rejectionOf(waited), 'name is bad');
+
+    assert.equal(model.get('name'), 'ok', 'the invalid attributes are not applied');
+    assert.equal(invalidCount, 2, "'invalid' fired once per attempt");
+    assert.equal(syncCount, 0, 'sync is never reached');
+    assert.isFalse(model.save({ name: 'bad' }), 'the callback form still returns false');
+  });
+
+  it('Collection create({ promise: true, validate: true }) returns a rejected promise (not null) when the attributes are invalid', async function () {
+    let syncCount = 0;
+    class ValidatingModel extends Model {
+      validate(attrs: any) {
+        if (attrs.name === 'bad') return 'name is bad';
+      }
+      sync(_method: any, _model: any, options: any) {
+        syncCount++;
+        options.success({});
+      }
+    }
+    class ValidatingCollection extends Collection {
+      get model() {
+        return ValidatingModel as any;
+      }
+    }
+    const coll = new ValidatingCollection();
+    let invalidCount = 0;
+    coll.on('invalid', () => invalidCount++);
+
+    const ret = coll.create({ id: 'cc-3', name: 'bad' }, { promise: true, validate: true });
+    assert.instanceOf(ret, Promise, 'create returns a Promise even when the attributes are invalid');
+    assert.equal(await rejectionOf(ret), 'name is bad');
+    assert.lengthOf(coll.models, 0, 'the invalid model is not added');
+    assert.equal(invalidCount, 1, "'invalid' fired once on the collection");
+    assert.equal(syncCount, 0, 'sync is never reached');
+    assert.isNull(coll.create({ id: 'cc-4', name: 'bad' }, { validate: true }), 'the callback form still returns null');
+  });
+
   it('Model autoSync hydration tolerates an empty store (first run)', async function () {
     class AutoM extends Model {
       get autoSync() {

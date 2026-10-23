@@ -20,6 +20,9 @@
 - Fix `save({ promise: true })` and `fetch({ promise: true, validate: true })` leaving the promise
   pending when the attributes returned by `sync` fail validation. The promise now rejects with
   `validationError`; the `'invalid'` event fires as before.
+- `save({ promise: true })` now returns a promise rejected with `validationError`, instead of `false`,
+  when the attributes passed to it fail validation; `create({ promise: true })` likewise returns a
+  rejected promise instead of `null`. The callback forms still return `false`/`null`.
 
 ## 3.1.6 (2026-08-06)
 

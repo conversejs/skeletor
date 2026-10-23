@@ -663,8 +663,19 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
     const return_promise = options.promise;
     const promise = return_promise && getResolveablePromise();
 
+    // `_prepareModel` reports attributes that fail validation by firing
+    // `'invalid'` and returning null. With `promise`, capture that error so a
+    // rejected promise is handed back rather than `null`.
+    let validationError: any;
+    const captureInvalid = (_c: unknown, err: any) => (validationError = err);
+    if (return_promise) this.on('invalid', captureInvalid);
     const preparedModel = this._prepareModel(model, options);
-    if (!preparedModel) return null;
+    if (return_promise) this.off('invalid', captureInvalid);
+    if (!preparedModel) {
+      if (!return_promise) return null;
+      promise.reject(validationError);
+      return promise;
+    }
 
     if (!wait) this.add(preparedModel, options);
 
