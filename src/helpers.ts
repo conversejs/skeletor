@@ -140,6 +140,68 @@ export function wrapError(
   };
 }
 
+/**
+ * Run a `sync` and make sure `promise` settles from its outcome, however the
+ * sync reports it.
+ *
+ * A `sync` may invoke `options.success`/`options.error` (the callback
+ * contract), or settle the promise it returns without calling them: a
+ * promise-only custom sync, or an async sync whose promise rejects because a
+ * `'sync'`/`'error'` listener threw after the callbacks ran. `options.success`
+ * and `options.error` must already be wired to resolve/reject `promise`. This
+ * wraps them to record that they ran, calls `run()`, and bridges a thenable
+ * result to them so the promise never hangs:
+ *
+ * - fulfilment with the callbacks unrun is delivered to `options.success`, so
+ *   the response is still merged into the model or collection;
+ * - rejection with the callbacks unrun is delivered to `options.error`, so the
+ *   caller's `error` callback and the `'error'` event still fire;
+ * - rejection after the callbacks ran rejects `promise` directly: a no-op if
+ *   they already settled it, and the only way to settle it if a listener threw
+ *   before they could;
+ * - a throw from either delivery (a throwing `success`/`error` callback or
+ *   listener) rejects `promise` instead of surfacing as an unhandled rejection.
+ *
+ * A non-thenable result (a callback-only sync that returns nothing, or an
+ * XHR) is left alone: such a sync settles `promise` through its callbacks, and
+ * bridging it would fire `success` on the next microtask, before the sync is
+ * done. Without a `promise`, `run()` is called as is.
+ */
+export function bridgeSyncToPromise(options: any, promise: ResolveablePromise | undefined, run: () => any): any {
+  if (!promise) return run();
+
+  let settled = false;
+  const success = options.success;
+  const error = options.error;
+  options.success = (...args: any[]) => {
+    settled = true;
+    return success && success(...args);
+  };
+  options.error = (...args: any[]) => {
+    settled = true;
+    return error && error(...args);
+  };
+
+  const result = run();
+  if (isThenable(result)) {
+    Promise.resolve(result)
+      .then(
+        (value) => {
+          if (!settled) options.success(value);
+        },
+        (e) => {
+          if (settled) {
+            promise.reject(e);
+          } else {
+            options.error(e);
+          }
+        },
+      )
+      .catch((e) => promise.reject(e));
+  }
+  return result;
+}
+
 // Map from CRUD to HTTP for our default `sync` implementation.
 const methodMap: Record<string, string> = {
   create: 'POST',

@@ -11,6 +11,12 @@
   returns a non-thenable (nothing, or an XHR) and invokes `success`/`error` later. The bridge from the
   `sync` return value to the returned promise now only engages for a thenable, so such a `sync` settles
   the promise through its callbacks. The same guard applies to `save({ promise: true })`.
+- The `{ promise: true }` paths of `fetch` and `save` now share one bridge from the `sync` outcome
+  to the returned promise, with two behaviour changes: a `sync` that rejects its promise without
+  calling the callbacks now also runs the `error` callback and fires the `'error'` event, and a
+  `'sync'`/`'error'` listener (or `success`/`error` callback) that throws now rejects the promise
+  instead of leaving it pending with an unhandled rejection. `Collection.fetch` fires `'sync'` before
+  resolving, as `Model.fetch`/`save` already did, so a throwing listener rejects there too.
 
 ## 3.1.6 (2026-08-06)
 

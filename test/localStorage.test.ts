@@ -517,9 +517,19 @@ describe('browserStorage deprecation warning', function () {
   });
 });
 
-describe('fetch promise contract', function () {
+describe('sync promise contract', function () {
   beforeEach(() => localStorage.clear());
   afterEach(() => resetForTesting());
+
+  /** Resolves with the reason `p` rejected with; fails the test if `p` resolves. */
+  async function rejectionOf(p: Promise<unknown>): Promise<any> {
+    const outcome: { rejected: boolean; reason?: any } = await p.then(
+      () => ({ rejected: false }),
+      (reason) => ({ rejected: true, reason }),
+    );
+    assert.isTrue(outcome.rejected, 'expected the promise to reject');
+    return outcome.reason;
+  }
 
   it('Model fetch({ promise: true }) resolves on a successful read', async function () {
     // Seed a record, then read it back with a fresh model.
@@ -542,12 +552,7 @@ describe('fetch promise contract', function () {
       }
     }
     const model = new FailModel({ id: 'fp-2' });
-    try {
-      await model.fetch({ promise: true });
-      assert.fail('fetch promise should have rejected');
-    } catch (e) {
-      assert.equal(e, 'boom');
-    }
+    assert.equal(await rejectionOf(model.fetch({ promise: true })), 'boom');
   });
 
   it('Collection fetch({ promise: true }) rejects on error (previously hung forever)', async function () {
@@ -557,12 +562,7 @@ describe('fetch promise contract', function () {
       }
     }
     const coll = new FailCollection();
-    try {
-      await coll.fetch({ promise: true });
-      assert.fail('fetch promise should have rejected');
-    } catch (e) {
-      assert.equal(e, 'kaput');
-    }
+    assert.equal(await rejectionOf(coll.fetch({ promise: true })), 'kaput');
   });
 
   it('Model fetch({ promise: true }) resolves with null on a missing record (read miss)', async function () {
@@ -617,13 +617,9 @@ describe('fetch promise contract', function () {
     };
     const model = new Model<ModelAttributes>({ id: 'save-fail-1' });
     model.storage = new Storage('saveFail', driver);
-    try {
-      await model.save({ name: 'X' }, { promise: true });
-      assert.fail('save promise should have rejected');
-    } catch (e) {
-      assert.instanceOf(e, Error, 'the rejection reason is a real Error, not a string');
-      assert.equal((e as Error).message, 'quota exceeded');
-    }
+    const e = await rejectionOf(model.save({ name: 'X' }, { promise: true }));
+    assert.instanceOf(e, Error, 'the rejection reason is a real Error, not a string');
+    assert.equal((e as Error).message, 'quota exceeded');
   });
 
   it('Model fetch({ promise: true }) resolves when sync resolves its promise (no options.success call)', async function () {
@@ -672,13 +668,9 @@ describe('fetch promise contract', function () {
     const model = new RejectSyncModel({ id: 'sp-1' });
     const ret = model.save({ name: 'X' }, { promise: true });
     assert.instanceOf(ret, Promise, 'save returns a Promise when promise:true');
-    try {
-      await ret;
-      assert.fail('save promise should have rejected');
-    } catch (e) {
-      assert.instanceOf(e, Error);
-      assert.equal((e as Error).message, 'boom');
-    }
+    const e = await rejectionOf(ret);
+    assert.instanceOf(e, Error);
+    assert.equal((e as Error).message, 'boom');
   });
 
   it('Model save({ promise: true }) resolves when sync resolves its promise (no options.success call)', async function () {
@@ -782,13 +774,9 @@ describe('fetch promise contract', function () {
     const coll = new RejectSyncCollection();
     const ret = coll.create({ id: 'cc-1' }, { promise: true, wait: true });
     assert.instanceOf(ret, Promise, 'create returns a Promise when promise:true');
-    try {
-      await ret;
-      assert.fail('create promise should have rejected');
-    } catch (e) {
-      assert.instanceOf(e, Error);
-      assert.equal((e as Error).message, 'nope');
-    }
+    const e = await rejectionOf(ret);
+    assert.instanceOf(e, Error);
+    assert.equal((e as Error).message, 'nope');
   });
 
   it('Collection create({ promise: true }) resolves when the save sync resolves its promise (no options.success call)', async function () {
@@ -812,6 +800,96 @@ describe('fetch promise contract', function () {
     assert.instanceOf(created, PromiseSyncModel, 'the promise resolves with the created model');
     assert.equal(created.get('name'), 'Bob', 'the resolved value is merged into the model');
     assert.strictEqual(coll.get('cc-2'), created, 'wait: true adds the model once the sync settles');
+  });
+
+  it('Model save({ promise: true }) rejects when a `sync` listener throws under a sync that resolves its promise', async function () {
+    // The bridge delivers the resolved value to options.success, which fires
+    // 'sync'. A throw there used to escape the bridge's fulfilment handler,
+    // leaving the save promise pending and the throw unhandled.
+    class PromiseSyncModel extends Model {
+      sync(_method: any, _model: any, _options: any) {
+        return Promise.resolve({ name: 'Bob' });
+      }
+    }
+    const model = new PromiseSyncModel({ id: 'sp-4' });
+    model.on('sync', () => {
+      throw new Error('listener boom');
+    });
+    const e = await rejectionOf(model.save({ age: 1 }, { promise: true }));
+    assert.instanceOf(e, Error);
+    assert.equal((e as Error).message, 'listener boom');
+    assert.equal(model.get('name'), 'Bob', 'the response was merged before the listener threw');
+  });
+
+  it('Model fetch({ promise: true }) rejects when a `sync` listener throws under a sync that resolves its promise', async function () {
+    class PromiseSyncModel extends Model {
+      sync(_method: any, _model: any, _options: any) {
+        return Promise.resolve({ name: 'Fay' });
+      }
+    }
+    const model = new PromiseSyncModel({ id: 'fp-4' });
+    model.on('sync', () => {
+      throw new Error('listener boom');
+    });
+    const e = await rejectionOf(model.fetch({ promise: true }));
+    assert.equal((e as Error).message, 'listener boom');
+  });
+
+  it('Collection fetch({ promise: true }) rejects when a `sync` listener throws', async function () {
+    // 'sync' fires before the promise resolves (as on Model), so a throwing
+    // listener rejects the promise instead of being lost.
+    class AsyncCallbackCollection extends Collection {
+      async sync(_method: any, _c: any, options: any) {
+        await Promise.resolve();
+        options.success([{ id: 'c1' }]);
+      }
+    }
+    const coll = new AsyncCallbackCollection();
+    coll.on('sync', () => {
+      throw new Error('listener boom');
+    });
+    const e = await rejectionOf(coll.fetch({ promise: true }));
+    assert.equal((e as Error).message, 'listener boom');
+    assert.lengthOf(coll.models, 1, 'the response was applied before the listener threw');
+  });
+
+  it('Model save({ promise: true }) runs the error callback and fires `error` when sync rejects its promise', async function () {
+    // The bridge used to reject the promise directly, skipping both.
+    class RejectSyncModel extends Model {
+      sync(_method: any, _model: any, _options: any) {
+        return Promise.reject(new Error('boom'));
+      }
+    }
+    const model = new RejectSyncModel({ id: 'sp-5' });
+    const callbackArgs: any[][] = [];
+    const eventArgs: any[][] = [];
+    model.on('error', (...args: any[]) => eventArgs.push(args));
+    const e = await rejectionOf(
+      model.save({ name: 'X' }, { promise: true, error: (...args: any[]) => callbackArgs.push(args) }),
+    );
+    assert.equal((e as Error).message, 'boom');
+    assert.lengthOf(callbackArgs, 1, 'the error callback ran once');
+    assert.strictEqual(callbackArgs[0][0], model);
+    assert.strictEqual(callbackArgs[0][1], e);
+    assert.lengthOf(eventArgs, 1, "'error' fired once");
+    assert.strictEqual(eventArgs[0][0], model);
+    assert.strictEqual(eventArgs[0][1], e);
+  });
+
+  it('Model fetch({ promise: true }) runs the error callback and fires `error` when sync rejects its promise', async function () {
+    class RejectSyncModel extends Model {
+      sync(_method: any, _model: any, _options: any) {
+        return Promise.reject(new Error('boom'));
+      }
+    }
+    const model = new RejectSyncModel({ id: 'fp-5' });
+    let callbackCount = 0;
+    let eventCount = 0;
+    model.on('error', () => eventCount++);
+    const e = await rejectionOf(model.fetch({ promise: true, error: () => callbackCount++ }));
+    assert.equal((e as Error).message, 'boom');
+    assert.equal(callbackCount, 1, 'the error callback ran once');
+    assert.equal(eventCount, 1, "'error' fired once");
   });
 
   it('Model autoSync hydration tolerates an empty store (first run)', async function () {

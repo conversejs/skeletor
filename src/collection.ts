@@ -8,10 +8,10 @@ import sortBy from 'lodash-es/sortBy';
 import { EventEmitterObject } from './eventemitter';
 import PersistentStorage from './storage';
 import {
+  bridgeSyncToPromise,
   getResolveablePromise,
   getStorage,
   getSyncMethod,
-  isThenable,
   warnBrowserStorageDeprecation,
   wrapError,
 } from './helpers';
@@ -634,53 +634,22 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
     const collection = this;
     const promise = options.promise ? getResolveablePromise() : undefined;
 
-    // Tracks whether sync invoked one of the callbacks. A sync may instead
-    // settle its returned promise; the `.then`/`.catch` below bridges that to
-    // the callbacks so the fetch promise never hangs. The flag is set
-    // synchronously inside each callback (before sync's promise resolves), so
-    // it's reliable by the time those handlers run.
-    let settled = false;
-
     options.success = function (resp: any) {
-      settled = true;
       const method = options.reset ? 'reset' : 'set';
       // fromStorage prevents individual model set() calls from triggering auto-save on reads
       collection[method](resp, Object.assign({}, options, { fromStorage: true }));
       if (success) success.call(options.context, collection, resp, options);
-      promise && promise.resolve();
+      // Fire 'sync' before resolving, as `Model.fetch`/`save` do, so a throwing
+      // listener rejects the promise instead of being lost.
       collection.trigger('sync', collection, resp, options);
+      promise && promise.resolve();
     };
     wrapError(this, options, promise);
-    if (promise) {
-      const onError = options.error;
-      options.error = (resp: any) => {
-        settled = true;
-        onError(resp);
-      };
-    }
 
-    const result = this.sync('read', this, options);
-    if (promise) {
-      // Only a thenable is bridged. A callback-style sync that returns nothing
-      // (or an XHR) and invokes the callbacks later must settle the promise
-      // through those callbacks; bridging its return value would fire
-      // `success` on the next microtask, before the sync is done.
-      if (isThenable(result)) {
-        Promise.resolve(result).then(
-          // A sync that resolves its promise without invoking options.success:
-          // treat the resolved value as the response, so the collection is still
-          // populated and the promise settles instead of hanging.
-          (value) => {
-            if (!settled) options.success(value);
-          },
-          // A sync that rejects instead of invoking options.error; settling
-          // twice is a harmless no-op.
-          (e) => promise.reject(e),
-        );
-      }
-      return promise;
-    }
-    return result;
+    // With `promise`, the sync's outcome is bridged to it however the sync
+    // reports it: through the callbacks, or through the promise it returns.
+    const result = bridgeSyncToPromise(options, promise, () => this.sync('read', this, options));
+    return promise ?? result;
   }
 
   /**

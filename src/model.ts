@@ -1,8 +1,8 @@
 import {
+  bridgeSyncToPromise,
   getResolveablePromise,
   getStorage,
   getSyncMethod,
-  isThenable,
   urlError,
   warnBrowserStorageDeprecation,
   wrapError,
@@ -512,15 +512,7 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
     const success = options.success;
     const promise = options.promise ? getResolveablePromise() : undefined;
 
-    // Tracks whether sync invoked one of the callbacks. A sync may instead
-    // settle its returned promise; the `.then`/`.catch` below bridges that to
-    // the callbacks so the fetch promise never hangs. The flag is set
-    // synchronously inside each callback (before sync's promise resolves), so
-    // it's reliable by the time those handlers run.
-    let settled = false;
-
     options.success = (resp: any) => {
-      settled = true;
       const serverAttrs = options.parse ? this.parse(resp, options) : resp;
       // fromStorage prevents the set() from triggering auto-save on reads
       if (!this.set(serverAttrs, Object.assign({}, options, { fromStorage: true }))) return false;
@@ -530,36 +522,11 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
     };
 
     wrapError(this, options, promise);
-    if (promise) {
-      const onError = options.error;
-      options.error = (resp: any) => {
-        settled = true;
-        onError(resp);
-      };
-    }
 
-    const result = this.sync('read', this, options);
-    if (promise) {
-      // Only a thenable is bridged. A callback-style sync that returns nothing
-      // (or an XHR) and invokes the callbacks later must settle the promise
-      // through those callbacks; bridging its return value would fire
-      // `success` on the next microtask, before the sync is done.
-      if (isThenable(result)) {
-        Promise.resolve(result).then(
-          // A sync that resolves its promise without invoking options.success:
-          // treat the resolved value as the response, so the model is still
-          // merged and the promise settles instead of hanging.
-          (value) => {
-            if (!settled) options.success(value);
-          },
-          // A sync that rejects instead of invoking options.error; settling
-          // twice is a harmless no-op.
-          (e) => promise.reject(e),
-        );
-      }
-      return promise;
-    }
-    return result;
+    // With `promise`, the sync's outcome is bridged to it however the sync
+    // reports it: through the callbacks, or through the promise it returns.
+    const result = bridgeSyncToPromise(options, promise, () => this.sync('read', this, options));
+    return promise ?? result;
   }
 
   /**
@@ -581,7 +548,7 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
     options = Object.assign({ validate: true, parse: true }, options);
     const wait = options.wait;
     const return_promise = options.promise;
-    const promise = return_promise && getResolveablePromise();
+    const promise = return_promise ? getResolveablePromise() : undefined;
 
     // If we're not waiting and attributes exist, save acts as
     // `set(attr).save(null, opts)` with validation. Otherwise, check if
@@ -598,14 +565,7 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
     const error = options.error;
     const attributes = this.attributes;
 
-    // Tracks whether sync invoked one of the callbacks, so the bridge below can
-    // treat a sync that settles its own promise without calling them (see
-    // `fetch`). Set synchronously inside each callback, so it's reliable by the
-    // time the bridge's handlers run.
-    let settled = false;
-
     options.success = (resp: any) => {
-      settled = true;
       // Ensure attributes are restored during synchronous saves.
       this.attributes = attributes;
       let serverAttrs = options.parse ? this.parse(resp, options) : resp;
@@ -617,7 +577,6 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
     };
 
     options.error = (model: this, e: any, options: Options) => {
-      settled = true;
       error && error.call(options.context, model, e, options);
       return_promise && promise.reject(e);
     };
@@ -629,33 +588,14 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
 
     const method = this.isNew() ? 'create' : options.patch ? 'patch' : 'update';
     if (method === 'patch' && !options.attrs) options.attrs = attrs;
-    const xhr = this.sync(method, this, options);
+    // With `promise`, the sync's outcome is bridged to it however the sync
+    // reports it: through the callbacks, or through the promise it returns.
+    const xhr = bridgeSyncToPromise(options, promise, () => this.sync(method, this, options));
 
     // Restore attributes.
     this.attributes = attributes;
 
-    if (return_promise) {
-      // Bridge the promise `sync` returns to the one we hand back, as `fetch`
-      // does. Without this a `sync` that settles its own promise instead of
-      // calling the callbacks leaves the save promise hanging, and a rejection
-      // (a throwing `'sync'`/`'error'` listener, say) goes unhandled.
-      //
-      // Only a thenable is bridged. A callback-style `sync` that returns
-      // nothing (or an XHR) and invokes the callbacks later must settle the
-      // promise through those callbacks; bridging its return value would fire
-      // `success` on the next microtask, before the sync is done.
-      if (isThenable(xhr)) {
-        Promise.resolve(xhr).then(
-          (value) => {
-            if (!settled) options.success(value);
-          },
-          (e) => promise.reject(e),
-        );
-      }
-      return promise;
-    } else {
-      return xhr;
-    }
+    return promise ?? xhr;
   }
 
   /**
