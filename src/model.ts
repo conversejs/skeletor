@@ -15,7 +15,7 @@ import has from 'lodash-es/has';
 import invert from 'lodash-es/invert';
 import isEmpty from 'lodash-es/isEmpty';
 import isEqual from 'lodash-es/isEqual';
-import iteratee from 'lodash-es/iteratee';
+import isMatch from 'lodash-es/isMatch';
 import omit from 'lodash-es/omit';
 import pick from 'lodash-es/pick';
 import result from 'lodash-es/result';
@@ -318,10 +318,19 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
   }
 
   /**
-   * Special-cased proxy to lodash's `matches` method.
+   * Returns `true` if the model's attributes satisfy `attrs`.
+   *
+   * An attributes object is compared with lodash's `isMatch`: a partial, deep
+   * comparison, so `{ form: { type: 'hidden' } }` matches a `form` attribute
+   * that has `type: 'hidden'` alongside other keys. A function is called with
+   * the attributes and its result coerced to a boolean.
+   *
+   * To scan a collection, prefer `Collection#find`, `filter` or `where`. They
+   * build their matcher once per scan instead of once per model.
    */
-  matches(attrs: Partial<T>): boolean {
-    return !!iteratee(attrs)(this.attributes);
+  matches(attrs: Partial<T> | ((attrs: T) => any)): boolean {
+    if (typeof attrs === 'function') return !!attrs(this.attributes);
+    return isMatch(this.attributes, attrs);
   }
 
   /**

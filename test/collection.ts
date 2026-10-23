@@ -810,6 +810,54 @@ import {CollectionOptions, ModelAttributes, ModelOptions} from '../src/types';
     assert.equal(coll.findWhere({a: 4}), undefined);
   });
 
+  QUnit.test('where and findWhere compare nested attributes partially', function (assert) {
+    assert.expect(5);
+    const upload = {value: 'urn:xmpp:http:upload:0', type: 'hidden'};
+    const hidden = new Skeletor.Model({FORM_TYPE: upload, other: 1});
+    const coll = new Skeletor.Collection([
+      hidden,
+      {FORM_TYPE: {value: 'urn:xmpp:http:upload:0', type: 'text-single'}},
+      {FORM_TYPE: {value: 'urn:xmpp:other', type: 'hidden'}},
+      {other: 1},
+    ]);
+    assert.equal((coll.where({FORM_TYPE: upload}) as Skeletor.Model[]).length, 1);
+    assert.equal(coll.findWhere({FORM_TYPE: upload}), hidden);
+    assert.equal((coll.where({FORM_TYPE: {type: 'hidden'}}) as Skeletor.Model[]).length, 2);
+    assert.equal(coll.findWhere({FORM_TYPE: {value: 'urn:xmpp:http:upload:0', type: 'missing'}}), undefined);
+    assert.equal(coll.filter({FORM_TYPE: {value: 'urn:xmpp:http:upload:0'}}).length, 2);
+  });
+
+  QUnit.test('attribute-object queries build their matcher once per scan', function (assert) {
+    assert.expect(4);
+    const coll = new Skeletor.Collection([{a: 1}, {a: 2}, {a: 1}, {a: 3}]);
+    let reads = 0;
+    const countingAttrs = (value: number) =>
+      Object.defineProperty({}, 'a', {
+        enumerable: true,
+        get() {
+          reads += 1;
+          return value;
+        },
+      });
+    assert.equal((coll.where(countingAttrs(1)) as Skeletor.Model[]).length, 2);
+    assert.equal(reads, 1, 'where read the attrs object once, not once per model');
+    reads = 0;
+    // Only the last model matches, so a matcher built per model would read the attrs object four times.
+    assert.equal(coll.findWhere(countingAttrs(3)), coll.at(3));
+    assert.equal(reads, 1, 'findWhere read the attrs object once, not once per model');
+  });
+
+  QUnit.test('find and filter read a string predicate as an attribute name', function (assert) {
+    assert.expect(4);
+    const nested = new Skeletor.Model<any>({a: {b: 1}});
+    const flat = new Skeletor.Model<any>({'a.b': 1});
+    const coll = new Skeletor.Collection([nested, flat]);
+    assert.equal(coll.find('a.b'), flat, 'a dotted string names an attribute, it is not a lodash path');
+    assert.deepEqual(coll.filter('a.b'), [flat]);
+    assert.equal(coll.find('a'), nested);
+    assert.deepEqual(coll.filter('a'), [nested]);
+  });
+
   QUnit.test('Lodash methods', function (assert) {
     assert.expect(16);
     assert.equal(col.map((model) => model.get('label')).join(' '), 'a b c d');

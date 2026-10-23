@@ -465,6 +465,15 @@ import { ModelAttributes, ModelOptions } from 'src/types';
     assert.strictEqual(model.matches({ name: 'Jonas', cool: false }), false);
   });
 
+  QUnit.test('matches compares nested attributes partially', function (assert) {
+    assert.expect(4);
+    const model = new Skeletor.Model<any>({ form: { type: 'hidden', value: 'urn:xmpp:http:upload:0' }, n: 1 });
+    assert.strictEqual(model.matches({ form: { type: 'hidden' } }), true);
+    assert.strictEqual(model.matches({ form: { type: 'hidden', value: 'urn:xmpp:http:upload:0' } }), true);
+    assert.strictEqual(model.matches({ form: { type: 'text-single' } }), false);
+    assert.strictEqual(model.matches({ form: { type: 'hidden' }, n: 2 }), false);
+  });
+
   QUnit.test('matches with predicate', function (assert) {
     const model = new Skeletor.Model({ a: 0 });
 
