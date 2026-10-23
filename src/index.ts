@@ -3,7 +3,7 @@ import { EventEmitter } from './eventemitter';
 import PersistentStorage from './storage';
 import { Collection } from './collection';
 import { Model } from './model';
-import { sync } from './helpers';
+import { sync, HTTPError } from './helpers';
 
 /**
  * @public
@@ -13,6 +13,7 @@ interface SkeletorType {
   EventEmitter: typeof EventEmitter;
   Model: typeof Model;
   sync: typeof sync;
+  HTTPError: typeof HTTPError;
   VERSION?: string;
   noConflict?: () => SkeletorType;
 }
@@ -25,6 +26,7 @@ const skeletor: SkeletorType = {
   EventEmitter,
   Model,
   sync,
+  HTTPError,
 };
 
 // Establish the root object, `window` (`self`) in the browser, or `global` on the server.
@@ -59,7 +61,7 @@ export default skeletor;
  * @public
  */
 const BrowserStorage = PersistentStorage;
-export { noConflict, Collection, EventEmitter, Model, PersistentStorage, BrowserStorage, sync };
+export { noConflict, Collection, EventEmitter, Model, PersistentStorage, BrowserStorage, sync, HTTPError };
 export { getStorage } from './helpers';
 
 export type { StorageDriver, StoreType } from './drivers/types';

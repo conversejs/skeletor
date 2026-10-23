@@ -23,6 +23,13 @@
 - `save({ promise: true })` now returns a promise rejected with `validationError`, instead of `false`,
   when the attributes passed to it fail validation; `create({ promise: true })` likewise returns a
   rejected promise instead of `null`. The callback forms still return `false`/`null`.
+- The default HTTP `sync` now honours both the callback and the promise contracts. It never invoked
+  `success`/`error` (it passed them to `fetch()` as init options, which ignores them), sent an empty
+  body on GET (which the Fetch API rejects outright), and resolved with the raw `Response`, which the
+  promise bridge then merged into the model as attributes. It now sends `data` as query parameters on
+  GET and as a JSON body otherwise, passes a parsed 2xx JSON body (`null` when empty) to `success` and
+  resolves with it, and on a non-2xx response or a network failure calls `error` with, and rejects
+  with, the error: an `HTTPError` (new export, carrying `status` and `response`) for the former.
 
 ## 3.1.6 (2026-08-06)
 

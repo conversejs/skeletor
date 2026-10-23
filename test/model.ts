@@ -842,9 +842,6 @@ import { ModelAttributes, ModelOptions } from 'src/types';
     assert.expect(3);
     const promise = doc.save({ title: 'Henry V' }, { 'promise': true, 'wait': true });
     assert.equal((promise as any).isResolved, false);
-    const ajaxSettings = (window.fetch as sinon.SinonStub).getCall((window.fetch as sinon.SinonStub).callCount - 1)
-      .args[1];
-    ajaxSettings.success();
     await promise;
     const syncArgs = syncSpy.lastCall.args;
     assert.equal(syncArgs[0], 'update');
@@ -979,7 +976,7 @@ import { ModelAttributes, ModelOptions } from 'src/types';
     assert.equal(url, '/collection/42');
   });
 
-  QUnit.test('save will pass extra options to success callback', function (assert) {
+  QUnit.test('save will pass extra options to success callback', async function (assert) {
     assert.expect(1);
     class SpecialSyncModel extends Skeletor.Model {
       get urlRoot() {
@@ -995,9 +992,7 @@ import { ModelAttributes, ModelOptions } from 'src/types';
     const onSuccess = function (m, response, options) {
       assert.ok(options.specialSync, 'Options were passed correctly to callback');
     };
-    model.save(null, { success: onSuccess });
-    const ajaxSettings = (window.fetch as any).getCall((window.fetch as any).callCount - 1).args[1];
-    ajaxSettings.success();
+    await model.save(null, { success: onSuccess });
   });
 
   QUnit.test('fetch', function (assert) {
@@ -1010,7 +1005,7 @@ import { ModelAttributes, ModelOptions } from 'src/types';
     syncSpy.restore();
   });
 
-  QUnit.test('fetch will pass extra options to success callback', function (assert) {
+  QUnit.test('fetch will pass extra options to success callback', async function (assert) {
     assert.expect(1);
     class SpecialSyncModel extends Skeletor.Model {
       get urlRoot() {
@@ -1026,9 +1021,7 @@ import { ModelAttributes, ModelOptions } from 'src/types';
     const onSuccess = function (m, response, options) {
       assert.ok((options as any).specialSync, 'Options were passed correctly to callback');
     };
-    model.fetch({ success: onSuccess });
-    const ajaxSettings = (window.fetch as any).getCall((window.fetch as any).callCount - 1).args[1];
-    ajaxSettings.success();
+    await model.fetch({ success: onSuccess });
   });
 
   QUnit.test('destroy', function (assert) {
@@ -1043,7 +1036,7 @@ import { ModelAttributes, ModelOptions } from 'src/types';
     syncSpy.restore();
   });
 
-  QUnit.test('destroy will pass extra options to success callback', function (assert) {
+  QUnit.test('destroy will pass extra options to success callback', async function (assert) {
     assert.expect(1);
 
     class SpecialSyncModel extends Skeletor.Model {
@@ -1061,9 +1054,7 @@ import { ModelAttributes, ModelOptions } from 'src/types';
     const onSuccess = function (m, response, options) {
       assert.ok((options as any).specialSync, 'Options were passed correctly to callback');
     };
-    model.destroy({ success: onSuccess });
-    const ajaxSettings = (window.fetch as any).getCall((window.fetch as any).callCount - 1).args[1];
-    ajaxSettings.success();
+    await model.destroy({ success: onSuccess });
   });
 
   QUnit.test('non-persisted destroy', function (assert) {
@@ -1326,19 +1317,19 @@ import { ModelAttributes, ModelOptions } from 'src/types';
     assert.equal(model.previous(''), true);
   });
 
-  QUnit.test('`save` with `wait` sends correct attributes', function (assert) {
+  QUnit.test('`save` with `wait` sends correct attributes', async function (assert) {
     assert.expect(5);
     let changed = 0;
     const model = new Skeletor.Model({ x: 1, y: 2 });
     model.url = '/test';
     model.on('change:x', () => changed++);
-    model.save({ x: 3 }, { wait: true });
+    const request = model.save({ x: 3 }, { wait: true });
     const ajaxSettings = (window.fetch as any).getCall((window.fetch as any).callCount - 1).args[1];
 
     assert.deepEqual(JSON.parse(ajaxSettings.body), { x: 3, y: 2 });
     assert.equal(model.get('x'), 1);
     assert.equal(changed, 0);
-    ajaxSettings.success({});
+    await request;
     assert.equal(model.get('x'), 3);
     assert.equal(changed, 1);
   });

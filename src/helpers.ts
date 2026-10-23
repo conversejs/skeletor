@@ -254,21 +254,42 @@ export function getSyncMethod(model: Model | Collection<any>): typeof sync & { _
 }
 
 /**
- * Override this function to change the manner in which Backbone persists
- * models to the server. You will be passed the type of request, and the
- * model in question. By default makes a `fetch()` API call
- * to the model's `url()`.
- *
- * Some possible customizations could be:
- *
- * - Use `setTimeout` to batch rapid-fire updates into a single request.
- * - Persist models via WebSockets instead of Ajax.
- * - Persist models to browser storage
+ * The error the default `sync` hands to `options.error`, and rejects with, for
+ * a response outside the 2xx range.
+ * @public
  */
+export class HTTPError extends Error {
+  readonly status: number;
+  readonly response: Response;
+
+  constructor(response: Response, method: string, url: string) {
+    const statusText = response.statusText ? ` ${response.statusText}` : '';
+    super(`${method} ${url} failed with HTTP ${response.status}${statusText}`);
+    this.name = 'HTTPError';
+    this.status = response.status;
+    this.response = response;
+  }
+}
+
 /**
+ * The default `sync`: a JSON request over `fetch()` to the model's `url()`.
+ * Override it (or `Model.sync`/`Collection.sync`) to change how models are
+ * persisted, for instance to batch rapid-fire updates with `setTimeout`, to
+ * talk over WebSockets, or to write to browser storage.
+ *
+ * It honours both contracts a `sync` may use. On a 2xx response the JSON body
+ * (`null` when the body is empty) is passed to `options.success` and the
+ * returned promise resolves with it. On a non-2xx response, a network failure
+ * or an unparsable body, `options.error` receives the error (an `HTTPError`
+ * for the first) and the promise rejects with it.
+ *
+ * `options.data` is sent as query parameters on GET, which may not carry a
+ * body, and as a JSON body otherwise. For create, update and patch the body
+ * defaults to `options.attrs` or the model's `toJSON()`.
  * @public
  */
 export function sync(method: SyncOperation, model: Model | Collection<any>, options: SyncOptions = {}): Promise<any> {
+  const type = methodMap[method];
   let data = options.data;
 
   // Ensure that we have the appropriate request data.
@@ -276,22 +297,40 @@ export function sync(method: SyncOperation, model: Model | Collection<any>, opti
     data = options.attrs || model.toJSON();
   }
 
-  const type = methodMap[method];
-  const params: RequestInit & { success?: any; error?: any } = {
-    method: type,
-    body: data ? JSON.stringify(data) : '',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    success: options.success,
-    error: options.error,
-  };
-
-  const url = options.url || result(model, 'url') || urlError();
-  const xhr = fetch(url, params);
-  if (options) {
-    options.xhr = xhr;
+  let url: string = options.url || result(model, 'url') || urlError();
+  const params: RequestInit = { method: type };
+  if (data != null) {
+    if (type === 'GET') {
+      url += (url.includes('?') ? '&' : '?') + new URLSearchParams(data).toString();
+    } else {
+      params.body = JSON.stringify(data);
+      params.headers = { 'Content-Type': 'application/json' };
+    }
   }
+
+  const xhr = fetch(url, params);
+  options.xhr = xhr;
   model.trigger('request', model, xhr, { ...params, xhr });
-  return xhr;
+
+  return Promise.resolve(xhr)
+    .then(async (response) => {
+      if (!response.ok) throw new HTTPError(response, type, url);
+      const text = await response.text();
+      return text ? JSON.parse(text) : null;
+    })
+    .then(
+      // The callbacks run before the returned promise settles, so a caller that
+      // bridges this promise (`Model.fetch`/`save`) sees the outcome as already
+      // reported. A throw from `success` (a `'sync'` listener, say) is not
+      // routed to `error`: it rejects the promise, which is what the bridge
+      // expects once the callbacks have run.
+      (resp) => {
+        options.success?.(resp, options);
+        return resp;
+      },
+      (e) => {
+        options.error?.(e);
+        throw e;
+      },
+    );
 }

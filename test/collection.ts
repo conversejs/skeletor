@@ -6,6 +6,12 @@ import {CollectionOptions, ModelAttributes, ModelOptions} from '../src/types';
 (function (QUnit) {
   let a, b, c, d, e, col: Skeletor.Collection, otherCol: Skeletor.Collection;
 
+  /** Let the stubbed `fetch` settle and the default `sync` deliver its callbacks. */
+  const settled = () => new Promise((resolve) => setTimeout(resolve, 0));
+  /** Make the stubbed `fetch` answer every request with `body` as JSON (a fresh Response per call). */
+  const respondWith = (body: unknown) =>
+    (window.fetch as sinon.SinonStub).callsFake(() => Promise.resolve(new Response(JSON.stringify(body))));
+
   QUnit.module('Skeletor.Collection', {
     beforeEach() {
       a = new Skeletor.Model({id: 3, label: 'a'});
@@ -672,7 +678,7 @@ import {CollectionOptions, ModelAttributes, ModelOptions} from '../src/types';
     assert.equal(collection.create({foo: 'bar'}, {validate: true}), null);
   });
 
-  QUnit.test('create will pass extra options to success callback', function (assert) {
+  QUnit.test('create will pass extra options to success callback', async function (assert) {
     assert.expect(1);
     class Model extends Skeletor.Model {
       sync(method, model, options) {
@@ -697,10 +703,10 @@ import {CollectionOptions, ModelAttributes, ModelOptions} from '../src/types';
       assert.ok(options.specialSync, 'Options were passed correctly to callback');
 
     collection.create({}, {success: success});
-    (window.fetch as sinon.SinonStub).lastCall.args[1].success();
+    await settled();
   });
 
-  QUnit.test('create with wait:true should not call collection.parse', function (assert) {
+  QUnit.test('create with wait:true should not call collection.parse', async function (assert) {
     assert.expect(0);
     class Collection extends Skeletor.Collection {
       // eslint-disable-next-line class-methods-use-this
@@ -714,7 +720,7 @@ import {CollectionOptions, ModelAttributes, ModelOptions} from '../src/types';
     }
     const collection = new Collection();
     collection.create({}, {wait: true});
-    (window.fetch as sinon.SinonStub).lastCall.args[1].success();
+    await settled();
   });
 
   QUnit.test('a failing create returns model with errors', function (assert) {
@@ -1123,7 +1129,7 @@ import {CollectionOptions, ModelAttributes, ModelOptions} from '../src/types';
     collection.create(m, opts);
   });
 
-  QUnit.test("#1412 - Trigger 'request' and 'sync' events.", function (assert) {
+  QUnit.test("#1412 - Trigger 'request' and 'sync' events.", async function (assert) {
     assert.expect(4);
     const collection = new Skeletor.Collection();
     collection.url = '/test';
@@ -1134,8 +1140,7 @@ import {CollectionOptions, ModelAttributes, ModelOptions} from '../src/types';
     collection.on('sync', function (obj, response, options) {
       assert.ok(obj === collection, "collection has correct 'sync' event after fetching");
     });
-    collection.fetch();
-    (window.fetch as sinon.SinonStub).lastCall.args[1].success();
+    await collection.fetch();
     collection.off();
 
     collection.on('request', function (obj, xhr, options) {
@@ -1145,11 +1150,11 @@ import {CollectionOptions, ModelAttributes, ModelOptions} from '../src/types';
       assert.ok(obj === collection.get(1), "collection has correct 'sync' event after one of its models save");
     });
     collection.create({id: 1});
-    (window.fetch as sinon.SinonStub).lastCall.args[1].success();
+    await settled();
     collection.off();
   });
 
-  QUnit.test('#3283 - fetch, create calls success with context', function (assert) {
+  QUnit.test('#3283 - fetch, create calls success with context', async function (assert) {
     assert.expect(2);
     const collection = new Skeletor.Collection();
     collection.url = '/test';
@@ -1160,10 +1165,9 @@ import {CollectionOptions, ModelAttributes, ModelOptions} from '../src/types';
         assert.equal(this, obj);
       },
     };
-    collection.fetch(options);
-    (window.fetch as sinon.SinonStub).lastCall.args[1].success();
+    await collection.fetch(options);
     collection.create({id: 1}, options);
-    (window.fetch as sinon.SinonStub).lastCall.args[1].success();
+    await settled();
   });
 
   QUnit.test('#1447 - create with wait adds model.', function (assert) {
@@ -1237,13 +1241,13 @@ import {CollectionOptions, ModelAttributes, ModelOptions} from '../src/types';
     assert.deepEqual(added, [1, 2]);
   });
 
-  QUnit.test('fetch parses models by default', function (assert) {
+  QUnit.test('fetch parses models by default', async function (assert) {
     assert.expect(1);
     const model = {};
 
     class CollectionModel extends Skeletor.Model {
       parse(resp) {
-        assert.strictEqual(resp, model);
+        assert.deepEqual(resp, model);
       }
     }
 
@@ -1255,8 +1259,8 @@ import {CollectionOptions, ModelAttributes, ModelOptions} from '../src/types';
         return CollectionModel;
       }
     }
-    new Collection().fetch();
-    (window.fetch as sinon.SinonStub).lastCall.args[1].success([model]);
+    respondWith([model]);
+    await new Collection().fetch();
   });
 
   QUnit.test("`sort` shouldn't always fire on `add`", function (assert) {
@@ -1595,10 +1599,10 @@ import {CollectionOptions, ModelAttributes, ModelOptions} from '../src/types';
 
   QUnit.test('#1939 - `parse` is passed `options`', function (assert) {
     (window.fetch as sinon.SinonStub).restore();
-    sinon.stub(window, 'fetch').callsFake((_input: RequestInfo | URL, init?: RequestInit): any => {
-      _.defer((init as any).success, []);
-      return {someHeader: 'headerValue'};
-    });
+    // The default `sync` hands whatever `fetch` returned to `parse` as `options.xhr`.
+    sinon.stub(window, 'fetch').callsFake(
+      (): any => Object.assign(Promise.resolve(new Response('[]')), {someHeader: 'headerValue'})
+    );
 
     const done = assert.async();
     assert.expect(1);
@@ -1619,7 +1623,7 @@ import {CollectionOptions, ModelAttributes, ModelOptions} from '../src/types';
     });
   });
 
-  QUnit.test('fetch will pass extra options to success callback', function (assert) {
+  QUnit.test('fetch will pass extra options to success callback', async function (assert) {
     assert.expect(1);
     class SpecialSyncCollection extends Skeletor.Collection {
       get url() {
@@ -1637,8 +1641,7 @@ import {CollectionOptions, ModelAttributes, ModelOptions} from '../src/types';
       assert.ok(options.specialSync, 'Options were passed correctly to callback');
     };
 
-    collection.fetch({success: onSuccess});
-    (window.fetch as sinon.SinonStub).lastCall.args[1].success();
+    await collection.fetch({success: onSuccess});
   });
 
   QUnit.test('`add` only `sort`s when necessary', function (assert) {
@@ -1716,10 +1719,11 @@ import {CollectionOptions, ModelAttributes, ModelOptions} from '../src/types';
     assert.equal(collection.length, 2);
   });
 
-  QUnit.test('#2606 - Collection#create, success arguments', function (assert) {
+  QUnit.test('#2606 - Collection#create, success arguments', async function (assert) {
     assert.expect(1);
     const collection = new Skeletor.Collection();
     collection.url = 'test';
+    respondWith('response');
     collection.create(
       {},
       {
@@ -1728,7 +1732,7 @@ import {CollectionOptions, ModelAttributes, ModelOptions} from '../src/types';
         },
       }
     );
-    (window.fetch as sinon.SinonStub).lastCall.args[1].success('response');
+    await settled();
   });
 
   QUnit.test('#2612 - nested `parse` works with `Collection#set`', function (assert) {
