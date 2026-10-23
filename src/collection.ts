@@ -4,6 +4,7 @@ import groupBy from 'lodash-es/groupBy';
 import isFunction from 'lodash-es/isFunction';
 import isString from 'lodash-es/isString';
 import keyBy from 'lodash-es/keyBy';
+import matches from 'lodash-es/matches';
 import sortBy from 'lodash-es/sortBy';
 import { EventEmitterObject } from './eventemitter';
 import PersistentStorage from './storage';
@@ -32,6 +33,24 @@ import {
 // Default options for `Collection#set`.
 const setOptions = { add: true, remove: true, merge: true };
 const addOptions = { add: true, remove: false };
+
+/**
+ * Normalizes the predicate forms accepted by the query methods into one
+ * `(model) => value` function. A function is used as-is, a string reads that
+ * attribute, and an attributes object becomes a lodash `matches` matcher.
+ *
+ * The matcher is built here, once per scan. Calling `Model#matches` per model
+ * instead rebuilds the match data for every model visited, which made
+ * `findWhere` an order of magnitude slower than a hand-written predicate.
+ */
+function toModelPredicate<T extends Model>(
+  pred: ((model: T) => any) | string | Partial<ModelAttributes>,
+): (model: T) => any {
+  if (isFunction(pred)) return pred as (model: T) => any;
+  if (isString(pred)) return (m: T) => m.get(pred);
+  const matcher = matches(pred);
+  return (m: T) => matcher(m.attributes);
+}
 
 /**
  * @public
@@ -401,20 +420,14 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
   }
 
   filter(callback: ((model: T) => boolean) | string | Partial<ModelAttributes>, thisArg?: any): T[] {
-    return this.models.filter(
-      isFunction(callback)
-        ? (callback as (model: T) => boolean)
-        : (m) => m.matches(callback as Partial<ModelAttributes>),
-      thisArg,
-    );
+    return this.models.filter(toModelPredicate(callback), thisArg);
   }
 
   every(pred: ((attrs: ModelAttributes) => boolean) | Options): boolean {
     if (isFunction(pred)) {
-      return this.models.map((m) => m.attributes).every(pred as (attrs: ModelAttributes) => boolean);
-    } else {
-      return this.models.every((m) => m.matches(pred));
+      return this.models.every((m) => (pred as (attrs: ModelAttributes) => boolean)(m.attributes));
     }
+    return this.models.every(toModelPredicate(pred));
   }
 
   difference(values: T[]): T[] {
@@ -435,19 +448,13 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
 
   some(pred: ((attrs: ModelAttributes) => boolean) | Options): boolean {
     if (isFunction(pred)) {
-      return this.models.map((m) => m.attributes).some(pred as (attrs: ModelAttributes) => boolean);
-    } else {
-      return this.models.some((m) => m.matches(pred));
+      return this.models.some((m) => (pred as (attrs: ModelAttributes) => boolean)(m.attributes));
     }
+    return this.models.some(toModelPredicate(pred));
   }
 
-  sortBy(iteratee: string | ((model: T) => any)): T[] {
-    return sortBy(
-      this.models,
-      isFunction(iteratee)
-        ? iteratee
-        : (m: T) => (isString(iteratee) ? m.get(iteratee as string) : m.matches(iteratee as Partial<ModelAttributes>)),
-    );
+  sortBy(iteratee: string | ((model: T) => any) | Partial<ModelAttributes>): T[] {
+    return sortBy(this.models, toModelPredicate(iteratee));
   }
 
   isEmpty(): boolean {
@@ -475,11 +482,11 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
   }
 
   countBy(f: string | ((model: T) => string) | Partial<ModelAttributes>): Record<string, number> {
-    return countBy(this.models, isFunction(f) ? f : (m) => (isString(f) ? m.get(f) : m.matches(f)));
+    return countBy(this.models, toModelPredicate(f));
   }
 
-  groupBy(pred: string | ((model: T) => string | number)): Record<string, T[]> {
-    return groupBy(this.models, isFunction(pred) ? pred : (m) => (isString(pred) ? m.get(pred) : m.matches(pred)));
+  groupBy(pred: string | ((model: T) => string | number) | Partial<ModelAttributes>): Record<string, T[]> {
+    return groupBy(this.models, toModelPredicate(pred));
   }
 
   indexOf(model: T, fromIndex?: number): number {
@@ -487,12 +494,7 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
   }
 
   findLastIndex(pred: ((model: T) => boolean) | string | Partial<ModelAttributes>, fromIndex?: number): number {
-    return this.models.findLastIndex(
-      isFunction(pred)
-        ? (pred as (model: T) => boolean)
-        : (m) => (isString(pred) ? m.get(pred as string) : m.matches(pred as Partial<ModelAttributes>)),
-      fromIndex,
-    );
+    return this.models.findLastIndex(toModelPredicate(pred), fromIndex);
   }
 
   lastIndexOf(model: T, fromIndex?: number): number {
@@ -500,11 +502,7 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
   }
 
   findIndex(pred: ((model: T) => boolean) | string | Partial<ModelAttributes>): number {
-    return this.models.findIndex(
-      isFunction(pred)
-        ? (pred as (model: T) => boolean)
-        : (m) => (isString(pred) ? m.get(pred as string) : m.matches(pred as Partial<ModelAttributes>)),
-    );
+    return this.models.findIndex(toModelPredicate(pred));
   }
 
   last(): T | undefined {
@@ -521,12 +519,7 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
   }
 
   map<U>(cb: string | ((model: T) => U) | Partial<ModelAttributes>, thisArg?: any): U[] {
-    return this.models.map(
-      isFunction(cb)
-        ? (cb as (model: T) => U)
-        : (m) => (isString(cb) ? m.get(cb as string) : m.matches(cb as Partial<ModelAttributes>)),
-      thisArg,
-    );
+    return this.models.map(toModelPredicate(cb), thisArg);
   }
 
   reduce<U = T>(callback: (accumulator: U, model: T, index: number, array: T[]) => U, initialValue?: U): U | T {
@@ -586,10 +579,7 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
   }
 
   find(predicate: ((model: T) => boolean) | Partial<ModelAttributes> | string, fromIndex?: number): T | undefined {
-    const pred = isFunction(predicate)
-      ? (predicate as (model: T) => boolean)
-      : (m: T) => m.matches(predicate as Partial<ModelAttributes>);
-    return this.models.find(pred, fromIndex);
+    return this.models.find(toModelPredicate(predicate), fromIndex);
   }
 
   /**

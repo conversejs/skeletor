@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+- Attribute-object queries on a collection (`findWhere`, `where`, and `find`, `filter`, `some`,
+  `every`, `map`, `sortBy`, `countBy`, `groupBy`, `findIndex` and `findLastIndex` when given an
+  object) now build their lodash matcher once per scan instead of once per model visited. Each
+  per-model build deep-cloned the attributes object and walked its keys, which made `findWhere`
+  roughly 8 to 13 times slower than `find` with a hand-written predicate on a few thousand models.
+  Matching semantics are unchanged: still lodash's partial, deep comparison, so nested lookups
+  such as `where({ FORM_TYPE: { type: 'hidden' } })` keep working. One alignment: `find` and
+  `filter` given a string now read that attribute through `Model.get`, like the other query
+  methods already did, instead of resolving it as a lodash property path over the raw attributes.
+
+- `Model.matches` no longer deep-clones its argument on every call (it uses lodash's `isMatch`)
+  and its signature now admits the predicate function it has always accepted at runtime. The
+  undocumented lodash string and `[key, value]` shorthand forms are no longer supported.
+
 - Fix `Model.save({ promise: true })` hanging forever, and leaking an unhandled rejection, when
   its `sync` settles the returned promise instead of invoking the `success`/`error` callbacks
   (a rejecting custom `sync`, or a throwing `'sync'`/`'error'` listener). `save` now bridges that
