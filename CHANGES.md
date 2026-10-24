@@ -21,22 +21,27 @@
   (a rejecting custom `sync`, or a throwing `'sync'`/`'error'` listener). `save` now bridges that
   promise to the one it hands back, the way `fetch` already did. `Collection.create({ promise: true })`,
   which delegates to `save`, is fixed the same way.
+
 - Fix `fetch({ promise: true })` on a Model or Collection settling early when a callback-style `sync`
   returns a non-thenable (nothing, or an XHR) and invokes `success`/`error` later. The bridge from the
   `sync` return value to the returned promise now only engages for a thenable, so such a `sync` settles
   the promise through its callbacks. The same guard applies to `save({ promise: true })`.
+
 - The `{ promise: true }` paths of `fetch` and `save` now share one bridge from the `sync` outcome
   to the returned promise, with two behaviour changes: a `sync` that rejects its promise without
   calling the callbacks now also runs the `error` callback and fires the `'error'` event, and a
   `'sync'`/`'error'` listener (or `success`/`error` callback) that throws now rejects the promise
   instead of leaving it pending with an unhandled rejection. `Collection.fetch` fires `'sync'` before
   resolving, as `Model.fetch`/`save` already did, so a throwing listener rejects there too.
+
 - Fix `save({ promise: true })` and `fetch({ promise: true, validate: true })` leaving the promise
   pending when the attributes returned by `sync` fail validation. The promise now rejects with
   `validationError`; the `'invalid'` event fires as before.
+
 - `save({ promise: true })` now returns a promise rejected with `validationError`, instead of `false`,
   when the attributes passed to it fail validation; `create({ promise: true })` likewise returns a
   rejected promise instead of `null`. The callback forms still return `false`/`null`.
+
 - The default HTTP `sync` now honours both the callback and the promise contracts. It never invoked
   `success`/`error` (it passed them to `fetch()` as init options, which ignores them), sent an empty
   body on GET (which the Fetch API rejects outright), and resolved with the raw `Response`, which the
