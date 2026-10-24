@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 4.0.0 (2026-10-24)
 
 - Attribute-object queries on a collection (`findWhere`, `where`, and `find`, `filter`, `some`,
   `every`, `map`, `sortBy`, `countBy`, `groupBy`, `findIndex` and `findLastIndex` when given an
