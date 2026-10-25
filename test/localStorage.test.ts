@@ -6,7 +6,7 @@ import { getStorage, getSyncMethod, sync } from '../src/helpers';
 import { resetForTesting, flushPending, scheduleAutoSave } from '../src/autosync';
 import { Model } from '../src/model';
 import Storage from '../src/storage';
-import { ModelAttributes } from 'src/types';
+import { ModelAttributes } from '../src/types';
 
 describe('Storage using localStorage', function () {
   const attributes = {

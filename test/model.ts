@@ -1,7 +1,7 @@
 import * as _ from 'lodash-es';
 import * as sinon from 'sinon';
 import * as Skeletor from '../src/index';
-import { ModelAttributes, ModelOptions } from 'src/types';
+import { ModelAttributes, ModelOptions } from '../src/types';
 
 // Make Skeletor available globally for tests
 (window as any).Skeletor = Skeletor;

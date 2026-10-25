@@ -9,22 +9,22 @@
     "strict": false,
     "noImplicitAny": false,
     "noImplicitThis": false,
-    "alwaysStrict": false,
 
     // Modules
     "moduleResolution": "bundler",
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "resolveJsonModule": true,
+    "types": ["node", "mocha", "qunit"],
 
     "declaration": false,
     "declarationMap": false,
     "sourceMap": true,
+    "rootDir": ".",
     "outDir": "./dist/",
 
     // Other
     "forceConsistentCasingInFileNames": true,
-    "skipLibCheck": true,
-    "baseUrl": "."
+    "skipLibCheck": true
   }
 }
