@@ -3,6 +3,10 @@ import resolve from '@rollup/plugin-node-resolve';
 import terser from '@rollup/plugin-terser';
 import commonjs from '@rollup/plugin-commonjs';
 import summary from 'rollup-plugin-summary';
+import dts from 'rollup-plugin-dts';
+
+/** Bundle the `.d.ts` output for one entry point into a single declaration file. */
+const declarations = () => dts({ tsconfig: './tsconfig.json', compilerOptions: { types: ['node'] } });
 
 const plugins = [
   resolve(),
@@ -83,5 +87,22 @@ export default [
     plugins,
     external: ['node:module', 'node:fs', 'node:path', 'node:sqlite'],
     preserveEntrySignatures: 'strict',
+  },
+  {
+    input: 'src/index.ts',
+    output: {
+      file: 'dist/skeletor.d.ts',
+      format: 'es',
+    },
+    plugins: [declarations()],
+  },
+  {
+    input: 'src/index.node.ts',
+    output: {
+      file: 'dist/skeletor.node.d.ts',
+      format: 'es',
+    },
+    plugins: [declarations()],
+    external: ['node:module', 'node:fs', 'node:path', 'node:sqlite'],
   },
 ];

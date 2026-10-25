@@ -37,7 +37,7 @@ nvm use  # v22.14.0 (.nvmrc)
 ## Build
 
 - **Rollup** bundles `src/index.ts` → `dist/skeletor.js` and `dist/skeletor.min.js` (UMD format).
-- **api-extractor** rolls up `.d.ts` declarations → `dist/skeletor.d.ts`.
+- **rollup-plugin-dts** bundles the `.d.ts` declarations → `dist/skeletor.d.ts` and `dist/skeletor.node.d.ts` (two extra entries in `rollup.config.js`, built with the project's own TypeScript).
 - Entry point: `src/index.ts`. Exports `Model`, `Collection`, `EventEmitter`, `sync`, `BrowserStorage`.
 - Attaches to global scope as `Skeletor` (browser `self` or server `global`).
 
