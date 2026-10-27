@@ -46,7 +46,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/conversejs/skeletor.git"
+    "url": "git+https://github.com/conversejs/skeletor.git"
   },
   "scripts": {
     "build": "npm run clean && rollup -c",
