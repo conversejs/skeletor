@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 4.0.1 (2026-10-27)
 
 - The declarations for `Model` and `Collection` no longer contain `#private` members, so mixins
   over them (`class extends Base`) type-check under TypeScript 6 (TS4094). No runtime change.
