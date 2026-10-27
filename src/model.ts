@@ -37,6 +37,72 @@ import {
 } from './types';
 
 /**
+ * Per-instance state that is private to this module.
+ *
+ * It lives in a WeakMap rather than in ES `#private` fields so that the
+ * published declarations carry no private members. TypeScript 6 refuses to
+ * emit an anonymous class type whose base has private members (TS4094), and
+ * that is exactly what the usual mixin pattern (`class extends Base`) over
+ * `Model` produces in consumers such as Converse.
+ */
+type ModelInternals = {
+  state: 'constructing' | 'hydrating' | 'ready';
+  computedCache?: Record<string, any>;
+  computedDefs?: ComputedProperties<any>;
+};
+
+const INTERNALS = new WeakMap<Model<any>, ModelInternals>();
+
+function internals(model: Model<any>): ModelInternals {
+  let priv = INTERNALS.get(model);
+  if (!priv) {
+    priv = { state: 'constructing' };
+    INTERNALS.set(model, priv);
+  }
+  return priv;
+}
+
+/** Load the model from storage, marking it ready whether or not the read succeeds. */
+async function hydrate(model: Model<any>, priv: ModelInternals): Promise<void> {
+  ensureUnloadListener(PersistentStorage);
+  try {
+    await model.fetch({ fromStorage: true, promise: true });
+  } finally {
+    priv.state = 'ready';
+  }
+}
+
+/** Evaluate the model's declared computed properties once, seeding the cache. */
+function initComputed(model: Model<any>, priv: ModelInternals): void {
+  const defs = result(model, 'computed') as ComputedProperties<any>;
+  if (!defs || isEmpty(defs)) return;
+  priv.computedDefs = defs;
+  priv.computedCache = {};
+  for (const [key, def] of Object.entries(defs)) {
+    priv.computedCache[key] = def.fn(model);
+  }
+}
+
+/** Recompute one computed property, firing `change:key` when its value changed. */
+function updateComputed(
+  model: Model<any>,
+  priv: ModelInternals,
+  key: string,
+  def: ComputedProperty<any>,
+  silent: boolean,
+  options: ModelOptions,
+): void {
+  const newVal = def.fn(model);
+  if (!isEqual(priv.computedCache[key], newVal)) {
+    priv.computedCache[key] = newVal;
+    if (!silent) {
+      (model.changed as any)[key] = newVal;
+      model.trigger('change:' + key, model, newVal, options);
+    }
+  }
+}
+
+/**
  * @public
  * **Models** are the basic data object in the framework --
  * frequently representing a row in a table in a database on your server.
@@ -44,9 +110,6 @@ import {
  * performing computations and transformations on that data.
  */
 export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmitterObject {
-  #computedCache?: Record<string, any>;
-  #computedDefs?: Record<string, ComputedProperty<this>>;
-  #state: 'constructing' | 'hydrating' | 'ready' = 'constructing';
   _storage?: PersistentStorage;
   _changing = false;
   _pending: boolean | ModelOptions = false;
@@ -68,6 +131,7 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
    */
   constructor(attributes?: Partial<T>, options?: ModelOptions) {
     super();
+    const priv = internals(this);
     let attrs: Partial<T> = attributes || ({} as Partial<T>);
     options = options || {};
 
@@ -83,12 +147,13 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
 
     this.set(attrs, options);
 
-    this.#initComputed();
+    initComputed(this, priv);
 
     this.attrs = new Proxy(this.attributes as T, {
       get: (_target, key) => {
-        if (typeof key !== 'symbol' && this.#computedCache && (key as string) in this.#computedCache) {
-          return this.#computedCache[key as string];
+        const cache = priv.computedCache;
+        if (typeof key !== 'symbol' && cache && (key as string) in cache) {
+          return cache[key as string];
         }
         return (this.attributes as any)[key];
       },
@@ -109,14 +174,14 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
     // otherwise it's already ready and resolves immediately.
     if (this.autoSync) {
       if (getStorage(this) && !this.isNew()) {
-        this.#state = 'hydrating';
-        this.hydrated = this.#hydrate();
+        priv.state = 'hydrating';
+        this.hydrated = hydrate(this, priv);
       } else {
-        this.#state = 'ready';
+        priv.state = 'ready';
         this.hydrated = Promise.resolve();
       }
     } else {
-      this.#state = 'ready';
+      priv.state = 'ready';
     }
   }
 
@@ -159,19 +224,6 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
    */
   get autoSyncDelay(): number {
     return 100;
-  }
-
-  async #hydrate(): Promise<void> {
-    ensureUnloadListener(PersistentStorage);
-    try {
-      await this.fetch({ fromStorage: true, promise: true });
-    } finally {
-      this.#state = 'ready';
-    }
-  }
-
-  #doAutoSave(): unknown {
-    return this.save(null, { noAutoSave: true });
   }
 
   /**
@@ -226,27 +278,6 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
     return {};
   }
 
-  #updateComputed(key: string, def: ComputedProperty<this>, silent: boolean, options: ModelOptions): void {
-    const newVal = def.fn(this);
-    if (!isEqual(this.#computedCache[key], newVal)) {
-      this.#computedCache[key] = newVal;
-      if (!silent) {
-        (this.changed as any)[key] = newVal;
-        this.trigger('change:' + key, this, newVal, options);
-      }
-    }
-  }
-
-  #initComputed(): void {
-    const defs = result(this, 'computed') as ComputedProperties<this>;
-    if (!defs || isEmpty(defs)) return;
-    this.#computedDefs = defs;
-    this.#computedCache = {};
-    for (const [key, def] of Object.entries(defs)) {
-      this.#computedCache[key] = def.fn(this);
-    }
-  }
-
   /**
    * Return a copy of the model's `attributes` object.
    */
@@ -265,8 +296,9 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
    * Get the value of an attribute, or a computed property.
    */
   get<K extends keyof T>(attr: K): T[K] {
-    if (this.#computedCache && (attr as string) in this.#computedCache) {
-      return this.#computedCache[attr as string];
+    const cache = internals(this).computedCache;
+    if (cache && (attr as string) in cache) {
+      return cache[attr as string];
     }
     return this.attributes[attr];
   }
@@ -352,10 +384,11 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
     }
 
     options = options || {};
+    const priv = internals(this);
 
     // Guard must come after arg normalization: when called as set(obj, opts),
     // fromStorage lives in `val` (second arg), not `options` (third arg).
-    if (this.autoSync && this.#state === 'hydrating' && !options.fromStorage) {
+    if (this.autoSync && priv.state === 'hydrating' && !options.fromStorage) {
       throw new Error(
         `Skeletor: set() called on an autoSync model before hydration resolved. Await model.hydrated first.`,
       );
@@ -404,10 +437,10 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
     }
 
     // Recalculate computed properties whose deps changed.
-    if (changes.length && this.#computedDefs) {
-      for (const [key, def] of Object.entries(this.#computedDefs)) {
+    if (changes.length && priv.computedDefs) {
+      for (const [key, def] of Object.entries(priv.computedDefs)) {
         if (def.deps.some((dep) => changes.includes(dep))) {
-          this.#updateComputed(key, def, silent, options);
+          updateComputed(this, priv, key, def, silent, options);
         }
       }
     }
@@ -430,14 +463,14 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
     // were actual changes that originated from application code (not a
     // storage read or an explicit noAutoSave call).
     if (
-      this.#state === 'ready' &&
+      priv.state === 'ready' &&
       this.autoSync &&
       getStorage(this) &&
       changes.length &&
       !options.fromStorage &&
       !options.noAutoSave
     ) {
-      scheduleAutoSave(this, () => this.#doAutoSave(), this.autoSyncDelay);
+      scheduleAutoSave(this, () => this.save(null, { noAutoSave: true }), this.autoSyncDelay);
     }
 
     return this;

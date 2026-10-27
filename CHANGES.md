@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- The declarations for `Model` and `Collection` no longer contain `#private` members, so mixins
+  over them (`class extends Base`) type-check under TypeScript 6 (TS4094). No runtime change.
+
 ## 4.0.0 (2026-10-24)
 
 - Attribute-object queries on a collection (`findWhere`, `where`, and `find`, `filter`, `some`,

@@ -53,6 +53,19 @@ function toModelPredicate<T extends Model>(
 }
 
 /**
+ * Load the collection's members from storage. A module-level function rather
+ * than a `#private` method so the published declarations carry no private
+ * members, which TypeScript 6 rejects in anonymously extended classes (TS4094).
+ */
+async function hydrate(collection: Collection<any>): Promise<void> {
+  ensureUnloadListener(PersistentStorage);
+  // An empty store is a normal first-run state: findAll() returns [] and a
+  // missing model record resolves to null, so hydration resolves rather
+  // than rejecting.
+  await collection.fetch({ fromStorage: true, promise: true });
+}
+
+/**
  * @public
  * If models tend to represent a single row of data, a Collection is
  * more analogous to a table full of data ... or a small slice or page of that
@@ -91,7 +104,7 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
     // uniformly `await collection.hydrated`; it resolves immediately when
     // there's no storage to hydrate from.
     if (this.autoSync) {
-      this.hydrated = getStorage(this) ? this.#hydrate() : Promise.resolve();
+      this.hydrated = getStorage(this) ? hydrate(this) : Promise.resolve();
     }
   }
 
@@ -141,14 +154,6 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
    */
   get autoSync(): boolean {
     return false;
-  }
-
-  async #hydrate(): Promise<void> {
-    ensureUnloadListener(PersistentStorage);
-    // An empty store is a normal first-run state: findAll() returns [] and a
-    // missing model record resolves to null, so hydration resolves rather
-    // than rejecting.
-    await this.fetch({ fromStorage: true, promise: true });
   }
 
   /**
