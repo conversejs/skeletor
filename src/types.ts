@@ -165,7 +165,9 @@ export type IterateeFunction = (
  */
 export type ComputedProperty<M> = {
   deps: string[];
-  fn: (model: M) => any;
+  // Method syntax, so that TypeScript checks `fn` bivariantly and
+  // `ComputedProperties<Subclass>` stays assignable to `ComputedProperties<Model>`.
+  fn(model: M): any;
 };
 
 /**
@@ -195,7 +197,7 @@ export type FetchOrCreateOptions = Options & {
  * @public
  */
 export type CollectionOptions<T extends Model = Model> = Options & {
-  model?: new (attributes?: Partial<ModelAttributes>, options?: ModelOptions) => T;
+  model?: new (attributes?: any, options?: any) => T;
   comparator?: Comparator<T>;
   previousModels?: Model[];
 };

@@ -2,8 +2,17 @@
 
 ## Unreleased
 
-- The bundled declarations now type-check for consumers with `strict: true` and
-  `skipLibCheck: false` (TS2411 on `EventHandlersMap`). No runtime change. (#67)
+- Subclasses of `Model` and `Collection` now type-check for consumers with `strict: true` and
+  `skipLibCheck: false`. (#67)
+  - A subclass that declares `computed` still satisfies `T extends Model` (TS2344).
+  - `Collection#model` and `Collection#comparator` are no longer accessors, so subclasses can
+    override them as instance properties (`model = Contact`) as well as accessors (TS2610).
+  - `model` accepts model classes whose constructors take required or narrower attributes and
+    options (TS2416).
+  - `EventHandlersMap` no longer conflicts with its own index signature (TS2411).
+
+  `Collection` still falls back to `Model` when `model` is unset. The protected `_model` and
+  `_comparator` fields are gone; use `model` and `comparator`.
 
 ## 4.0.1 (2026-10-27)
 

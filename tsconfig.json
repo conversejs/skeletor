@@ -1,5 +1,7 @@
 {
   "include": ["src/**/*", "test/**/*"],
+  // Checked against the built declarations by `npm run check:dts`.
+  "exclude": ["test/types"],
   "compilerOptions": {
     "target": "es2020",
     "module": "esnext",
