@@ -1,0 +1,14 @@
+{
+  // Type-checks the bundled declarations the way a strict consumer would.
+  "files": ["dist/skeletor.d.ts", "dist/skeletor.node.d.ts"],
+  "compilerOptions": {
+    "noEmit": true,
+    "strict": true,
+    "skipLibCheck": false,
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "target": "es2020",
+    "lib": ["es2023", "dom"],
+    "types": ["node"]
+  }
+}

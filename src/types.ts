@@ -62,10 +62,7 @@ export type EventListenerMap = Record<string, ListeningType>;
 /**
  * @public
  */
-export interface EventHandlersMap {
-  all?: EventHandler[];
-  [name: string]: EventHandler[];
-}
+export type EventHandlersMap = Record<string, EventHandler[]>;
 
 /**
  * @public

@@ -52,6 +52,7 @@
     "build": "npm run clean && rollup -c",
     "check": "npm run check:types && npm run test && npm run test:node && npm run lint",
     "check:types": "tsc --noEmit",
+    "check:dts": "tsc -p tsconfig.dts.json",
     "clean": "rm -rf dist",
     "dev": "karma start --single-run=false",
     "lint": "eslint src/*.ts test/*.ts",

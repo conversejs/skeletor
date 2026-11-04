@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- The bundled declarations now type-check for consumers with `strict: true` and
+  `skipLibCheck: false` (TS2411 on `EventHandlersMap`). No runtime change. (#67)
+
 ## 4.0.1 (2026-10-27)
 
 - The declarations for `Model` and `Collection` no longer contain `#private` members, so mixins
