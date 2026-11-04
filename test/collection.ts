@@ -766,6 +766,30 @@ import {CollectionOptions, ModelAttributes, ModelOptions} from '../src/types';
     assert.equal(coll.one, 1);
   });
 
+  QUnit.test('subclasses can override model and comparator as properties or accessors', function (assert) {
+    class Contact extends Skeletor.Model {}
+
+    class WithProperties extends Skeletor.Collection<Contact> {
+      model = Contact;
+      comparator = 'name';
+    }
+    class WithAccessors extends Skeletor.Collection<Contact> {
+      get model() {
+        return Contact;
+      }
+      get comparator() {
+        return 'name';
+      }
+    }
+
+    for (const coll of [new WithProperties(), new WithAccessors()]) {
+      coll.add([{ name: 'b' }, { name: 'a' }]);
+      assert.ok(coll.at(0) instanceof Contact);
+      assert.deepEqual(coll.pluck('name'), ['a', 'b']);
+    }
+    assert.ok(new Skeletor.Collection([{ id: 1 }]).get(1) instanceof Skeletor.Model);
+  });
+
   QUnit.test('preinitialize occurs before the collection is set up', function (assert) {
     assert.expect(2);
     class Collection extends Skeletor.Collection {

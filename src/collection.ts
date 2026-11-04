@@ -66,6 +66,23 @@ async function hydrate(collection: Collection<any>): Promise<void> {
 }
 
 /**
+ * `model` and `comparator` are declared on an interface merged with the class
+ * rather than on the class itself, so that subclasses may override them either
+ * as instance properties (`model = Contact`) or as accessors (`get model()`).
+ * TypeScript rejects the one form overriding the other (TS2610, TS2611) only
+ * when the base member is declared on a class.
+ */
+export interface Collection<T extends Model = Model> {
+  /**
+   * The model class to instantiate when raw attributes are added. Defaults to
+   * `Model` when unset. Typed loosely so that model classes whose constructors
+   * take required or narrower attributes and options fit.
+   */
+  model: new (attributes?: any, options?: any) => T;
+  comparator: Comparator<T>;
+}
+
+/**
  * @public
  * If models tend to represent a single row of data, a Collection is
  * more analogous to a table full of data ... or a small slice or page of that
@@ -74,15 +91,14 @@ async function hydrate(collection: Collection<any>): Promise<void> {
  * belonging to this particular author, and so on. Collections maintain
  * indexes of their models, both in order, and for lookup by `id`.
  */
+// eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging -- see the interface above
 export class Collection<T extends Model = Model> extends EventEmitterObject {
   [key: symbol]: () => CollectionIterator<T>;
   _storage?: PersistentStorage;
-  _comparator?: Comparator<T>;
   _url: string = '';
   hydrated?: Promise<void>;
   models: T[];
   protected _byId: Record<string, T>;
-  protected _model?: new (attributes?: Partial<ModelAttributes>, options?: ModelOptions) => T;
 
   /**
    * Create a new **Collection**, perhaps to contain a specific type of `model`.
@@ -93,7 +109,7 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
     super();
     options = options || {};
     this.preinitialize.apply(this, arguments as any);
-    if (options.model) this._model = options.model;
+    if (options.model) this.model = options.model;
     if (options.comparator !== undefined) this.comparator = options.comparator;
     this._reset();
     this.initialize.apply(this, arguments as any);
@@ -106,14 +122,6 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
     if (this.autoSync) {
       this.hydrated = getStorage(this) ? hydrate(this) : Promise.resolve();
     }
-  }
-
-  get comparator(): Comparator<T> {
-    return this._comparator;
-  }
-
-  set comparator(c: Comparator<T>) {
-    this._comparator = c;
   }
 
   /**
@@ -154,18 +162,6 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
    */
   get autoSync(): boolean {
     return false;
-  }
-
-  /**
-   * The default model for a collection is just a **Model**.
-   * This should be overridden in most cases.
-   */
-  get model(): new (attributes?: Partial<ModelAttributes>, options?: ModelOptions) => T | Model {
-    return this._model ?? Model;
-  }
-
-  set model(model: new (attributes?: Partial<ModelAttributes>, options?: ModelOptions) => T) {
-    this._model = model;
   }
 
   get length(): number {
@@ -745,7 +741,7 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
    * Define how to uniquely identify models in the collection.
    */
   modelId(attrs: ModelAttributes): string | number | undefined {
-    return attrs[this.model.prototype?.idAttribute || 'id'];
+    return attrs[(this.model ?? Model).prototype?.idAttribute || 'id'];
   }
 
   /** Get an iterator of all models in this collection. */
@@ -779,7 +775,7 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
   }
 
   createModel(attrs: ModelAttributes, options?: Options): T {
-    const Klass = this.model;
+    const Klass = this.model ?? Model;
     return new Klass(attrs, options) as T;
   }
 
