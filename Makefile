@@ -19,6 +19,7 @@ build: node_modules
 dist: build
 
 check: node_modules build eslint
+	npm run check:dts
 	npm run check
 
 .PHONY: eslint
