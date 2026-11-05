@@ -39,7 +39,7 @@
   "contributors": [
     "JC Brand"
   ],
-  "version": "4.0.1",
+  "version": "4.0.2",
   "engines": {
     "node": ">=22.0.0"
   },
