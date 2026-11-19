@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Batched storages sharing a store object no longer orphan pending writes.
+
 ## 4.0.2 (2026-11-05)
 
 - Subclasses of `Model` and `Collection` now type-check for consumers with `strict: true` and

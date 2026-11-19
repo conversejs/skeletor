@@ -34,6 +34,20 @@ const weakInstances = new Set<WeakRef<PersistentStorage>>();
 const registered = new WeakSet<PersistentStorage>();
 
 /**
+ * Enable batched writes on a store object, unless it already has them.
+ *
+ * A store object is often shared by many PersistentStorage instances (the
+ * global localForage, or a driver instance the caller passes to each of them).
+ * They must share one batch too: replacing it would orphan the writes still
+ * pending in the old one, out of reach of `flush()`.
+ */
+function batchWrites(store: StorageDriver): void {
+  store.debouncedSetItems ??= mergebounce((items: Record<string, any>) => store.setItems!(items), 50, {
+    'promise': true,
+  });
+}
+
+/**
  * Constructor for a Node.js-only storage driver. Registered by the
  * `@converse/skeletor/node` entry point via {@link PersistentStorage.nodeStorage}.
  * @public
@@ -114,11 +128,8 @@ class PersistentStorage {
       this.storeInitialized = this.initStore(type as StoreType, batchedWrites);
     } else {
       this.store = type;
-      if (batchedWrites) {
-        this.store.debouncedSetItems = mergebounce((items: Record<string, any>) => this.store.setItems!(items), 50, {
-          'promise': true,
-        });
-      }
+      if (batchedWrites) batchWrites(this.store);
+
       this.storeInitialized = Promise.resolve();
     }
     // Flip the synchronous-readiness flag once init settles. Callers that await
@@ -147,21 +158,14 @@ class PersistentStorage {
         );
       }
       this.store = new NodeSQLiteStorage(this.name, PersistentStorage.nodeStorageDir ?? undefined);
-      if (batchedWrites) {
-        this.store.debouncedSetItems = mergebounce((items: Record<string, any>) => this.store.setItems!(items), 50, {
-          'promise': true,
-        });
-      }
+      if (batchedWrites) batchWrites(this.store);
+
       return;
     } else if (type !== 'indexed') {
       throw new Error('Skeletor.storage: No storage type was specified');
     }
     this.store = localForage as StorageDriver;
-    if (batchedWrites) {
-      this.store.debouncedSetItems = mergebounce((items: Record<string, any>) => this.store.setItems!(items), 50, {
-        'promise': true,
-      });
-    }
+    if (batchedWrites) batchWrites(this.store);
   }
 
   flush(): void {

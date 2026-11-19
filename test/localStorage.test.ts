@@ -1242,6 +1242,31 @@ describe('sync promise contract', function () {
     assert.deepEqual(store['batchedFlush-b-1'], { id: 'b-1', name: 'Bob' }, 'the buffered attributes were persisted');
   });
 
+  it('shares one batch of pending writes between storages on the same store object', function () {
+    const store: Record<string, any> = {};
+    const driver: any = {
+      setItems(items: Record<string, any>) {
+        Object.assign(store, items);
+        return Promise.resolve(items);
+      },
+    };
+
+    const first = new Storage('sharedBatchFirst', driver, true);
+    const batch = driver.debouncedSetItems;
+    const second = new Storage('sharedBatchSecond', driver, true);
+    assert.strictEqual(driver.debouncedSetItems, batch, 'the second storage reuses the batch of the first');
+
+    first.save(new Model({ id: 'a-1', name: 'Alice' }));
+    assert.notProperty(store, 'sharedBatchFirst-a-1', 'the write is still pending in the batch');
+
+    second.flush();
+    assert.deepEqual(
+      store['sharedBatchFirst-a-1'],
+      { id: 'a-1', name: 'Alice' },
+      'flushing the second storage writes what the first one buffered',
+    );
+  });
+
   it('surfaces an auto-save rejection that bypasses options.error on the model error event', async function () {
     // localSync routes storage failures through options.error (-> the model's
     // `error` event) and then resolves, so they never reach fireRun's catch. A
