@@ -3,7 +3,7 @@
   "description": "Models and Collections for modern web apps",
   "url": "https://github.com/conversejs/skeletor",
   "type": "module",
-  "main": "dist/skeletor.js",
+  "main": "dist/skeletor.esm.js",
   "module": "dist/skeletor.esm.js",
   "types": "dist/skeletor.d.ts",
   "browser": "dist/skeletor.js",
@@ -11,19 +11,16 @@
     ".": {
       "node": {
         "types": "./dist/skeletor.node.d.ts",
-        "require": "./dist/skeletor.node.js",
-        "import": "./dist/skeletor.node.mjs"
+        "default": "./dist/skeletor.node.mjs"
       },
       "default": {
         "types": "./dist/skeletor.d.ts",
-        "import": "./dist/skeletor.esm.js",
-        "require": "./dist/skeletor.js"
+        "default": "./dist/skeletor.esm.js"
       }
     },
     "./node": {
       "types": "./dist/skeletor.node.d.ts",
-      "require": "./dist/skeletor.node.js",
-      "import": "./dist/skeletor.node.mjs"
+      "default": "./dist/skeletor.node.mjs"
     }
   },
   "keywords": [
@@ -41,7 +38,7 @@
   ],
   "version": "4.0.2",
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=22.13.0"
   },
   "license": "MIT",
   "repository": {
@@ -69,7 +66,6 @@
     "dist/skeletor.js.map",
     "dist/skeletor.esm.js.map",
     "dist/skeletor.min.js",
-    "dist/skeletor.node.js",
     "dist/skeletor.node.mjs",
     "dist/skeletor.d.ts",
     "dist/skeletor.node.d.ts",
