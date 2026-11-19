@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 4.0.3 (2026-11-19)
 
 - Batched storages sharing a store object no longer orphan pending writes.
 - `require("@converse/skeletor")` works in Node again. It now loads the ES module builds, so the
