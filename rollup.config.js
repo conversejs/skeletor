@@ -66,19 +66,6 @@ export default [
   {
     input: 'src/index.node.ts',
     output: {
-      name: 'skeletor',
-      sourcemap: true,
-      file: 'dist/skeletor.node.js',
-      format: 'cjs',
-      exports: 'named',
-    },
-    plugins,
-    external: ['node:module', 'node:fs', 'node:path', 'node:sqlite'],
-    preserveEntrySignatures: 'strict',
-  },
-  {
-    input: 'src/index.node.ts',
-    output: {
       sourcemap: true,
       file: 'dist/skeletor.node.mjs',
       format: 'es',

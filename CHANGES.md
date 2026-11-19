@@ -3,6 +3,8 @@
 ## Unreleased
 
 - Batched storages sharing a store object no longer orphan pending writes.
+- `require("@converse/skeletor")` works in Node again. It now loads the ES module builds, so the
+  CommonJS build `dist/skeletor.node.js` is gone and Node 22.13 or newer is required. (#70)
 
 ## 4.0.2 (2026-11-05)
 
