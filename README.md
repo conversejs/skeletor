@@ -241,6 +241,76 @@ function UserName({ user }) {
 }
 ```
 
+### Integration with Marionette
+
+Use Skeletor Models and Collections with [Marionette](https://marionettejs.com/) views through `@mnjs/adapters/skeletor`.
+
+Each `UserName` view renders a user. Clicking a name stores that user’s ID in the `UserList` view’s state. Each row observes the shared state, so selection changes update the buttons without rerendering the list. Start with `<div id="app"></div>` on the page:
+
+```ts
+import { Collection, Model } from '@converse/skeletor';
+import { CollectionView, Region, View, setDataApi, setDomApi, setStateApi } from 'marionette';
+import SkeletorApi from '@mnjs/adapters/skeletor';
+import { html } from '@mnjs/html';
+import HtmlDomApi from '@mnjs/html/marionette';
+
+setDataApi(SkeletorApi);
+setDomApi(HtmlDomApi);
+setStateApi(SkeletorApi);
+
+type Selection = {
+  selectedUserId: string | number | null;
+};
+
+const UserName = View.extend({
+  template: ({ firstName, isSelected }: { firstName: string; isSelected: boolean }) =>
+    html`<button type="button"
+      class=${isSelected ? 'is-selected' : ''}
+      aria-pressed=${String(isSelected)}>${firstName}</button>`,
+
+  modelEvents: { 'change:firstName': 'render' },
+  stateEvents: { 'change:selectedUserId': 'render' },
+  triggers: { 'click button': 'select:user' },
+
+  templateContext() {
+    const model = this.model as Model;
+    const state = this.getState() as Model<Selection>;
+    return { isSelected: state.get('selectedUserId') === model.id };
+  }
+});
+
+const UserList = CollectionView.extend({
+  childView: UserName,
+
+  createState() {
+    return new Model<Selection>({ selectedUserId: null });
+  },
+
+  childViewOptions() {
+    return { state: this.getState() };
+  },
+
+  childViewEvents: { 'select:user': 'selectUser' },
+
+  selectUser(child: InstanceType<typeof UserName>) {
+    this.getState().set('selectedUserId', (child.model as Model).id);
+  }
+});
+
+const ada = new Model({ id: 1, firstName: 'Ada' });
+const users = new Collection([ada]);
+const userList = new UserList({ collection: users });
+new Region({ el: '#app' }).show(userList);
+
+ada.set('firstName', 'Ada Lovelace'); // Updates the first button.
+users.add({ id: 2, firstName: 'Grace' }); // Adds a second button.
+// Clicking Grace marks her button with aria-pressed="true".
+```
+
+[Try the example on CodePen](https://codepen.io/editor/paulfalgout-the-sans/pen/01a20cce-1773-7bb9-8785-d9d9fa5d37ca).
+
+Verified with Skeletor 4.0.3. See the [adapter notes](https://marionettejs.com/docs/packages/adapters/#skeletor).
+
 ## Features at a Glance
 
 | Export              | What it provides                                                                                                                       |
@@ -255,7 +325,7 @@ function UserName({ user }) {
 
 Skeletor is a **headless data layer**, not an application-state framework. It owns your _domain model_ (typed models
 and collections, their relationships, persistence, and server sync) and stays out of your view layer.
-Bind it to whatever renders your UI: [Lit](https://lit.dev), React (via [`useSyncExternalStore`](#integration-with-react)), or plain DOM.
+Bind it to whatever renders your UI: [Lit](https://lit.dev), React (via [`useSyncExternalStore`](#integration-with-react)), [Marionette](#integration-with-marionette), or plain DOM.
 
 That scope is deliberate. Skeletor isn't trying to compete with signal libraries, Zustand, or Redux for general UI state.
 What it's uniquely good at is giving a real, long-lived application a _typed, persistent, promise-capable_ data layer it
