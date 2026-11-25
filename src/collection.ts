@@ -771,7 +771,9 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
    */
   _reset(): void {
     this.models = [];
-    this._byId = {};
+    // Without a prototype, so that ids such as `constructor` or `__proto__`
+    // don't resolve to inherited members.
+    this._byId = Object.create(null);
   }
 
   createModel(attrs: ModelAttributes, options?: Options): T {

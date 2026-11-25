@@ -2359,4 +2359,21 @@ import {CollectionOptions, ModelAttributes, ModelOptions} from '../src/types';
     const collection = new Skeletor.Collection([model]);
     assert.ok(collection.get(model));
   });
+
+  QUnit.test('ids that name Object.prototype members are ordinary ids', function (assert) {
+    const coll = new Skeletor.Collection([{id: 'a@x'}]);
+    assert.strictEqual(coll.get('constructor'), undefined);
+    assert.strictEqual(coll.has('toString'), false);
+    assert.strictEqual(coll.get('__proto__'), undefined);
+
+    const ids = ['constructor', 'toString', '__proto__', 'hasOwnProperty'];
+    ids.forEach((id) => coll.add({id}));
+    assert.strictEqual(coll.length, 5);
+    ids.forEach((id) => assert.strictEqual(coll.get(id), coll.models.find((m) => m.id === id), id));
+    assert.strictEqual(coll.get('valueOf'), undefined);
+
+    coll.remove(coll.get('__proto__'));
+    assert.strictEqual(coll.get('__proto__'), undefined);
+    assert.strictEqual(coll.get('a@x').id, 'a@x');
+  });
 })(QUnit);
