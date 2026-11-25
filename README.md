@@ -320,6 +320,8 @@ Your Views and Router don't need to change at all. Skeletor models and collectio
 - `attrs` proxy for direct reactive attribute access
 - `computed` properties with caching and automatic change events
 - `subscribe()` returning an unsubscribe function on all reactive objects
+- A `write` event, fired before the `change` events and also for silent writes, for state that must mirror a
+  model (indexes, signals). `silent` now only silences the `change` events, and `all` listeners hear `write` too.
 
 ### What was removed
 

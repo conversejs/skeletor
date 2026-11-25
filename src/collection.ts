@@ -1,5 +1,6 @@
 import clone from 'lodash-es/clone';
 import countBy from 'lodash-es/countBy';
+import eq from 'lodash-es/eq';
 import groupBy from 'lodash-es/groupBy';
 import isFunction from 'lodash-es/isFunction';
 import isString from 'lodash-es/isString';
@@ -53,6 +54,72 @@ function toModelPredicate<T extends Model>(
 }
 
 /**
+ * Defines one index of a collection: either the name of an attribute, or a
+ * function returning the key (or an array of keys) to file the model under.
+ * Only primitive keys are indexed. `null`, `undefined` and objects are skipped.
+ */
+export type IndexSpec<T extends Model = Model> = string | ((model: T) => unknown);
+
+/** A built index: the models filed under each key, and the keys of each model. */
+interface CollectionIndex<T extends Model> {
+  spec: IndexSpec<T>;
+  buckets: Map<unknown, Set<T>>;
+  keys: Map<T, unknown[]>;
+}
+
+const NO_KEYS: unknown[] = [];
+
+function isIndexable(key: unknown): boolean {
+  return key != null && typeof key !== 'object' && typeof key !== 'function';
+}
+
+/** The keys a model belongs under, for the given index definition. */
+function indexKeys<T extends Model>(spec: IndexSpec<T>, model: T): unknown[] {
+  if (isString(spec)) {
+    // Through `get`, so that a computed property can be indexed too.
+    const value = model.get(spec);
+    return isIndexable(value) ? [value] : NO_KEYS;
+  }
+  const value = spec(model);
+  if (Array.isArray(value)) {
+    const keys = value.filter(isIndexable);
+    return keys.length > 1 ? [...new Set(keys)] : keys;
+  }
+  return isIndexable(value) ? [value] : NO_KEYS;
+}
+
+function unindexModel<T extends Model>(index: CollectionIndex<T>, model: T): void {
+  const keys = index.keys.get(model);
+  if (!keys) return;
+  index.keys.delete(model);
+  for (const key of keys) {
+    const bucket = index.buckets.get(key);
+    if (bucket?.delete(model) && !bucket.size) index.buckets.delete(key);
+  }
+}
+
+/**
+ * File a model under its current keys. The keys it was filed under before are
+ * remembered per model, so it can be moved or removed whatever its attributes
+ * have become since.
+ */
+function indexModel<T extends Model>(index: CollectionIndex<T>, model: T): void {
+  const keys = indexKeys(index.spec, model);
+  const prev = index.keys.get(model);
+  if (prev) {
+    if (prev.length === keys.length && prev.every((key, i) => key === keys[i])) return;
+    unindexModel(index, model);
+  }
+  if (!keys.length) return;
+  index.keys.set(model, keys);
+  for (const key of keys) {
+    const bucket = index.buckets.get(key);
+    if (bucket) bucket.add(model);
+    else index.buckets.set(key, new Set([model]));
+  }
+}
+
+/**
  * Load the collection's members from storage. A module-level function rather
  * than a `#private` method so the published declarations carry no private
  * members, which TypeScript 6 rejects in anonymously extended classes (TS4094).
@@ -80,6 +147,25 @@ export interface Collection<T extends Model = Model> {
    */
   model: new (attributes?: any, options?: any) => T;
   comparator: Comparator<T>;
+  /**
+   * Extra lookup indexes, by name. Each is either an attribute name or a
+   * function returning the key or keys to file a model under:
+   *
+   *     indexes = {
+   *       nick: 'nick',
+   *       ids: (m) => [m.get('msgid'), m.get('origin_id')],
+   *     };
+   *
+   * Query them with `getBy` and `getAllBy`. `where` and `findWhere` use an
+   * attribute index by themselves when the query has that attribute.
+   *
+   * An attribute index may also name a computed property.
+   *
+   * An index is built on its first lookup and kept current from then on, as
+   * models are added, removed and changed, silently or not. A changed model
+   * is refiled before its change events fire.
+   */
+  indexes?: Record<string, IndexSpec<T>>;
 }
 
 /**
@@ -102,6 +188,8 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
   protected _byId: Record<string, T>;
   /** The models, by cid. Kept apart from `_byId`, so that an id such as `c1` can't collide with a cid. */
   protected _byCid: Record<string, T>;
+  /** The indexes built so far, by name. See `indexes`. */
+  protected _indexes?: Map<string, CollectionIndex<T>>;
 
   /**
    * Create a new **Collection**, perhaps to contain a specific type of `model`.
@@ -114,6 +202,7 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
     this.preinitialize.apply(this, arguments as any);
     if (options.model) this.model = options.model;
     if (options.comparator !== undefined) this.comparator = options.comparator;
+    if (options.indexes) this.indexes = options.indexes;
     this._reset();
     this.initialize.apply(this, arguments as any);
     if (models) this.reset(models, Object.assign({ silent: true }, options));
@@ -378,6 +467,7 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
    */
   reset(models?: T[] | T | ModelAttributes | ModelAttributes[], options?: Options): T | T[] {
     options = options ? clone(options) : {};
+    this._indexes = undefined;
     for (let i = 0; i < this.models.length; i++) {
       this._removeReference(this.models[i], options);
     }
@@ -569,7 +659,93 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
    * `filter`.
    */
   where(attrs: ModelAttributes | Partial<ModelAttributes>, first?: boolean): T[] | T | undefined {
+    const candidates = this._indexedCandidates(attrs);
+    if (candidates) {
+      // The candidates are still matched against the query, for its other
+      // attributes.
+      const keys = Object.keys(attrs);
+      let predicate: (model: T) => any;
+      if (keys.length === 1) {
+        // Skips building a lodash matcher, which costs more than the lookup.
+        const key = keys[0];
+        const value = attrs[key];
+        predicate = (m) => eq(m.attributes[key], value);
+      } else {
+        predicate = toModelPredicate<T>(attrs);
+      }
+      return first ? candidates.find(predicate) : candidates.filter(predicate);
+    }
     return this[first ? 'find' : 'filter'](attrs);
+  }
+
+  /**
+   * Return the first model, in collection order, filed under `key` in the
+   * index called `name`. See `indexes`.
+   */
+  getBy(name: string, key: unknown): T | undefined {
+    const bucket = this._getIndex(name).buckets.get(key);
+    if (!bucket) return undefined;
+    if (bucket.size === 1) return bucket.values().next().value;
+    return this.models.find((m) => bucket.has(m));
+  }
+
+  /**
+   * Return all models, in collection order, filed under `key` in the index
+   * called `name`. See `indexes`.
+   */
+  getAllBy(name: string, key: unknown): T[] {
+    const bucket = this._getIndex(name).buckets.get(key);
+    if (!bucket) return [];
+    if (bucket.size === 1) return [...bucket];
+    return this.models.filter((m) => bucket.has(m));
+  }
+
+  /**
+   * Return the index called `name`, building it from the current models if
+   * this is its first use.
+   */
+  protected _getIndex(name: string): CollectionIndex<T> {
+    let index = this._indexes?.get(name);
+    if (!index) {
+      const indexes = this.indexes;
+      const spec = indexes && Object.prototype.hasOwnProperty.call(indexes, name) ? indexes[name] : undefined;
+      if (spec == null) throw new Error(`Collection has no index called "${name}"`);
+      index = { spec, buckets: new Map(), keys: new Map() };
+      for (let i = 0; i < this.models.length; i++) indexModel(index, this.models[i]);
+      (this._indexes ??= new Map()).set(name, index);
+    }
+    return index;
+  }
+
+  /**
+   * Called on a member model's `write` event, which fires before its change
+   * events and also when they are silenced. Refiles it in the built indexes.
+   */
+  protected _onModelWrite(model: T, changes: string[]): void {
+    this._indexes?.forEach((index) => {
+      if (!isString(index.spec) || changes.includes(index.spec)) indexModel(index, model);
+    });
+  }
+
+  /** Drop a model from the built indexes. */
+  protected _unindex(model: T): void {
+    this._indexes?.forEach((index) => unindexModel(index, model));
+  }
+
+  /**
+   * The models an attribute index narrows an attributes query down to, or
+   * `undefined` when no index applies and the whole collection must be scanned.
+   */
+  protected _indexedCandidates(attrs: unknown): T[] | undefined {
+    const indexes = this.indexes;
+    if (!indexes || attrs == null || typeof attrs !== 'object') return undefined;
+    for (const name of Object.keys(indexes)) {
+      const spec = indexes[name];
+      if (isString(spec) && Object.prototype.hasOwnProperty.call(attrs, spec) && isIndexable(attrs[spec])) {
+        return this.getAllBy(name, attrs[spec]);
+      }
+    }
+    return undefined;
   }
 
   /**
@@ -776,6 +952,8 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
     // don't resolve to inherited members.
     this._byId = Object.create(null);
     this._byCid = Object.create(null);
+    // Dropped rather than emptied: each is rebuilt on its next lookup.
+    this._indexes = undefined;
   }
 
   createModel(attrs: ModelAttributes, options?: Options): T {
@@ -817,6 +995,7 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
       delete this._byCid[model.cid];
       const id = this.modelId(model.attributes);
       if (id != null) delete this._byId[id];
+      this._unindex(model);
 
       if (!options?.silent) {
         options = options || {};
@@ -845,6 +1024,7 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
     this._byCid[model.cid] = model;
     const id = this.modelId(model.attributes);
     if (id != null) this._byId[id as string] = model;
+    this._indexes?.forEach((index) => indexModel(index, model));
     model.on('all', this._onModelEvent, this);
   }
 
@@ -855,20 +1035,26 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
     delete this._byCid[model.cid];
     const id = this.modelId(model.attributes);
     if (id != null) delete this._byId[id as string];
+    this._unindex(model);
     if (this === model.collection) delete model.collection;
     model.off('all', this._onModelEvent, this);
   }
 
   /**
    * Internal method called every time a model in the set fires an event.
-   * Sets need to update their indexes when models change ids. All other
-   * events simply proxy through. "add" and "remove" events that originate
+   * Sets need to update their indexes when models change ids or are written
+   * to. All events proxy through. "add" and "remove" events that originate
    * in other collections are ignored.
    */
   _onModelEvent(event: string, model: T, collection: Collection<T>, options?: Options): void {
     if (model) {
       if ((event === 'add' || event === 'remove') && collection !== this) return;
       if (event === 'destroy') this.remove(model, options);
+      // Only while it is a member: a model being removed still fires events
+      // until it is unbound, and must not be filed again.
+      if (event === 'write' && this._byCid[model.cid] === model) {
+        this._onModelWrite(model, collection as unknown as string[]);
+      }
       if (event === 'change') {
         const prevId = this.modelId(model.previousAttributes());
         const id = this.modelId(model.attributes);

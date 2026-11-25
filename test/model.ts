@@ -1403,7 +1403,8 @@ import { ModelAttributes, ModelOptions } from '../src/types';
       model.set({ y: true });
     });
     model.set({ x: true });
-    assert.deepEqual(events, ['change:y', 'change:x', 'change']);
+    // `all` also hears `write`, which fires even for the silent write of `z`.
+    assert.deepEqual(events, ['write', 'write', 'change:y', 'change:x', 'write', 'change']);
     events = [];
     model.set({ z: true });
     assert.deepEqual(events, []);
@@ -1811,6 +1812,43 @@ import { ModelAttributes, ModelOptions } from '../src/types';
     assert.equal(model.id, 2);
     model.set({ id: 3 });
     assert.equal(model.id, 3);
+  });
+
+  QUnit.test('write fires on every write, silent or not, before change events', function (assert) {
+    const model = new Skeletor.Model({a: 1, b: 2});
+    const log = [];
+    model.on('write', (m, changes, options) => {
+      assert.strictEqual(m, model);
+      log.push(['write', changes, !!options.silent]);
+    });
+    model.on('change:a', () => log.push(['change:a']));
+    model.on('change', () => log.push(['change']));
+
+    model.set({a: 10, b: 2});
+    model.set({b: 20}, {silent: true});
+    model.set({b: 20});
+    model.unset('a', {silent: true});
+    assert.deepEqual(log, [
+      ['write', ['a'], false],
+      ['change:a'],
+      ['change'],
+      ['write', ['b'], true],
+      ['write', ['a'], true],
+    ]);
+  });
+
+  QUnit.test('write fires for a computed property, also when silent', function (assert) {
+    class Named extends Skeletor.Model {
+      get computed() {
+        return {label: {deps: ['name'], fn: (m) => `<${m.get('name')}>`}};
+      }
+    }
+    const model = new Named({name: 'x'});
+    const writes = [];
+    model.on('write', (m, changes) => writes.push(changes));
+    model.set({name: 'y'}, {silent: true});
+    assert.deepEqual(writes, [['name'], ['label']]);
+    assert.equal(model.get('label'), '<y>');
   });
 
   QUnit.test('attribute names that match Object.prototype members', function (assert) {

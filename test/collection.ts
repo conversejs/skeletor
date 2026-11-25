@@ -2403,4 +2403,248 @@ import {CollectionOptions, ModelAttributes, ModelOptions} from '../src/types';
     assert.equal(coll.length, 2);
     assert.strictEqual(coll.get(Object.assign(Object.create(null), {id: 'b'})).id, 'b');
   });
+
+  QUnit.test('indexes: getBy and getAllBy look models up by an attribute', function (assert) {
+    const coll = new Skeletor.Collection(
+      [
+        {id: 1, nick: 'alice', role: 'moderator'},
+        {id: 2, nick: 'bob', role: 'participant'},
+        {id: 3, nick: 'carol', role: 'participant'},
+        {id: 4, role: 'visitor', nick: null},
+      ],
+      {indexes: {nick: 'nick', role: 'role'}}
+    );
+    assert.strictEqual(coll.getBy('nick', 'bob'), coll.get(2));
+    assert.strictEqual(coll.getBy('nick', 'dave'), undefined);
+    assert.strictEqual(coll.getBy('nick', null), undefined, 'null and undefined are not indexed');
+    assert.strictEqual(coll.getBy('nick', undefined), undefined);
+    assert.deepEqual(
+      coll.getAllBy('role', 'participant').map((m) => m.id),
+      [2, 3]
+    );
+    assert.deepEqual(coll.getAllBy('role', 'owner'), []);
+    assert.throws(() => coll.getBy('jid', 'x'), /no index called "jid"/);
+    assert.throws(() => coll.getBy('toString', 'x'), /no index called/);
+  });
+
+  QUnit.test('indexes: declared as a class field on a subclass', function (assert) {
+    class Occupants extends Skeletor.Collection {
+      indexes = {nick: 'nick'};
+    }
+    const coll = new Occupants([{id: 1, nick: 'alice'}]);
+    coll.add({id: 2, nick: 'bob'});
+    assert.strictEqual(coll.getBy('nick', 'alice'), coll.get(1));
+    assert.strictEqual(coll.getBy('nick', 'bob'), coll.get(2));
+  });
+
+  QUnit.test('indexes: follow add, remove, change, reset and destroy', function (assert) {
+    const coll = new Skeletor.Collection([{id: 1, nick: 'alice'}], {indexes: {nick: 'nick'}});
+    const alice = coll.get(1);
+    assert.strictEqual(coll.getBy('nick', 'alice'), alice, 'built on first lookup');
+
+    const bob = coll.add({id: 2, nick: 'bob'}) as Skeletor.Model;
+    assert.strictEqual(coll.getBy('nick', 'bob'), bob, 'add');
+
+    alice.set('nick', 'alice_');
+    assert.strictEqual(coll.getBy('nick', 'alice'), undefined, 'change drops the old key');
+    assert.strictEqual(coll.getBy('nick', 'alice_'), alice, 'change files the new key');
+
+    alice.unset('nick');
+    assert.strictEqual(coll.getBy('nick', 'alice_'), undefined, 'unset');
+    alice.set('nick', 'alice');
+    assert.strictEqual(coll.getBy('nick', 'alice'), alice, 'set again');
+
+    coll.remove(bob);
+    assert.strictEqual(coll.getBy('nick', 'bob'), undefined, 'remove');
+    bob.set('nick', 'robert');
+    assert.strictEqual(coll.getBy('nick', 'robert'), undefined, 'a removed model is no longer tracked');
+
+    coll.set([{id: 1, nick: 'al'}, {id: 3, nick: 'carol'}]);
+    assert.strictEqual(coll.getBy('nick', 'al'), alice, 'merge through set');
+    assert.strictEqual(coll.getBy('nick', 'carol'), coll.get(3));
+
+    alice.trigger('destroy', alice, coll);
+    assert.strictEqual(coll.getBy('nick', 'al'), undefined, 'destroy');
+
+    coll.reset([{id: 4, nick: 'dave'}]);
+    assert.strictEqual(coll.getBy('nick', 'carol'), undefined, 'reset');
+    assert.strictEqual(coll.getBy('nick', 'dave'), coll.get(4));
+  });
+
+  QUnit.test('indexes: listeners see the index already updated', function (assert) {
+    assert.expect(4);
+    const coll = new Skeletor.Collection([{id: 1, nick: 'alice'}], {indexes: {nick: 'nick'}});
+    const alice = coll.get(1);
+    coll.getBy('nick', 'alice');
+    coll.on('change:nick', () => {
+      assert.strictEqual(coll.getBy('nick', 'ally'), alice);
+      assert.strictEqual(coll.getBy('nick', 'alice'), undefined);
+    });
+    coll.on('remove', () => assert.strictEqual(coll.getBy('nick', 'ally'), undefined));
+    coll.on('add', (m) => assert.strictEqual(coll.getBy('nick', 'bob'), m));
+    alice.set('nick', 'ally');
+    coll.remove(alice);
+    coll.add({id: 2, nick: 'bob'});
+  });
+
+  QUnit.test('indexes: a key shared by several models returns them in collection order', function (assert) {
+    const coll = new Skeletor.Collection([], {indexes: {msgid: 'msgid'}, comparator: 'time'});
+    coll.getAllBy('msgid', 'x');
+    coll.add({id: 'late', msgid: 'abc', time: 3});
+    coll.add({id: 'early', msgid: 'abc', time: 1});
+    coll.add({id: 'other', msgid: 'xyz', time: 2});
+    assert.strictEqual(coll.getBy('msgid', 'abc').id, 'early');
+    assert.deepEqual(
+      coll.getAllBy('msgid', 'abc').map((m) => m.id),
+      ['early', 'late']
+    );
+    coll.remove('early');
+    assert.strictEqual(coll.getBy('msgid', 'abc').id, 'late');
+    coll.remove('late');
+    assert.deepEqual(coll.getAllBy('msgid', 'abc'), []);
+  });
+
+  QUnit.test('indexes: a function may file a model under several keys', function (assert) {
+    const coll = new Skeletor.Collection(
+      [
+        {id: 1, msgid: 'm1', origin_id: 'o1'},
+        {id: 2, msgid: 'm2', origin_id: 'm2'},
+        {id: 3, msgid: 'm3'},
+      ],
+      {indexes: {ids: (m: Skeletor.Model) => [m.get('msgid'), m.get('origin_id'), m.get('retraction_id')]}}
+    );
+    assert.strictEqual(coll.getBy('ids', 'm1'), coll.get(1));
+    assert.strictEqual(coll.getBy('ids', 'o1'), coll.get(1));
+    assert.deepEqual(coll.getAllBy('ids', 'm2'), [coll.get(2)], 'a repeated key files the model once');
+
+    coll.get(3).set('retraction_id', 'r3');
+    assert.strictEqual(coll.getBy('ids', 'r3'), coll.get(3), 'a change to any attribute refiles');
+    coll.get(1).set('origin_id', 'o1b');
+    assert.strictEqual(coll.getBy('ids', 'o1'), undefined);
+    assert.strictEqual(coll.getBy('ids', 'o1b'), coll.get(1));
+    assert.strictEqual(coll.getBy('ids', 'm1'), coll.get(1));
+
+    coll.remove(coll.get(1));
+    assert.strictEqual(coll.getBy('ids', 'm1'), undefined);
+    assert.strictEqual(coll.getBy('ids', 'o1b'), undefined);
+  });
+
+  QUnit.test('indexes: where and findWhere use an attribute index', function (assert) {
+    const coll = new Skeletor.Collection(
+      [
+        {id: 1, jid: 'a@x', nick: 'alice', n: 1},
+        {id: 2, jid: 'b@x', nick: 'bob', n: 1},
+        {id: 3, jid: 'a@x', nick: 'ally', n: '1'},
+        {id: 4, jid: null, nick: 'dan'},
+      ],
+      {indexes: {jid: 'jid'}}
+    );
+    const find = sinon.spy(coll, 'find');
+    const filter = sinon.spy(coll, 'filter');
+    assert.strictEqual(coll.findWhere({jid: 'b@x'}), coll.get(2));
+    assert.strictEqual(coll.findWhere({jid: 'a@x'}), coll.get(1), 'first in collection order');
+    assert.strictEqual(coll.findWhere({jid: 'a@x', nick: 'ally'}), coll.get(3), 'other attributes still match');
+    assert.strictEqual(coll.findWhere({jid: 'a@x', nick: 'bob'}), undefined);
+    assert.strictEqual(coll.findWhere({jid: 'c@x'}), undefined);
+    assert.deepEqual(
+      (coll.where({jid: 'a@x'}) as Skeletor.Model[]).map((m) => m.id),
+      [1, 3]
+    );
+    assert.strictEqual(find.callCount + filter.callCount, 0, 'no scan of the collection');
+
+    assert.strictEqual(coll.findWhere({nick: 'bob'}), coll.get(2), 'unindexed attributes still scan');
+    assert.strictEqual(coll.findWhere({jid: null}), coll.get(4), 'unindexable values scan');
+    assert.strictEqual(coll.findWhere('n' as any), coll.get(1), 'other predicate forms are untouched');
+  });
+
+  QUnit.test('indexes: an index is built only when first used', function (assert) {
+    const spec = sinon.spy((m: Skeletor.Model) => m.get('nick'));
+    const coll = new Skeletor.Collection([{id: 1, nick: 'alice'}], {indexes: {nick: spec}});
+    coll.add({id: 2, nick: 'bob'});
+    coll.get(1).set('nick', 'ally');
+    assert.strictEqual(spec.callCount, 0);
+    assert.strictEqual(coll.getBy('nick', 'ally'), coll.get(1));
+    assert.strictEqual(spec.callCount, 2);
+  });
+
+  QUnit.test('indexes: follow silent changes', function (assert) {
+    const coll = new Skeletor.Collection([{id: 1, nick: 'alice'}], {indexes: {nick: 'nick'}});
+    const alice = coll.get(1);
+    coll.getBy('nick', 'alice');
+    alice.set('nick', 'ally', {silent: true});
+    assert.strictEqual(coll.getBy('nick', 'alice'), undefined);
+    assert.strictEqual(coll.getBy('nick', 'ally'), alice);
+    assert.strictEqual(coll.findWhere({nick: 'ally'}), alice);
+    alice.unset('nick', {silent: true});
+    assert.strictEqual(coll.getBy('nick', 'ally'), undefined);
+  });
+
+  QUnit.test("indexes: a model's own listeners see the index already updated", function (assert) {
+    assert.expect(3);
+    const coll = new Skeletor.Collection([{id: 1, nick: 'alice'}], {indexes: {nick: 'nick'}});
+    const alice = coll.get(1);
+    coll.getBy('nick', 'alice');
+    alice.on('change:nick', () => {
+      assert.strictEqual(coll.getBy('nick', 'ally'), alice);
+      assert.strictEqual(coll.getBy('nick', 'alice'), undefined);
+    });
+    alice.set('nick', 'ally');
+    alice.off('change:nick');
+    coll.on('remove', () => {
+      // No longer a member, so no longer followed.
+      alice.set('nick', 'al');
+      assert.strictEqual(coll.getBy('nick', 'al'), undefined);
+    });
+    coll.remove(alice);
+  });
+
+  QUnit.test('indexes: an attribute index may name a computed property', function (assert) {
+    class Contact extends Skeletor.Model {
+      get computed() {
+        return {
+          display: {deps: ['nick', 'jid'], fn: (m: Skeletor.Model) => m.get('nick') || m.get('jid')},
+        };
+      }
+    }
+    const coll = new Skeletor.Collection([{id: 1, jid: 'a@x'}], {model: Contact, indexes: {display: 'display'}});
+    const contact = coll.get(1);
+    assert.strictEqual(coll.getBy('display', 'a@x'), contact);
+    assert.strictEqual(coll.findWhere({display: 'a@x'}), undefined, 'where matches stored attributes only');
+    contact.set('nick', 'alice');
+    assert.strictEqual(coll.getBy('display', 'a@x'), undefined);
+    assert.strictEqual(coll.getBy('display', 'alice'), contact);
+    contact.set('nick', 'ally', {silent: true});
+    assert.strictEqual(coll.getBy('display', 'ally'), contact);
+    coll.add({id: 2, jid: 'b@x', nick: 'bob'});
+    assert.strictEqual(coll.getBy('display', 'bob'), coll.get(2));
+  });
+
+  QUnit.test('indexes: a model in two collections is indexed by each', function (assert) {
+    const model = new Skeletor.Model({id: 1, nick: 'alice', jid: 'a@x'});
+    const one = new Skeletor.Collection([model], {indexes: {nick: 'nick'}});
+    const two = new Skeletor.Collection([model], {indexes: {jid: 'jid'}});
+    assert.strictEqual(one.getBy('nick', 'alice'), model);
+    assert.strictEqual(two.getBy('jid', 'a@x'), model);
+    two.remove(model);
+    model.set({nick: 'ally', jid: 'b@x'});
+    assert.strictEqual(one.getBy('nick', 'ally'), model);
+    assert.strictEqual(two.getBy('jid', 'b@x'), undefined);
+  });
+
+  QUnit.test('write events reach the collection, and a model being removed is not refiled', function (assert) {
+    const coll = new Skeletor.Collection([{id: 1}], {indexes: {nick: 'nick'}});
+    const model = coll.get(1);
+    const writes = [];
+    coll.on('write', (m, changes) => writes.push([m, changes]));
+    model.set({nick: 'a'}, {silent: true});
+    assert.deepEqual(writes, [[model, ['nick']]]);
+    assert.strictEqual(coll.getBy('nick', 'a'), model);
+
+    coll.on('remove', (m) => m.set({id: 2, nick: 'b'}));
+    coll.remove(model);
+    assert.strictEqual(coll.get(1), undefined);
+    assert.strictEqual(coll.get(2), undefined, 'not filed under its new id');
+    assert.strictEqual(coll.getBy('nick', 'b'), undefined);
+    assert.equal(coll.length, 0);
+  });
 })(QUnit);
