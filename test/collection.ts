@@ -2647,4 +2647,45 @@ import {CollectionOptions, ModelAttributes, ModelOptions} from '../src/types';
     assert.strictEqual(coll.getBy('nick', 'b'), undefined);
     assert.equal(coll.length, 0);
   });
+
+  QUnit.test('get follows id changes that are silent, and before change events fire', function (assert) {
+    assert.expect(9);
+    const coll = new Skeletor.Collection([{id: 1}, {id: 5}]);
+    const model = coll.get(1);
+    model.set('id', 2, {silent: true});
+    assert.strictEqual(coll.get(1), undefined);
+    assert.strictEqual(coll.get(2), model);
+
+    model.on('change:id', () => {
+      assert.strictEqual(coll.get(2), undefined);
+      assert.strictEqual(coll.get(3), model);
+    });
+    model.set('id', 3);
+    model.off('change:id');
+
+    model.unset('id');
+    assert.strictEqual(coll.get(3), undefined);
+    assert.strictEqual(coll.get(model), model, 'still found by cid');
+    model.set('id', 4);
+    assert.strictEqual(coll.get(4), model);
+
+    coll.remove(model);
+    model.set('id', 6);
+    assert.strictEqual(coll.get(6), undefined, 'a removed model is no longer followed');
+    assert.strictEqual(coll.get(5).id, 5);
+  });
+
+  QUnit.test('get follows an id that modelId derives from other attributes', function (assert) {
+    class Contacts extends Skeletor.Collection {
+      modelId(attrs: ModelAttributes) {
+        return attrs.jid && `${attrs.type}:${attrs.jid}`;
+      }
+    }
+    const coll = new Contacts([{type: 'chat', jid: 'a@x'}]);
+    const model = coll.at(0);
+    assert.strictEqual(coll.get('chat:a@x'), model);
+    model.set('type', 'muc', {silent: true});
+    assert.strictEqual(coll.get('chat:a@x'), undefined);
+    assert.strictEqual(coll.get('muc:a@x'), model);
+  });
 })(QUnit);

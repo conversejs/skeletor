@@ -7,6 +7,7 @@
 - `Model#attributes` and `Model#changed` are objects without a prototype.
 - Event names such as `constructor` or `toString` no longer throw.
 - Models whose id matches another model's cid, such as `c1`, can be added.
+- `Collection#get` follows id changes, silent ones too, before events fire.
 - Models fire `write` on every write, silent or not, before `change` events.
 
 - Collections can declare extra lookup indexes, so that models are found by more than their id

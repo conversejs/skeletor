@@ -188,6 +188,8 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
   protected _byId: Record<string, T>;
   /** The models, by cid. Kept apart from `_byId`, so that an id such as `c1` can't collide with a cid. */
   protected _byCid: Record<string, T>;
+  /** The id each model is filed under in `_byId`, by cid. */
+  protected _idByCid: Record<string, string | number>;
   /** The indexes built so far, by name. See `indexes`. */
   protected _indexes?: Map<string, CollectionIndex<T>>;
 
@@ -719,9 +721,21 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
 
   /**
    * Called on a member model's `write` event, which fires before its change
-   * events and also when they are silenced. Refiles it in the built indexes.
+   * events and also when they are silenced. Refiles it under its id, which
+   * `modelId` may derive from any attribute, and in the built indexes.
    */
   protected _onModelWrite(model: T, changes: string[]): void {
+    const id = this.modelId(model.attributes);
+    const prevId = this._idByCid[model.cid];
+    if (prevId !== id) {
+      if (prevId != null && this._byId[prevId] === model) delete this._byId[prevId];
+      if (id != null) {
+        this._byId[id] = model;
+        this._idByCid[model.cid] = id;
+      } else {
+        delete this._idByCid[model.cid];
+      }
+    }
     this._indexes?.forEach((index) => {
       if (!isString(index.spec) || changes.includes(index.spec)) indexModel(index, model);
     });
@@ -730,6 +744,7 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
   /** Drop a model from the built indexes. */
   protected _unindex(model: T): void {
     this._indexes?.forEach((index) => unindexModel(index, model));
+    delete this._idByCid[model.cid];
   }
 
   /**
@@ -952,6 +967,7 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
     // don't resolve to inherited members.
     this._byId = Object.create(null);
     this._byCid = Object.create(null);
+    this._idByCid = Object.create(null);
     // Dropped rather than emptied: each is rebuilt on its next lookup.
     this._indexes = undefined;
   }
@@ -1023,7 +1039,10 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
   _addReference(model: T, _options?: Options): void {
     this._byCid[model.cid] = model;
     const id = this.modelId(model.attributes);
-    if (id != null) this._byId[id as string] = model;
+    if (id != null) {
+      this._byId[id as string] = model;
+      this._idByCid[model.cid] = id;
+    }
     this._indexes?.forEach((index) => indexModel(index, model));
     model.on('all', this._onModelEvent, this);
   }
@@ -1042,9 +1061,9 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
 
   /**
    * Internal method called every time a model in the set fires an event.
-   * Sets need to update their indexes when models change ids or are written
-   * to. All events proxy through. "add" and "remove" events that originate
-   * in other collections are ignored.
+   * A written model is refiled, a destroyed model is removed, and all events
+   * proxy through. "add" and "remove" events that originate in other
+   * collections are ignored.
    */
   _onModelEvent(event: string, model: T, collection: Collection<T>, options?: Options): void {
     if (model) {
@@ -1054,14 +1073,6 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
       // until it is unbound, and must not be filed again.
       if (event === 'write' && this._byCid[model.cid] === model) {
         this._onModelWrite(model, collection as unknown as string[]);
-      }
-      if (event === 'change') {
-        const prevId = this.modelId(model.previousAttributes());
-        const id = this.modelId(model.attributes);
-        if (prevId !== id) {
-          if (prevId != null) delete this._byId[prevId as string];
-          if (id != null) this._byId[id as string] = model;
-        }
       }
     }
     this.trigger.apply(this, arguments as any);
