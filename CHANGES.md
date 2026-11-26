@@ -4,6 +4,8 @@
 
 - Models with ids such as `constructor` or `__proto__` can be added.
 
+- Models whose id matches another model's cid, such as `c1`, can be added.
+
 ## 4.0.3 (2026-11-19)
 
 - Batched storages sharing a store object no longer orphan pending writes.
