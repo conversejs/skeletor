@@ -35,7 +35,7 @@ class Listening implements ListeningType {
       listening: _listening,
     };
 
-    this._events = eventsApi(onApi, this._events || {}, name, callback, options) as EventCallbackMap;
+    this._events = eventsApi(onApi, this._events || Object.create(null), name, callback, options) as EventCallbackMap;
 
     if (_listening) {
       const listeners = this.obj._listeners || (this.obj._listeners = {});
