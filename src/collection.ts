@@ -98,7 +98,10 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
   _url: string = '';
   hydrated?: Promise<void>;
   models: T[];
+  /** The models, by id. */
   protected _byId: Record<string, T>;
+  /** The models, by cid. Kept apart from `_byId`, so that an id such as `c1` can't collide with a cid. */
+  protected _byCid: Record<string, T>;
 
   /**
    * Create a new **Collection**, perhaps to contain a specific type of `model`.
@@ -541,11 +544,9 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
    */
   get(obj?: string | number | ModelAttributes | T | null): T | undefined {
     if (obj == null) return undefined;
-    return (
-      this._byId[obj as string] ||
-      this._byId[this.modelId(this._isModel(obj) ? (obj as T).attributes : (obj as ModelAttributes)) as string] ||
-      ((obj as T).cid && this._byId[(obj as T).cid])
-    );
+    if (typeof obj !== 'object') return this._byId[obj] || this._byCid[obj];
+    const id = this.modelId(this._isModel(obj) ? obj.attributes : obj);
+    return (id != null && this._byId[id as string]) || (obj.cid != null ? this._byCid[obj.cid] : undefined);
   }
 
   /**
@@ -774,6 +775,7 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
     // Without a prototype, so that ids such as `constructor` or `__proto__`
     // don't resolve to inherited members.
     this._byId = Object.create(null);
+    this._byCid = Object.create(null);
   }
 
   createModel(attrs: ModelAttributes, options?: Options): T {
@@ -812,7 +814,7 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
 
       // Remove references before triggering 'remove' event to prevent an
       // infinite loop. #3693
-      delete this._byId[model.cid];
+      delete this._byCid[model.cid];
       const id = this.modelId(model.attributes);
       if (id != null) delete this._byId[id];
 
@@ -840,7 +842,7 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
    * Internal method to create a model's ties to a collection.
    */
   _addReference(model: T, _options?: Options): void {
-    this._byId[model.cid] = model;
+    this._byCid[model.cid] = model;
     const id = this.modelId(model.attributes);
     if (id != null) this._byId[id as string] = model;
     model.on('all', this._onModelEvent, this);
@@ -850,7 +852,7 @@ export class Collection<T extends Model = Model> extends EventEmitterObject {
    * Internal method to sever a model's ties to a collection.
    */
   _removeReference(model: T, _options?: Options): void {
-    delete this._byId[model.cid];
+    delete this._byCid[model.cid];
     const id = this.modelId(model.attributes);
     if (id != null) delete this._byId[id as string];
     if (this === model.collection) delete model.collection;

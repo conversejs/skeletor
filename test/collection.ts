@@ -1916,7 +1916,7 @@ import {CollectionOptions, ModelAttributes, ModelOptions} from '../src/types';
         Skeletor.Collection.prototype._addReference.apply(this, arguments);
         calls.add++;
         assert.equal(model, this._byId[model.id]);
-        assert.equal(model, this._byId[model.cid]);
+        assert.equal(model, this._byCid[model.cid]);
         assert.equal(model._events.all.length, 1);
       }
 
@@ -1924,7 +1924,7 @@ import {CollectionOptions, ModelAttributes, ModelOptions} from '../src/types';
         Skeletor.Collection.prototype._removeReference.apply(this, arguments);
         calls.remove++;
         assert.equal(this._byId[model.id], undefined);
-        assert.equal(this._byId[model.cid], undefined);
+        assert.equal(this._byCid[model.cid], undefined);
         assert.equal(model.collection, undefined);
       }
     }
@@ -2375,5 +2375,32 @@ import {CollectionOptions, ModelAttributes, ModelOptions} from '../src/types';
     coll.remove(coll.get('__proto__'));
     assert.strictEqual(coll.get('__proto__'), undefined);
     assert.strictEqual(coll.get('a@x').id, 'a@x');
+  });
+
+  QUnit.test('an id that looks like a cid does not collide with that cid', function (assert) {
+    const coll = new Skeletor.Collection([{id: 'x'}]);
+    const a = coll.at(0);
+    const b = coll.add({id: a.cid}) as Skeletor.Model;
+    assert.notStrictEqual(b, a, 'added as a model of its own');
+    assert.equal(coll.length, 2);
+    assert.strictEqual(a.get('id'), 'x', 'not merged into the model with that cid');
+    assert.strictEqual(coll.get(a.cid), b, 'an id wins over a cid');
+    assert.strictEqual(coll.get(a), a);
+    assert.strictEqual(coll.get({cid: a.cid}), a);
+
+    const c = coll.add({id: 'y'}) as Skeletor.Model;
+    c.set('id', b.cid);
+    assert.strictEqual(coll.get(b), b, 'still found by cid after another model took it as an id');
+    coll.remove(c);
+    assert.strictEqual(coll.get(b), b);
+    assert.strictEqual(coll.get(b.cid), b);
+  });
+
+  QUnit.test('get does not stringify an attributes object', function (assert) {
+    const coll = new Skeletor.Collection([{id: '[object Object]'}]);
+    assert.strictEqual(coll.get({id: 'b'}), undefined);
+    coll.add({id: 'b'});
+    assert.equal(coll.length, 2);
+    assert.strictEqual(coll.get(Object.assign(Object.create(null), {id: 'b'})).id, 'b');
   });
 })(QUnit);
