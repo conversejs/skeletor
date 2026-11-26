@@ -77,7 +77,7 @@ function initComputed(model: Model<any>, priv: ModelInternals): void {
   const defs = result(model, 'computed') as ComputedProperties<any>;
   if (!defs || isEmpty(defs)) return;
   priv.computedDefs = defs;
-  priv.computedCache = {};
+  priv.computedCache = Object.create(null);
   for (const [key, def] of Object.entries(defs)) {
     priv.computedCache[key] = def.fn(model);
   }
@@ -118,7 +118,7 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
   _urlRoot: string;
   attrs: T;
   attributes: T;
-  changed: Partial<T> = {};
+  changed: Partial<T> = Object.create(null);
   cid: string;
   collection?: Collection;
   id: string | number;
@@ -137,13 +137,15 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
 
     this.preinitialize.apply(this, arguments as any);
     this.cid = uniqueId(this.cidPrefix);
-    this.attributes = {} as T;
+    // Without a prototype, so that attributes such as `constructor` or
+    // `__proto__` are stored and read as attributes, not inherited members.
+    this.attributes = Object.create(null);
 
     if (options.collection) this.collection = options.collection;
     if (options.parse) attrs = this.parse(attrs, options) || ({} as Partial<T>);
 
     const default_attrs = result(this, 'defaults');
-    attrs = defaults(Object.assign({}, default_attrs, attrs), default_attrs);
+    attrs = defaults(Object.assign(Object.create(null), default_attrs, attrs), default_attrs);
 
     this.set(attrs, options);
 
@@ -166,7 +168,7 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
     this.initialize.apply(this, arguments as any);
 
     // Reset changed after initial set
-    this.changed = {};
+    this.changed = Object.create(null);
 
     // When autoSync is on, `hydrated` is always a Promise so callers can
     // uniformly `await model.hydrated`. It only hydrates from storage when
@@ -405,8 +407,8 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
     this._changing = true;
 
     if (!changing) {
-      this._previousAttributes = clone(this.attributes);
-      this.changed = {};
+      this._previousAttributes = Object.assign(Object.create(null), this.attributes);
+      this.changed = Object.create(null);
     }
 
     const current = this.attributes;
@@ -640,7 +642,7 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
     wrapError(this, options);
 
     // Set temporary attributes if `{wait: true}` to properly find new ids.
-    if (attrs && wait) this.attributes = Object.assign({}, attributes, attrs);
+    if (attrs && wait) this.attributes = Object.assign(Object.create(null), attributes, attrs);
 
     const method = this.isNew() ? 'create' : options.patch ? 'patch' : 'update';
     if (method === 'patch' && !options.attrs) options.attrs = attrs;
