@@ -35,7 +35,7 @@ export function EventEmitter<T extends ClassConstructor>(Base: T) {
      * the callback to all events fired.
      */
     on(name: string | EventCallbackMap, callback?: EventCallback | EventContext, context?: EventContext): this {
-      this._events = eventsApi(onApi, this._events || {}, name, callback, {
+      this._events = eventsApi(onApi, this._events || Object.create(null), name, callback, {
         context: context,
         ctx: this,
         listening: _listening,

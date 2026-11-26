@@ -40,6 +40,21 @@ import { EventCallbackMap } from '../src/types';
     assert.equal(foo.counter, 5, 'counter should be incremented five times.');
   });
 
+  QUnit.test('event names that match Object.prototype members', function (assert) {
+    const foo = new Foo();
+    foo.trigger('constructor');
+    foo.off('toString');
+    for (const name of ['constructor', 'toString', 'hasOwnProperty', '__proto__']) {
+      let calls = 0;
+      const cb = () => calls++;
+      foo.on(name, cb);
+      foo.trigger(name);
+      foo.off(name, cb);
+      foo.trigger(name);
+      assert.equal(calls, 1, name);
+    }
+  });
+
   QUnit.test('binding and triggering multiple events', function (assert) {
     assert.expect(4);
 
