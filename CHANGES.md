@@ -1,9 +1,10 @@
 # Changelog
 
-## Unreleased
+## 4.1.0 (Unreleased)
 
 - Models with ids such as `constructor` or `__proto__` can be added.
-
+- Attributes named `constructor`, `__proto__` and so on work as attributes.
+- `Model#attributes` and `Model#changed` are objects without a prototype.
 - Event names such as `constructor` or `toString` no longer throw.
 - Models whose id matches another model's cid, such as `c1`, can be added.
 

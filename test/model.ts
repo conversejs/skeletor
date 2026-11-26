@@ -1812,4 +1812,36 @@ import { ModelAttributes, ModelOptions } from '../src/types';
     model.set({ id: 3 });
     assert.equal(model.id, 3);
   });
+
+  QUnit.test('attribute names that match Object.prototype members', function (assert) {
+    const model = new Skeletor.Model();
+    for (const name of ['constructor', 'toString', 'hasOwnProperty', '__proto__']) {
+      assert.strictEqual(model.get(name), undefined, `get ${name}`);
+      assert.false(model.has(name), `has ${name}`);
+    }
+    model.set({ constructor: 'a' });
+    model.set({ constructor: 'b' });
+    assert.equal(model.get('constructor'), 'b');
+    assert.equal(model.previous('constructor'), 'a');
+    assert.strictEqual(model.previous('toString'), undefined);
+
+    model.set(JSON.parse('{"__proto__": {"injected": 1}}'));
+    assert.deepEqual(model.get('__proto__'), { injected: 1 }, 'stored as an attribute');
+    assert.strictEqual(model.get('injected'), undefined, 'not inherited');
+    assert.deepEqual(model.toJSON(), JSON.parse('{"constructor": "b", "__proto__": {"injected": 1}}'));
+
+    const fromCtor = new Skeletor.Model(JSON.parse('{"__proto__": {"injected": 1}}'));
+    assert.deepEqual(fromCtor.get('__proto__'), { injected: 1 });
+    assert.strictEqual(fromCtor.get('injected'), undefined);
+
+    class Named extends Skeletor.Model {
+      get computed() {
+        return { label: { deps: ['name'], fn: (m) => `<${m.get('name')}>` } };
+      }
+    }
+    const named = new Named({ name: 'x', constructor: 'c' });
+    assert.equal(named.get('constructor'), 'c');
+    assert.equal(named.attrs.constructor, 'c');
+    assert.equal(named.attrs.label, '<x>');
+  });
 })();
