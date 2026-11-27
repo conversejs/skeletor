@@ -91,6 +91,6 @@ export type {
   SyncOptions,
 } from './types';
 
-export type { CollectionIterator } from './collection';
+export type { CollectionIterator, IndexSpec } from './collection';
 export type { SkeletorType };
 export type { EventEmitterObject } from './eventemitter';

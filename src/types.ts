@@ -199,6 +199,7 @@ export type FetchOrCreateOptions = Options & {
 export type CollectionOptions<T extends Model = Model> = Options & {
   model?: new (attributes?: any, options?: any) => T;
   comparator?: Comparator<T>;
+  indexes?: Record<string, string | ((model: T) => unknown)>;
   previousModels?: Model[];
 };
 

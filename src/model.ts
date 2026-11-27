@@ -83,7 +83,10 @@ function initComputed(model: Model<any>, priv: ModelInternals): void {
   }
 }
 
-/** Recompute one computed property, firing `change:key` when its value changed. */
+/**
+ * Recompute one computed property. When its value changed, fire `write` and,
+ * unless silent, `change:key`.
+ */
 function updateComputed(
   model: Model<any>,
   priv: ModelInternals,
@@ -95,6 +98,7 @@ function updateComputed(
   const newVal = def.fn(model);
   if (!isEqual(priv.computedCache[key], newVal)) {
     priv.computedCache[key] = newVal;
+    model.trigger('write', model, [key], options);
     if (!silent) {
       (model.changed as any)[key] = newVal;
       model.trigger('change:' + key, model, newVal, options);
@@ -371,6 +375,16 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
    * Set a hash of model attributes on the object, firing `"change"`. This is
    * the core primitive operation of a model, updating the data and notifying
    * anyone who needs to know about the change in state. The heart of the beast.
+   *
+   * Before any `change` event, and also when `silent` is set, `set` fires
+   * `"write"` with `(model, changes, options)`, where `changes` names the
+   * attributes whose values changed. `silent` only silences the `change`
+   * events, which are for side effects such as sending or saving. `write` is
+   * for state that must mirror the model, such as indexes and signals.
+   *
+   * `write` listeners run in no set order, so one may run before the model's
+   * collections have refiled it, and see their `get` and indexes still stale.
+   * By the time the `change` events fire, they are current.
    */
   set(key: string | Partial<T> | ObjectWithId, val?: any, options?: ModelOptions): this {
     if (key == null) return this;
@@ -429,6 +443,11 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
 
     // Update the `id`.
     if (this.idAttribute in attrs) this.id = this.get(this.idAttribute);
+
+    // `write` fires even when silent, and before the change events, so that
+    // state mirroring the model (collection indexes, signals) is current by
+    // the time those fire.
+    if (changes.length) this.trigger('write', this, changes, options);
 
     // Trigger all relevant attribute changes.
     if (!silent) {

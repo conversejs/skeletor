@@ -7,6 +7,28 @@
 - `Model#attributes` and `Model#changed` are objects without a prototype.
 - Event names such as `constructor` or `toString` no longer throw.
 - Models whose id matches another model's cid, such as `c1`, can be added.
+- `Collection#get` follows id changes, silent ones too, before events fire.
+- Models fire `write` on every write, silent or not, before `change` events.
+
+- Collections can declare extra lookup indexes, so that models are found by more than their id
+  without scanning the collection:
+
+  ```ts
+  class Occupants extends Collection<Occupant> {
+    indexes = {
+      nick: 'nick',
+      ids: (m) => [m.get('occupant_id'), m.get('jid')],
+    };
+  }
+  occupants.getBy('nick', 'alice'); // the first match
+  occupants.getAllBy('ids', jid); // every match
+  ```
+
+  An index is an attribute name, the name of a computed property, or a function returning one
+  key or an array of keys. Several models may share a key. `where` and `findWhere` use an
+  attribute index by themselves when the query has that attribute. Indexes are built on first
+  use and can also be passed as the `indexes` constructor option. They follow silent changes
+  too, and a changed model is refiled before its change events fire.
 
 ## 4.0.3 (2026-11-19)
 
