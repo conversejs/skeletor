@@ -381,6 +381,10 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
    * attributes whose values changed. `silent` only silences the `change`
    * events, which are for side effects such as sending or saving. `write` is
    * for state that must mirror the model, such as indexes and signals.
+   *
+   * `write` listeners run in no set order, so one may run before the model's
+   * collections have refiled it, and see their `get` and indexes still stale.
+   * By the time the `change` events fire, they are current.
    */
   set(key: string | Partial<T> | ObjectWithId, val?: any, options?: ModelOptions): this {
     if (key == null) return this;
@@ -441,7 +445,8 @@ export class Model<T extends ModelAttributes = ModelAttributes> extends EventEmi
     if (this.idAttribute in attrs) this.id = this.get(this.idAttribute);
 
     // `write` fires even when silent, and before the change events, so that
-    // its listeners (collection indexes, signals) never lag behind the model.
+    // state mirroring the model (collection indexes, signals) is current by
+    // the time those fire.
     if (changes.length) this.trigger('write', this, changes, options);
 
     // Trigger all relevant attribute changes.

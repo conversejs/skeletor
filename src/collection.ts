@@ -163,7 +163,8 @@ export interface Collection<T extends Model = Model> {
    *
    * An index is built on its first lookup and kept current from then on, as
    * models are added, removed and changed, silently or not. A changed model
-   * is refiled before its change events fire.
+   * is refiled before its change events fire, though not necessarily before
+   * its other `write` listeners run.
    */
   indexes?: Record<string, IndexSpec<T>>;
 }
